@@ -90,10 +90,46 @@ const ViolationTemplates = (() => {
       .map(([m]) => m);
   }
 
+  /** Места текущего черновика + ранее введённые по каталогу. */
+  function collectMestaForSuggestions(catalog, draft) {
+    const seen = new Set();
+    const out = [];
+    const add = (value) => {
+      const s = String(value || '').trim();
+      if (!s || seen.has(s)) return;
+      seen.add(s);
+      out.push(s);
+    };
+    (draft?.violations || []).forEach((v) => add(v.mesto));
+    (draft?.objectsCheck || []).forEach((o) => {
+      add(o.title);
+      add(o.subTitle);
+    });
+    collectMestaFromCatalog(catalog).forEach(add);
+    return out;
+  }
+
+  /**
+   * При пустом поле или исходном значении при правке — все места.
+   * Иначе фильтр по подстроке. Точное совпадение с запросом не показываем.
+   */
+  function filterMestoSuggestions(items, query, originalValue) {
+    const list = (items || []).map((m) => String(m || '').trim()).filter(Boolean);
+    const q = String(query || '').trim().toLowerCase();
+    const original = String(originalValue || '').trim().toLowerCase();
+    const showAll = !q || q === original;
+    const filtered = showAll
+      ? list
+      : list.filter((m) => m.toLowerCase().includes(q));
+    return filtered.filter((m) => m.toLowerCase() !== q).slice(0, 15);
+  }
+
   return {
     VIOLATION_TYPES,
     MAPPING_SEED_TYPES,
     collectFromCatalog,
     collectMestaFromCatalog,
+    collectMestaForSuggestions,
+    filterMestoSuggestions,
   };
 })();

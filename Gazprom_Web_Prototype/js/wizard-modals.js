@@ -322,23 +322,22 @@ const WizardModals = (() => {
 
     const registryItems = catalog?.violationRegistry || [];
 
-    // Места нарушений только из текущего акта (другие пункты этого же акта)
-    const mestoSuggestions = [
-      ...new Set(
-        (draft.violations || [])
-          .filter((x) => x.id !== violationId)
-          .map((x) => x.mesto)
-          .filter(Boolean)
-      ),
-    ];
+    const originalMesto = String(v?.mesto || '').trim();
+    const mestoSuggestions =
+      typeof ViolationTemplates !== 'undefined'
+        ? ViolationTemplates.collectMestaForSuggestions(catalog, draft)
+        : [...new Set((draft.violations || []).map((x) => x.mesto).filter(Boolean))];
 
     function renderMestoSuggestions(query) {
-      const q = query.trim().toLowerCase();
-      if (!q) return '';
-      const items = mestoSuggestions.filter((m) => m.toLowerCase().includes(q));
+      const items =
+        typeof ViolationTemplates !== 'undefined'
+          ? ViolationTemplates.filterMestoSuggestions(mestoSuggestions, query, originalMesto)
+          : mestoSuggestions.filter((m) => {
+              const q = String(query || '').trim().toLowerCase();
+              return q && m.toLowerCase().includes(q) && m.toLowerCase() !== q;
+            });
       if (!items.length) return '';
       return items
-        .slice(0, 15)
         .map(
           (m) =>
             `<button type="button" class="mesto-suggestion-item" data-mesto="${AktUtils.escapeHtml(m)}">${AktUtils.escapeHtml(m)}</button>`
@@ -561,6 +560,10 @@ const WizardModals = (() => {
       mestoInput.addEventListener('input', () => {
         clearTimeout(mestoTimer);
         mestoTimer = setTimeout(refreshMestoSuggestions, 120);
+      });
+      mestoInput.addEventListener('focus', () => {
+        clearTimeout(mestoTimer);
+        refreshMestoSuggestions();
       });
       mestoInput.addEventListener('blur', () => {
         setTimeout(hideMestoSuggestions, 150);

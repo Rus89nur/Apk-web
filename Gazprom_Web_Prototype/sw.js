@@ -1,8 +1,8 @@
-const CACHE_NAME = 'gazprom-web-v258';
+const CACHE_NAME = 'gazprom-web-v259';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
   './manifest.json',
-  './css/app.css?v=258',
+  './css/app.css?v=259',
   './js/idb-connection.js?v=22',
   './js/file-utils.js?v=1',
   './js/data-store.js?v=28',
@@ -13,7 +13,7 @@ const STATIC_ASSETS = [
   './js/violation-search.js?v=3',
   './js/photo-lightbox.js?v=1',
   './js/wizard-violations-ui.js?v=2',
-  './js/violation-templates.js?v=21',
+  './js/violation-templates.js?v=22',
   './js/violation-types.js?v=13',
   './js/violation-types-editor.js?v=12',
   './js/ml-image-service.js?v=6',
@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
   './js/catalog-editor.js?v=16',
   './js/schedule-editor.js?v=2',
   './js/elimination-editor.js?v=12',
-  './js/wizard-modals.js?v=51',
+  './js/wizard-modals.js?v=52',
   './js/wizard.js?v=60',
   './js/spravka-utils.js?v=4',
   './js/spravka-wizard.js?v=12',
