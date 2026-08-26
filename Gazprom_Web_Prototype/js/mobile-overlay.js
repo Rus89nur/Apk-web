@@ -132,13 +132,18 @@ var GazpromMobileOverlay = (() => {
     if (screen.id === 'screen-home') {
       return screen.lastElementChild;
     }
+    if (screen.id === 'screen-wizard' || screen.id === 'screen-spravka') {
+      return (
+        screen.querySelector('#wizardPanels .wizard-panel-active, #spravkaPanels .wizard-panel-active') ||
+        screen.querySelector('#wizardPanels, #spravkaPanels') ||
+        screen.querySelector('.wizard-layout')
+      );
+    }
     return (
-      screen.querySelector('.wizard-footer') ||
       screen.querySelector('#historyList .history-list-item:last-child') ||
       screen.querySelector('#eliminationCardList .elimination-act-card:last-child') ||
       screen.querySelector('.settings-section:last-child .settings-tile:last-child') ||
       screen.querySelector('.settings-grid .settings-tile:last-child') ||
-      screen.querySelector('#wizardPanels .wizard-panel-active') ||
       screen.querySelector('.screen.active .card:last-child') ||
       screen.lastElementChild
     );
@@ -197,10 +202,22 @@ var GazpromMobileOverlay = (() => {
     const nav = document.querySelector('.bottom-nav');
     if (!nav || !mq.matches) {
       document.body.style.removeProperty('--gazprom-nav-bar-height');
+      document.body.style.setProperty('--wizard-mobile-footer-h', '0px');
       return;
     }
     const h = Math.ceil(nav.getBoundingClientRect().height);
     document.body.style.setProperty('--gazprom-nav-bar-height', `${h}px`);
+    const active = document.querySelector('.screen.active');
+    const footer =
+      active && (active.id === 'screen-wizard' || active.id === 'screen-spravka')
+        ? active.querySelector('.wizard-footer')
+        : null;
+    if (!footer) {
+      document.body.style.setProperty('--wizard-mobile-footer-h', '0px');
+      return;
+    }
+    const footerH = Math.ceil(footer.getBoundingClientRect().height);
+    document.body.style.setProperty('--wizard-mobile-footer-h', `${Math.max(footerH, 56)}px`);
   };
 
   const applyScrollClearance = (blockPx) => {
@@ -229,6 +246,7 @@ var GazpromMobileOverlay = (() => {
     navBlockByScreen.clear();
     document.body.style.removeProperty('--gazprom-nav-block');
     document.body.style.removeProperty('--gazprom-nav-bar-height');
+    document.body.style.setProperty('--wizard-mobile-footer-h', '0px');
     document.body.style.removeProperty('--gazprom-safari-bottom-inset');
     document.querySelector('.bottom-nav')?.style.removeProperty('bottom');
     document.querySelector('.gazprom-scroll-bottom-spacer')?.style.removeProperty('height');

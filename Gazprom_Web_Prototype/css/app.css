@@ -5933,7 +5933,7 @@
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations {
-        padding-bottom: calc(88px + var(--gazprom-nav-block, 72px));
+        padding-bottom: calc(88px + var(--gazprom-nav-block, 72px) + var(--wizard-mobile-footer-h, 0px));
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations .viol-cards-list {
@@ -6222,12 +6222,32 @@
         touch-action: pan-x pinch-zoom;
       }
 
-      body.gazprom-mobile-shell .wizard-footer {
+      body.gazprom-mobile-shell #screen-wizard.active .wizard-footer,
+      body.gazprom-mobile-shell #screen-spravka.active .wizard-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: calc(var(--gazprom-nav-bar-height, 56px) + var(--gazprom-safari-bottom-inset, 0px));
+        z-index: 205;
+        margin: 0;
+        padding: 10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+        border-top: 1px solid var(--border);
+        background: rgba(248, 250, 252, 0.96);
+        backdrop-filter: blur(14px) saturate(1.15);
+        -webkit-backdrop-filter: blur(14px) saturate(1.15);
+        box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
         flex-direction: row;
         flex-wrap: nowrap;
         justify-content: space-between;
         align-items: stretch;
         gap: 12px;
+        box-sizing: border-box;
+        pointer-events: auto;
+      }
+
+      body.gazprom-mobile-shell #screen-wizard.active .wizard-layout,
+      body.gazprom-mobile-shell #screen-spravka.active .wizard-layout {
+        padding-bottom: calc(var(--gazprom-nav-block, 72px) + var(--wizard-mobile-footer-h, 0px)) !important;
       }
 
       body.gazprom-mobile-shell .wizard-footer button {
@@ -6242,6 +6262,21 @@
         min-height: 48px;
         box-sizing: border-box;
         box-shadow: 0 2px 10px rgba(13, 71, 161, 0.28);
+        pointer-events: auto;
+      }
+
+      html.gazprom-scroll-lock body.gazprom-mobile-shell .wizard-footer {
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      body.gazprom-mobile-shell .toast-container {
+        top: calc(10px + env(safe-area-inset-top, 0px));
+        bottom: auto;
+        left: max(12px, env(safe-area-inset-left));
+        right: max(12px, env(safe-area-inset-right));
+        max-width: none;
+        z-index: 10050;
       }
 
       body.gazprom-mobile-shell .bottom-nav {
@@ -6649,6 +6684,29 @@
         -webkit-overflow-scrolling: touch;
       }
 
+      /* Справочники: комиссия, организации, объекты, представители — на весь экран */
+      body.gazprom-mobile-shell .catalog-editor-root:not([hidden]) {
+        align-items: stretch;
+        justify-content: stretch;
+        padding:
+          env(safe-area-inset-top, 0px)
+          0
+          env(safe-area-inset-bottom, 0px)
+          0;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule) {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        max-height: none;
+        margin: 0;
+        flex: 1 1 auto;
+        align-self: stretch;
+        border-radius: 0;
+        padding: 0;
+      }
+
       .modal-body,
       .catalog-editor-body,
       .catalog-form-dialog,
@@ -6836,19 +6894,19 @@
         padding: 10px 16px;
       }
 
-      .catalog-editor-body .catalog-list-table,
-      .catalog-editor-body .catalog-list-table tbody {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table,
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table tbody {
         display: block;
         width: 100%;
         max-width: 100%;
         overflow: visible;
       }
 
-      .catalog-editor-body .catalog-list-table thead {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table thead {
         display: none;
       }
 
-      .catalog-editor-body .catalog-list-table tr.catalog-row {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table tbody tr {
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -6862,12 +6920,13 @@
         background: var(--surface, #fff);
       }
 
-      .catalog-editor-body .catalog-list-table tr.catalog-row-empty {
-        display: block;
-        width: 100%;
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table tbody tr:has(td[colspan]) {
+        border: none;
+        padding: 16px 8px;
+        margin: 0;
       }
 
-      .catalog-editor-body .catalog-list-table td {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table td {
         display: block;
         width: 100%;
         max-width: 100%;
@@ -6878,7 +6937,7 @@
         word-break: break-word;
       }
 
-      .catalog-editor-body .catalog-list-table td:not(.btn-row):not(.catalog-empty-cell)::before {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table td:not(.btn-row):not(.catalog-empty-cell):not([colspan])::before {
         content: attr(data-label);
         display: block;
         font-size: 11px;
@@ -6889,7 +6948,7 @@
         margin-bottom: 2px;
       }
 
-      .catalog-editor-body .catalog-list-table td.btn-row {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table td.btn-row {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
@@ -6897,9 +6956,11 @@
         white-space: normal;
       }
 
-      .catalog-editor-body .catalog-list-table td.btn-row .btn-ghost {
+      body.gazprom-mobile-shell .catalog-editor-panel:not(.catalog-editor-panel--schedule) .list-table td.btn-row .btn-ghost {
         flex: 1 1 calc(50% - 8px);
         min-height: 44px;
+        display: inline-flex;
+        align-items: center;
         justify-content: center;
       }
 
@@ -6948,6 +7009,8 @@
       }
 
       .toast-container {
+        top: calc(10px + env(safe-area-inset-top, 0px));
+        bottom: auto;
         left: max(16px, env(safe-area-inset-left));
         right: max(16px, env(safe-area-inset-right));
         max-width: none;
@@ -7139,6 +7202,11 @@
       .catalog-editor-panel {
         height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px));
         max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px));
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule) {
+        height: 100%;
+        max-height: none;
       }
 
       .modal-header,
