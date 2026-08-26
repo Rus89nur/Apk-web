@@ -6769,6 +6769,11 @@
         );
       }
 
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule) {
+        height: 100%;
+        max-height: none;
+      }
+
       /* График: заголовок и «×» в первой строке, выбор года — отдельно ниже (без наложения) */
       .catalog-editor-header.catalog-editor-header--schedule.catalog-editor-header--year {
         display: flex;

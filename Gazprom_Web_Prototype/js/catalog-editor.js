@@ -120,11 +120,11 @@ const CatalogEditor = (() => {
 
   function buildRowsHtml(cfg, fields, items, emptyMsg) {
     if (!items.length) {
-      return `<tr><td colspan="${fields.length + 1}" style="text-align:center;padding:32px;color:var(--text-muted);">${emptyMsg}</td></tr>`;
+      return `<tr class="catalog-row-empty"><td colspan="${fields.length + 1}" class="catalog-empty-cell">${emptyMsg}</td></tr>`;
     }
     return items.map((item) => `
-      <tr data-id="${item.id}">
-        ${fields.map((f) => `<td>${escHtml(item[f.key] || '—')}</td>`).join('')}
+      <tr data-id="${item.id}" class="catalog-row">
+        ${fields.map((f) => `<td data-label="${escHtml(f.label)}">${escHtml(item[f.key] || '—')}</td>`).join('')}
         <td class="btn-row">
           <button type="button" class="btn-ghost btn-sm" data-edit="${item.id}">Изменить</button>
           <button type="button" class="btn-ghost btn-sm modal-btn-danger" data-del="${item.id}">Удалить</button>
@@ -189,7 +189,7 @@ const CatalogEditor = (() => {
           <input type="search" class="form-control catalog-search-input" placeholder="🔍 Поиск…" value="${escHtml(query)}" autocomplete="off">
         </div>
         <div class="catalog-editor-body">
-          <table class="list-table">
+          <table class="list-table catalog-list-table">
             <thead><tr>${fields.map((f) => `<th>${escHtml(f.label)}</th>`).join('')}<th></th></tr></thead>
             <tbody>${buildRowsHtml(cfg, fields, filtered, query ? 'Ничего не найдено' : 'Нет записей — нажмите «+ Добавить»')}</tbody>
           </table>
