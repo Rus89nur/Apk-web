@@ -37,11 +37,19 @@ describe('ViolationTemplates mesto suggestions', () => {
     expect(r).toEqual(['Склад ГСМ']);
   });
 
-  it('collectMestaForSuggestions берёт места черновика даже если их ещё нет в каталоге', () => {
-    const r = VT.collectMestaForSuggestions(
-      { akts: [] },
-      { violations: [{ mesto: 'Насосная' }, { mesto: 'Насосная' }, { mesto: 'Кровля' }] }
-    );
+  it('collectMestaForSuggestions берёт только места текущего акта', () => {
+    const r = VT.collectMestaForSuggestions({
+      objectsCheck: [{ title: 'Объект проверки', subTitle: 'Адрес' }],
+      violations: [{ mesto: 'Насосная' }, { mesto: 'Насосная' }, { mesto: 'Кровля' }, { mesto: '  ' }],
+    });
     expect(r).toEqual(['Насосная', 'Кровля']);
+  });
+
+  it('не подмешивает места из других актов', () => {
+    const r = VT.collectMestaForSuggestions({
+      violations: [{ mesto: 'Цех 1' }],
+    });
+    expect(r).not.toContain('Чужой объект');
+    expect(r).toEqual(['Цех 1']);
   });
 });

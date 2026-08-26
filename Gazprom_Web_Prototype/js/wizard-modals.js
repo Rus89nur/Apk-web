@@ -304,7 +304,7 @@ const WizardModals = (() => {
     const originalMesto = String(v?.mesto || '').trim();
     const mestoSuggestions =
       typeof ViolationTemplates !== 'undefined'
-        ? ViolationTemplates.collectMestaForSuggestions(catalog, draft)
+        ? ViolationTemplates.collectMestaForSuggestions(draft)
         : [...new Set((draft.violations || []).map((x) => x.mesto).filter(Boolean))];
 
     function renderMestoSuggestions(query) {
