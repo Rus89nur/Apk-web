@@ -197,7 +197,7 @@ const WizardViolationsUI = (() => {
             <input type="search"
               class="form-control"
               id="${ids.search}"
-              placeholder="🔍 Поиск по формулировке, месту, документу, виду…"
+              placeholder="🔍 Поиск в акте…"
               value="${AktUtils.escapeHtml(getViolSearchQuery())}"
               autocomplete="off"
               aria-label="Поиск нарушений">

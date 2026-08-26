@@ -2724,15 +2724,33 @@
     }
     .viol-search-toolbar {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       margin-bottom: 12px;
       max-width: 100%;
       min-width: 0;
     }
     .viol-search-toolbar .form-control { font-size: 13px; min-width: 0; }
-    .viol-search-toolbar input[type="search"] { flex: 1 1 180px; min-width: 0; }
+    .viol-search-toolbar input[type="search"] {
+      flex: 1 1 auto;
+      min-width: 0;
+      height: 36px;
+      min-height: 36px;
+      max-height: 36px;
+      padding: 6px 10px;
+      line-height: 22px;
+      box-sizing: border-box;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .viol-search-toolbar input[type="search"]::-webkit-search-decoration,
+    .viol-search-toolbar input[type="search"]::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+    }
     .viol-search-toolbar select { flex: 0 1 200px; min-width: 0; max-width: 240px; }
     .viol-empty--filter .viol-empty-icon { font-size: 32px; }
     .viol-filters {
@@ -5907,6 +5925,9 @@
         padding: 8px 12px;
         line-height: 24px;
         font-size: 16px;
+        white-space: nowrap;
+        appearance: none;
+        -webkit-appearance: none;
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations .viol-filters {
