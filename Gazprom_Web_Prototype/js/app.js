@@ -145,7 +145,17 @@ function clearSilentUpdateState() {
   }
 }
 
+function parseBuildNumber(value) {
+  const n = parseInt(String(value || ''), 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function isNewerBuild(remoteBuild, localBuild = window.GAZPROM_ASSET_V) {
+  return parseBuildNumber(remoteBuild) > parseBuildNumber(localBuild);
+}
+
 function canSilentUpdateTo(remoteBuild) {
+  if (!isNewerBuild(remoteBuild)) return false;
   try {
     const target = sessionStorage.getItem(UPDATE_TARGET_KEY);
     const attempts = parseInt(sessionStorage.getItem(UPDATE_ATTEMPTS_KEY) || '0', 10);
@@ -235,7 +245,7 @@ async function checkRemoteBuildVersion() {
     if (!match) return;
     const remoteBuild = match[1];
     const localBuild = String(window.GAZPROM_ASSET_V || '');
-    if (remoteBuild && localBuild && remoteBuild !== localBuild) {
+    if (remoteBuild && localBuild && isNewerBuild(remoteBuild, localBuild)) {
       pendingRemoteBuild = remoteBuild;
       updateSettingsUpdateBanner(remoteBuild);
       await applySilentUpdate(remoteBuild);

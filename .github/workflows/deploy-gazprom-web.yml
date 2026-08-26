@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -23,7 +23,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Всегда публикуем актуальный main. Задержанный webhook старого
+      # push иначе выкатывает прошлую сборку поверх новой (откат 253→244).
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
