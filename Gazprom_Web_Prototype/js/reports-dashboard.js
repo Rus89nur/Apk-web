@@ -92,24 +92,14 @@ const ReportsDashboard = (() => {
     return aliases;
   }
 
-  function contractorFilterValues() {
-    return [...filters.contractors];
-  }
-
   function isContractorFilterActive(...labels) {
     if (!filters.contractors.size) return false;
-    const selected = contractorFilterValues();
+    const selected = [...filters.contractors];
     return labels.some((label) => {
       const val = String(label || '').trim();
       if (!val) return false;
       return selected.includes(val);
     });
-  }
-
-  function matchesContractorFilter(akt, data) {
-    if (!filters.contractors.size) return true;
-    const aliases = getOrgAliases(akt, data);
-    return contractorFilterValues().some((f) => aliases.has(f));
   }
 
   function getObjectTitle(akt) {
@@ -245,7 +235,7 @@ const ReportsDashboard = (() => {
     return effectiveFilters.contractors.has(org);
   }
 
-  function filterAkts(akts, data, { ignoreContractorFilter = false, effectiveFilters = filters } = {}) {
+  function filterAkts(akts, data, { effectiveFilters = filters } = {}) {
     return (akts || []).filter((akt) => {
       if (effectiveFilters.acts.size && !effectiveFilters.acts.has(String(akt.number))) return false;
       if (effectiveFilters.years.size) {
@@ -253,11 +243,7 @@ const ReportsDashboard = (() => {
         if (!effectiveFilters.years.has(y)) return false;
       }
       if (effectiveFilters.objects.size && !effectiveFilters.objects.has(getObjectTitle(akt))) return false;
-      if (
-        !ignoreContractorFilter &&
-        effectiveFilters.contractors.size &&
-        !matchesContractorFilterWith(akt, data, effectiveFilters)
-      ) {
+      if (effectiveFilters.contractors.size && !matchesContractorFilterWith(akt, data, effectiveFilters)) {
         return false;
       }
       return true;
@@ -287,11 +273,9 @@ const ReportsDashboard = (() => {
     return (akt.violations || []).length > 0;
   }
 
-  function collectRows(data, { ignoreContractorFilter = false, ignoreFilters = false } = {}) {
+  function collectRows(data) {
     const eliminations = data.violationEliminations || [];
-    const akts = ignoreFilters
-      ? data.akts || []
-      : filterAkts(data.akts || [], data, { ignoreContractorFilter });
+    const akts = filterAkts(data.akts || [], data);
     const rows = [];
 
     for (const akt of akts) {
@@ -445,15 +429,13 @@ const ReportsDashboard = (() => {
     if (!onlyThis) filters.contractors.add(org);
   }
 
-  function renderOrgTreemap(data) {
+  function renderOrgTreemap(rows) {
     const wrap =
       document.getElementById('reportsOrgTreemap') ||
       document.getElementById('reportsContractorGrid');
     if (!wrap) return;
 
     try {
-      const { rows } = collectRows(data, { ignoreFilters: true });
-
       if (!rows.length) {
         wrap.innerHTML =
           '<p class="reports-chart-empty" role="status">Нет нарушений по подрядчикам</p>';
@@ -795,7 +777,7 @@ const ReportsDashboard = (() => {
 
     renderKpi(rows, akts);
     renderDonut(stats);
-    renderOrgTreemap(data);
+    renderOrgTreemap(rows);
     renderBarChart(rows);
     renderOverdueChart(rows);
     renderScheduleDashboard(data);
