@@ -158,11 +158,11 @@ var GazpromMobileOverlay = (() => {
 
   const computeNavBlockPx = () => {
     const nav = document.querySelector('.bottom-nav');
-    const gap = 28;
-    if (!nav || !mq.matches) return 96;
+    const gap = 48;
+    if (!nav || !mq.matches) return 120;
     const rect = nav.getBoundingClientRect();
     const occupied = Math.max(rect.height, window.innerHeight - rect.top, 0);
-    return Math.max(96, Math.ceil(occupied + gap));
+    return Math.max(120, Math.ceil(occupied + gap));
   };
 
   const capScreenBlockPx = (blockPx) => {
@@ -220,6 +220,10 @@ var GazpromMobileOverlay = (() => {
       const host = getScreenScrollHost(screen);
       if (host && host !== screen) host.style.removeProperty('padding-bottom');
     });
+    const active = document.querySelector('.main > .screen.active');
+    if (active) {
+      active.style.paddingBottom = `calc(${px} + var(--gazprom-safari-bottom-inset, 0px) + 24px)`;
+    }
   };
 
   const clearMainScrollPadding = () => {

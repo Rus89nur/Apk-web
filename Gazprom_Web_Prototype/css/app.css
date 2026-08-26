@@ -5620,8 +5620,8 @@
       body.gazprom-mobile-shell .gazprom-scroll-bottom-spacer {
         flex-shrink: 0;
         width: 100%;
-        height: var(--gazprom-nav-block, 96px);
-        min-height: 96px;
+        height: calc(var(--gazprom-nav-block, 120px) + var(--gazprom-safari-bottom-inset, 0px));
+        min-height: 120px;
         pointer-events: none;
       }
 
@@ -5648,19 +5648,30 @@
       }
 
       body.gazprom-mobile-shell .main {
+        display: block;
         flex: 1 1 auto;
         min-height: 0;
         min-width: 0;
         max-width: 100%;
         width: 100%;
         box-sizing: border-box;
-        overflow-x: clip;
+        overflow-x: hidden;
         overflow-y: auto;
         overscroll-behavior-y: contain;
         overscroll-behavior-x: none;
         -webkit-overflow-scrolling: touch;
-        padding: 12px max(12px, env(safe-area-inset-right)) calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px)) max(12px, env(safe-area-inset-left));
-        scroll-padding-bottom: calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px));
+        padding: 12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left));
+        scroll-padding-bottom: calc(var(--gazprom-nav-block, 120px) + var(--gazprom-safari-bottom-inset, 0px));
+      }
+
+      /* flex:1 + min-height:0 на экране сжимал контент до высоты вьюпорта — футер уезжал под бар и не было прокрутки */
+      body.gazprom-mobile-shell .main > .screen.active {
+        display: block;
+        flex: none;
+        min-height: auto;
+        height: auto;
+        overflow: visible;
+        padding-bottom: calc(var(--gazprom-nav-block, 120px) + var(--gazprom-safari-bottom-inset, 0px) + 24px);
       }
 
       body.gazprom-mobile-shell .main.gazprom-main-scroll-lock {
@@ -7071,8 +7082,8 @@
 
       body.gazprom-mobile-shell .main {
         padding-top: 6px;
-        padding-bottom: calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px));
-        scroll-padding-bottom: calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px));
+        padding-bottom: 12px;
+        scroll-padding-bottom: calc(var(--gazprom-nav-block, 120px) + var(--gazprom-safari-bottom-inset, 0px));
       }
 
       body.gazprom-mobile-shell .main .card {
