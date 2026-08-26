@@ -132,18 +132,13 @@ var GazpromMobileOverlay = (() => {
     if (screen.id === 'screen-home') {
       return screen.lastElementChild;
     }
-    if (screen.id === 'screen-wizard' || screen.id === 'screen-spravka') {
-      return (
-        screen.querySelector('#wizardPanels .wizard-panel-active, #spravkaPanels .wizard-panel-active') ||
-        screen.querySelector('#wizardPanels, #spravkaPanels') ||
-        screen.querySelector('.wizard-layout')
-      );
-    }
     return (
+      screen.querySelector('.wizard-footer') ||
       screen.querySelector('#historyList .history-list-item:last-child') ||
       screen.querySelector('#eliminationCardList .elimination-act-card:last-child') ||
       screen.querySelector('.settings-section:last-child .settings-tile:last-child') ||
       screen.querySelector('.settings-grid .settings-tile:last-child') ||
+      screen.querySelector('#wizardPanels .wizard-panel-active, #spravkaPanels .wizard-panel-active') ||
       screen.querySelector('.screen.active .card:last-child') ||
       screen.lastElementChild
     );
@@ -163,15 +158,16 @@ var GazpromMobileOverlay = (() => {
 
   const computeNavBlockPx = () => {
     const nav = document.querySelector('.bottom-nav');
-    if (!nav) return 80;
-    const gap = 20;
+    const gap = 28;
+    if (!nav || !mq.matches) return 96;
     const rect = nav.getBoundingClientRect();
-    return Math.max(80, Math.ceil(Math.max(rect.height, window.innerHeight - rect.top) + gap));
+    const occupied = Math.max(rect.height, window.innerHeight - rect.top, 0);
+    return Math.max(96, Math.ceil(occupied + gap));
   };
 
   const capScreenBlockPx = (blockPx) => {
     const base = computeNavBlockPx();
-    return Math.min(Math.ceil(blockPx), base + 160);
+    return Math.min(Math.ceil(blockPx), base + 240);
   };
 
   const clampMainScrollTop = (main) => {
@@ -202,22 +198,10 @@ var GazpromMobileOverlay = (() => {
     const nav = document.querySelector('.bottom-nav');
     if (!nav || !mq.matches) {
       document.body.style.removeProperty('--gazprom-nav-bar-height');
-      document.body.style.setProperty('--wizard-mobile-footer-h', '0px');
       return;
     }
     const h = Math.ceil(nav.getBoundingClientRect().height);
-    document.body.style.setProperty('--gazprom-nav-bar-height', `${h}px`);
-    const active = document.querySelector('.screen.active');
-    const footer =
-      active && (active.id === 'screen-wizard' || active.id === 'screen-spravka')
-        ? active.querySelector('.wizard-footer')
-        : null;
-    if (!footer) {
-      document.body.style.setProperty('--wizard-mobile-footer-h', '0px');
-      return;
-    }
-    const footerH = Math.ceil(footer.getBoundingClientRect().height);
-    document.body.style.setProperty('--wizard-mobile-footer-h', `${Math.max(footerH, 56)}px`);
+    document.body.style.setProperty('--gazprom-nav-bar-height', `${Math.max(h, 48)}px`);
   };
 
   const applyScrollClearance = (blockPx) => {
@@ -234,19 +218,14 @@ var GazpromMobileOverlay = (() => {
     document.querySelectorAll('.main > .screen').forEach((screen) => {
       screen.style.removeProperty('padding-bottom');
       const host = getScreenScrollHost(screen);
-      if (!host || host === screen) return;
-      host.style.removeProperty('padding-bottom');
+      if (host && host !== screen) host.style.removeProperty('padding-bottom');
     });
-    const active = document.querySelector('.screen.active');
-    const host = getScreenScrollHost(active);
-    if (host) host.style.paddingBottom = px;
   };
 
   const clearMainScrollPadding = () => {
     navBlockByScreen.clear();
     document.body.style.removeProperty('--gazprom-nav-block');
     document.body.style.removeProperty('--gazprom-nav-bar-height');
-    document.body.style.setProperty('--wizard-mobile-footer-h', '0px');
     document.body.style.removeProperty('--gazprom-safari-bottom-inset');
     document.querySelector('.bottom-nav')?.style.removeProperty('bottom');
     document.querySelector('.gazprom-scroll-bottom-spacer')?.style.removeProperty('height');
@@ -396,8 +375,6 @@ var GazpromMobileOverlay = (() => {
 
   /** Тихая подстройка padding после остановки скролла — без принудительного scrollTop в цикле. */
   const bumpScrollClearanceAtRest = () => {
-    const active = document.querySelector('.screen.active')?.id;
-    if (active === 'screen-wizard' || active === 'screen-spravka') return 0;
     const overlapPx = measureScrollOverlap();
     if (overlapPx <= 0) return 0;
     const main = mainEl();

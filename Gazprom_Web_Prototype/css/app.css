@@ -5521,8 +5521,7 @@
         --gazprom-nav-lift: 0px;
         --gazprom-nav-shift-down: 6px;
         /* JS syncNavScrollInset() перезаписывает по высоте .bottom-nav + Safari */
-        --gazprom-nav-block: calc(72px + env(safe-area-inset-bottom, 0px));
-        --wizard-mobile-footer-h: 0px;
+        --gazprom-nav-block: calc(96px + env(safe-area-inset-bottom, 0px));
         --mobile-modal-gutter: 20px;
         --mobile-modal-width: 90%;
         overflow: hidden;
@@ -5625,8 +5624,8 @@
       body.gazprom-mobile-shell .gazprom-scroll-bottom-spacer {
         flex-shrink: 0;
         width: 100%;
-        height: var(--gazprom-nav-block, 72px);
-        min-height: 72px;
+        height: var(--gazprom-nav-block, 96px);
+        min-height: 96px;
         pointer-events: none;
       }
 
@@ -5664,7 +5663,8 @@
         overscroll-behavior-y: contain;
         overscroll-behavior-x: none;
         -webkit-overflow-scrolling: touch;
-        padding: 12px max(12px, env(safe-area-inset-right)) calc(12px + var(--gazprom-nav-block)) max(12px, env(safe-area-inset-left));
+        padding: 12px max(12px, env(safe-area-inset-right)) calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px)) max(12px, env(safe-area-inset-left));
+        scroll-padding-bottom: calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px));
       }
 
       body.gazprom-mobile-shell .main.gazprom-main-scroll-lock {
@@ -5900,13 +5900,8 @@
 
       body.gazprom-mobile-shell .viol-add-fab {
         right: max(16px, env(safe-area-inset-right, 0px));
-        bottom: calc(
-          var(--gazprom-nav-bar-height, 56px)
-          + var(--gazprom-safari-bottom-inset, 0px)
-          + var(--wizard-mobile-footer-h, 0px)
-          + 16px
-        );
-        z-index: 206;
+        bottom: calc(var(--gazprom-nav-block, 96px) + 16px);
+        z-index: 150;
       }
 
       /* iOS: font-size < 16px вызывает zoom — после модалки «плывёт» центрирование */
@@ -5922,7 +5917,7 @@
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations {
-        padding-bottom: calc(88px + var(--gazprom-nav-block, 72px) + var(--wizard-mobile-footer-h, 0px));
+        padding-bottom: 88px;
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations .viol-cards-list {
@@ -5998,7 +5993,7 @@
         min-width: 0;
         max-width: 100%;
         gap: 12px;
-        overflow-x: clip;
+        overflow: visible;
       }
 
       body.gazprom-mobile-shell #screen-wizard .wizard-layout > div {
@@ -6211,32 +6206,14 @@
         touch-action: pan-x pinch-zoom;
       }
 
-      body.gazprom-mobile-shell #screen-wizard.active .wizard-footer,
-      body.gazprom-mobile-shell #screen-spravka.active .wizard-footer {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: calc(var(--gazprom-nav-bar-height, 56px) + var(--gazprom-safari-bottom-inset, 0px));
-        z-index: 205;
-        margin: 0;
-        padding: 10px max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
-        border-top: 1px solid var(--border);
-        background: rgba(248, 250, 252, 0.96);
-        backdrop-filter: blur(14px) saturate(1.15);
-        -webkit-backdrop-filter: blur(14px) saturate(1.15);
-        box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.08);
+      body.gazprom-mobile-shell .wizard-footer {
+        position: static;
         flex-direction: row;
         flex-wrap: nowrap;
         justify-content: space-between;
         align-items: stretch;
         gap: 12px;
-        box-sizing: border-box;
-        pointer-events: auto;
-      }
-
-      body.gazprom-mobile-shell #screen-wizard.active .wizard-layout,
-      body.gazprom-mobile-shell #screen-spravka.active .wizard-layout {
-        padding-bottom: calc(var(--gazprom-nav-block, 72px) + var(--wizard-mobile-footer-h, 0px)) !important;
+        margin-top: 24px;
       }
 
       body.gazprom-mobile-shell .wizard-footer button {
@@ -6251,12 +6228,6 @@
         min-height: 48px;
         box-sizing: border-box;
         box-shadow: 0 2px 10px rgba(13, 71, 161, 0.28);
-        pointer-events: auto;
-      }
-
-      html.gazprom-scroll-lock body.gazprom-mobile-shell .wizard-footer {
-        visibility: hidden;
-        pointer-events: none;
       }
 
       body.gazprom-mobile-shell .toast-container {
@@ -6433,9 +6404,25 @@
         padding:
           max(12px, env(safe-area-inset-top))
           max(var(--mobile-modal-gutter), env(safe-area-inset-right))
-          calc(max(12px, env(safe-area-inset-bottom, 0px)) + 18px)
+          calc(
+            var(--gazprom-nav-bar-height, 56px)
+            + var(--gazprom-safari-bottom-inset, 0px)
+            + max(12px, env(safe-area-inset-bottom, 0px))
+          )
           max(var(--mobile-modal-gutter), env(safe-area-inset-left));
         box-sizing: border-box;
+      }
+
+      html.gazprom-scroll-lock .modal-root,
+      html.gazprom-scroll-lock .modal-root.show,
+      html.gazprom-scroll-lock .catalog-form-overlay:not([hidden]),
+      html.gazprom-scroll-lock .catalog-editor-root:not([hidden]),
+      html.gazprom-scroll-lock .confirm-overlay,
+      html.gazprom-scroll-lock .photo-lightbox.show,
+      html.gazprom-scroll-lock .vr-form-overlay,
+      html.gazprom-scroll-lock .schedule-form-overlay,
+      html.gazprom-scroll-lock .elimination-detail-overlay {
+        padding-bottom: calc(max(12px, env(safe-area-inset-bottom, 0px)) + 18px);
       }
 
       .catalog-form-overlay:not([hidden]),
@@ -6680,8 +6667,16 @@
         padding:
           env(safe-area-inset-top, 0px)
           0
-          env(safe-area-inset-bottom, 0px)
+          calc(
+            env(safe-area-inset-bottom, 0px)
+            + var(--gazprom-nav-bar-height, 0px)
+            + var(--gazprom-safari-bottom-inset, 0px)
+          )
           0;
+      }
+
+      html.gazprom-scroll-lock body.gazprom-mobile-shell .catalog-editor-root:not([hidden]) {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
       }
 
       body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule) {
@@ -7069,7 +7064,8 @@
 
       body.gazprom-mobile-shell .main {
         padding-top: 6px;
-        padding-bottom: calc(6px + var(--gazprom-nav-block));
+        padding-bottom: calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px));
+        scroll-padding-bottom: calc(var(--gazprom-nav-block, 96px) + var(--gazprom-safari-bottom-inset, 0px));
       }
 
       body.gazprom-mobile-shell .main .card {
