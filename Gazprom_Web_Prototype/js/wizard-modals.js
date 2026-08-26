@@ -378,15 +378,20 @@ const WizardModals = (() => {
     const body = `
       <div class="form-group mv-mesto-block">
         <label class="form-label">Место нарушения</label>
-        <input class="form-control" id="mvMesto"
-          value="${AktUtils.escapeHtml(v?.mesto || '')}"
-          placeholder="Введите место нарушения…"
-          role="combobox"
-          aria-expanded="false"
-          aria-controls="mvMestoSuggestions"
-          aria-autocomplete="list"
-          autocomplete="off">
-        <div class="mesto-suggestions" id="mvMestoSuggestions" hidden></div>
+        <div class="mv-mesto-field">
+          <input class="form-control" id="mvMesto"
+            name="gazprom-violation-mesto"
+            value="${AktUtils.escapeHtml(v?.mesto || '')}"
+            placeholder="Введите место нарушения…"
+            role="combobox"
+            aria-expanded="false"
+            aria-controls="mvMestoSuggestions"
+            aria-autocomplete="list"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false">
+          <div class="mesto-suggestions" id="mvMestoSuggestions" hidden></div>
+        </div>
       </div>
 
       <div class="mv-search-block form-group">
@@ -504,12 +509,17 @@ const WizardModals = (() => {
       if (!mestoInput || !mestoList) return;
       mestoList.hidden = false;
       mestoInput.setAttribute('aria-expanded', 'true');
+      mestoInput.closest('.mv-mesto-block')?.classList.add('mv-mesto-block--open');
+      requestAnimationFrame(() => {
+        mestoList.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      });
     }
 
     function hideMestoSuggestions() {
       if (!mestoInput || !mestoList) return;
       mestoList.hidden = true;
       mestoInput.setAttribute('aria-expanded', 'false');
+      mestoInput.closest('.mv-mesto-block')?.classList.remove('mv-mesto-block--open');
     }
 
     function refreshMestoSuggestions() {
