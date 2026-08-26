@@ -1,15 +1,15 @@
-const CACHE_NAME = 'gazprom-web-v244';
+const CACHE_NAME = 'gazprom-web-v246';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
   './manifest.json',
-  './css/app.css?v=244',
+  './css/app.css?v=246',
   './js/idb-connection.js?v=22',
   './js/file-utils.js?v=1',
   './js/data-store.js?v=28',
   './js/photo-store.js?v=31',
   './js/akt-utils.js?v=32',
   './js/toast.js?v=2',
-  './js/mobile-overlay.js?v=37',
+  './js/mobile-overlay.js?v=38',
   './js/violation-search.js?v=3',
   './js/photo-lightbox.js?v=1',
   './js/wizard-violations-ui.js?v=2',
