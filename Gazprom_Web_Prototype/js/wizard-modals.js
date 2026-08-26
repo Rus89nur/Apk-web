@@ -42,11 +42,7 @@ const WizardModals = (() => {
       <div class="modal-dialog" role="dialog" aria-modal="true">
         <div class="modal-header">
           <h3 id="modalTitle">—</h3>
-          <div class="modal-header-actions">
-            <button type="button" class="btn-ghost btn-sm modal-header-cancel" id="modalHeaderCancel" hidden>Отмена</button>
-            <button type="button" class="btn-primary btn-sm modal-header-save" id="modalHeaderSave" hidden>Сохранить</button>
-            <button type="button" class="modal-close" data-close aria-label="Закрыть">×</button>
-          </div>
+          <button type="button" class="modal-close" data-close aria-label="Закрыть">×</button>
         </div>
         <div class="modal-body" id="modalBody"></div>
         <div class="modal-footer" id="modalFooter"></div>
@@ -73,21 +69,6 @@ const WizardModals = (() => {
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalBody').innerHTML = bodyHtml;
     document.getElementById('modalFooter').innerHTML = footerHtml || '';
-    const headerSave = document.getElementById('modalHeaderSave');
-    const headerCancel = document.getElementById('modalHeaderCancel');
-    const footerPrimary = document.getElementById('modalFooter')?.querySelector('.btn-primary');
-    if (headerSave) {
-      headerSave.hidden = !footerPrimary;
-      headerSave.disabled = false;
-      headerSave.onclick = footerPrimary ? () => footerPrimary.click() : null;
-    }
-    if (headerCancel) {
-      headerCancel.hidden = false;
-      headerCancel.disabled = false;
-      headerCancel.onclick = () => {
-        void requestClose();
-      };
-    }
     GazpromMobileOverlay.syncWizardModalViewport?.();
   }
 
@@ -195,13 +176,11 @@ const WizardModals = (() => {
 
   function setSaveButtonsBusy(busy, label = 'Сохранение…') {
     const saveBtn = document.getElementById('mvSave');
-    const headerSave = document.getElementById('modalHeaderSave');
     if (saveBtn) {
       saveBtn.disabled = busy;
       if (busy) saveBtn.textContent = label;
       else if (saveBtn.dataset.defaultLabel) saveBtn.textContent = saveBtn.dataset.defaultLabel;
     }
-    if (headerSave) headerSave.disabled = busy;
   }
 
   async function finalizePhotoRefs(photos) {
