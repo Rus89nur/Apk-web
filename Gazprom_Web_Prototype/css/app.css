@@ -372,12 +372,16 @@
       color: var(--text-muted);
       margin-bottom: 10px;
     }
-    .home-ruslan-label {
+    .home-stats-line {
       margin: 0 0 28px;
       text-align: center;
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: #16a34a;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .home-stats-line--alert {
+      color: #c62828;
     }
     .home-data-hint {
       max-width: 520px;
@@ -2450,8 +2454,13 @@
 
     /* Поиск в шапке редактора справочника */
     .catalog-editor-search-bar {
-      padding: 10px 0;
+      padding: 10px 20px;
       border-bottom: 1px solid var(--border);
+    }
+    .catalog-empty-cell {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-muted);
     }
     .catalog-search-input {
       width: 100%;
@@ -5524,6 +5533,7 @@
         --gazprom-nav-shift-down: 6px;
         /* JS syncNavScrollInset() перезаписывает по высоте .bottom-nav + Safari */
         --gazprom-nav-block: calc(72px + env(safe-area-inset-bottom, 0px));
+        --wizard-mobile-footer-h: 0px;
         --mobile-modal-gutter: 20px;
         --mobile-modal-width: 90%;
         overflow: hidden;
@@ -5901,8 +5911,13 @@
 
       body.gazprom-mobile-shell .viol-add-fab {
         right: max(16px, env(safe-area-inset-right, 0px));
-        bottom: calc(var(--gazprom-nav-block, 72px) + 16px + var(--gazprom-safari-bottom-inset, 0px));
-        z-index: 210;
+        bottom: calc(
+          var(--gazprom-nav-bar-height, 56px)
+          + var(--gazprom-safari-bottom-inset, 0px)
+          + var(--wizard-mobile-footer-h, 0px)
+          + 16px
+        );
+        z-index: 206;
       }
 
       /* iOS: font-size < 16px вызывает zoom — после модалки «плывёт» центрирование */
@@ -6012,6 +6027,77 @@
         box-sizing: border-box;
       }
 
+      /* Мастер: справочники — комиссия, организация, объекты, представители */
+      body.gazprom-mobile-shell .wizard-panel--date,
+      body.gazprom-mobile-shell .wizard-panel--org,
+      body.gazprom-mobile-shell .wizard-panel--objects,
+      body.gazprom-mobile-shell .wizard-panel--conclusions {
+        overflow-x: clip;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--date .commission-catalog-section,
+      body.gazprom-mobile-shell .wizard-panel--org .commission-catalog-section,
+      body.gazprom-mobile-shell .wizard-panel--objects .commission-catalog-section {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--date .commission-catalog-header,
+      body.gazprom-mobile-shell .wizard-panel--org .commission-catalog-header,
+      body.gazprom-mobile-shell .wizard-panel--objects .commission-catalog-header,
+      body.gazprom-mobile-shell .wizard-panel--conclusions .commission-catalog-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--date #wNewPersonBtn,
+      body.gazprom-mobile-shell .wizard-panel--org #wNewOrgBtn,
+      body.gazprom-mobile-shell .wizard-panel--objects #wNewObjBtn,
+      body.gazprom-mobile-shell .wizard-panel--conclusions #wNewPredBtn {
+        width: 100%;
+        text-align: center;
+        min-height: 44px;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--date .chip-list,
+      body.gazprom-mobile-shell .wizard-panel--org .chip-list,
+      body.gazprom-mobile-shell .wizard-panel--objects .chip-list,
+      body.gazprom-mobile-shell .wizard-panel--conclusions .chip-list {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        gap: 8px;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--date .chip,
+      body.gazprom-mobile-shell .wizard-panel--org .chip,
+      body.gazprom-mobile-shell .wizard-panel--objects .chip,
+      body.gazprom-mobile-shell .wizard-panel--conclusions .chip {
+        display: flex;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.35;
+        height: auto;
+        border-radius: 12px;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--date h3,
+      body.gazprom-mobile-shell .wizard-panel--org h3,
+      body.gazprom-mobile-shell .wizard-panel--objects h3,
+      body.gazprom-mobile-shell .wizard-panel--conclusions h3 {
+        max-width: 100%;
+        word-break: break-word;
+      }
+
       /* Мастер: шаг 5 «Выводы комиссии» */
       body.gazprom-mobile-shell .wizard-panel--conclusions {
         overflow-x: clip;
@@ -6110,16 +6196,6 @@
         text-align: center;
       }
 
-      body.gazprom-mobile-shell .wizard-panel--conclusions .commission-catalog-header {
-        flex-direction: column;
-        align-items: stretch;
-      }
-
-      body.gazprom-mobile-shell .wizard-panel--conclusions #wNewPredBtn {
-        width: 100%;
-        text-align: center;
-      }
-
       body.gazprom-mobile-shell .wizard-panel--conclusions .pred-filter-row {
         flex-direction: row;
         flex-wrap: nowrap;
@@ -6144,33 +6220,6 @@
         white-space: nowrap;
         word-break: normal;
         touch-action: pan-x pinch-zoom;
-      }
-
-      body.gazprom-mobile-shell .wizard-panel--conclusions .chip-list {
-        display: flex;
-        flex-direction: column;
-        align-items: stretch;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        gap: 8px;
-      }
-
-      body.gazprom-mobile-shell .wizard-panel--conclusions .chip {
-        display: flex;
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-        white-space: normal;
-        word-break: break-word;
-        line-height: 1.35;
-        height: auto;
-      }
-
-      body.gazprom-mobile-shell .wizard-panel--conclusions h3 {
-        max-width: 100%;
-        word-break: break-word;
       }
 
       body.gazprom-mobile-shell .wizard-footer {
@@ -6783,6 +6832,97 @@
         -webkit-overflow-scrolling: touch;
       }
 
+      .catalog-editor-search-bar {
+        padding: 10px 16px;
+      }
+
+      .catalog-editor-body .catalog-list-table,
+      .catalog-editor-body .catalog-list-table tbody {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow: visible;
+      }
+
+      .catalog-editor-body .catalog-list-table thead {
+        display: none;
+      }
+
+      .catalog-editor-body .catalog-list-table tr.catalog-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0 0 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface, #fff);
+      }
+
+      .catalog-editor-body .catalog-list-table tr.catalog-row-empty {
+        display: block;
+        width: 100%;
+      }
+
+      .catalog-editor-body .catalog-list-table td {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 2px 0;
+        border: none;
+        box-sizing: border-box;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      .catalog-editor-body .catalog-list-table td:not(.btn-row):not(.catalog-empty-cell)::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 2px;
+      }
+
+      .catalog-editor-body .catalog-list-table td.btn-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+        white-space: normal;
+      }
+
+      .catalog-editor-body .catalog-list-table td.btn-row .btn-ghost {
+        flex: 1 1 calc(50% - 8px);
+        min-height: 44px;
+        justify-content: center;
+      }
+
+      .catalog-editor-footer {
+        flex-wrap: wrap;
+        justify-content: stretch;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+      }
+
+      .catalog-editor-footer button {
+        flex: 1 1 calc(50% - 10px);
+        min-height: 44px;
+      }
+
+      .catalog-form-actions {
+        flex-wrap: wrap;
+      }
+
+      .catalog-form-actions button {
+        flex: 1 1 calc(50% - 10px);
+        min-height: 44px;
+      }
+
       .vr-panel {
         width: 100%;
         max-width: 100%;
@@ -6943,6 +7083,11 @@
       body.gazprom-mobile-shell .home-greeting {
         font-size: 1rem;
         margin-bottom: 8px;
+      }
+
+      body.gazprom-mobile-shell .home-stats-line {
+        font-size: 0.82rem;
+        margin-bottom: 12px;
       }
 
       body.gazprom-mobile-shell .progress-hint {
