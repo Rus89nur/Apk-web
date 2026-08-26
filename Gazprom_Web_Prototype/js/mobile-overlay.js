@@ -158,16 +158,16 @@ var GazpromMobileOverlay = (() => {
 
   const computeNavBlockPx = () => {
     const nav = document.querySelector('.bottom-nav');
-    const gap = 48;
-    if (!nav || !mq.matches) return 120;
+    const gap = 8;
+    if (!nav || !mq.matches) return 64;
     const rect = nav.getBoundingClientRect();
     const occupied = Math.max(rect.height, window.innerHeight - rect.top, 0);
-    return Math.max(120, Math.ceil(occupied + gap));
+    return Math.max(48, Math.ceil(occupied + gap));
   };
 
   const capScreenBlockPx = (blockPx) => {
     const base = computeNavBlockPx();
-    return Math.min(Math.ceil(blockPx), base + 240);
+    return Math.min(Math.ceil(blockPx), base + 12);
   };
 
   const clampMainScrollTop = (main) => {
@@ -209,7 +209,7 @@ var GazpromMobileOverlay = (() => {
     document.body.style.setProperty('--gazprom-nav-block', px);
     syncNavBarHeight();
     const spacer = document.querySelector('.gazprom-scroll-bottom-spacer');
-    if (spacer) spacer.style.height = px;
+    if (spacer) spacer.style.height = '0px';
     const main = mainEl();
     if (main) {
       main.style.removeProperty('padding-bottom');
@@ -222,7 +222,7 @@ var GazpromMobileOverlay = (() => {
     });
     const active = document.querySelector('.main > .screen.active');
     if (active) {
-      active.style.paddingBottom = `calc(${px} + var(--gazprom-safari-bottom-inset, 0px) + 24px)`;
+      active.style.paddingBottom = px;
     }
   };
 
@@ -285,7 +285,7 @@ var GazpromMobileOverlay = (() => {
     const main = mainEl();
     if (!main) return 0;
     const savedTop = main.scrollTop;
-    const gap = 20;
+    const gap = 8;
     positionBottomNav();
     const active = document.querySelector('.screen.active');
     const sid = active?.id || '';
@@ -385,7 +385,7 @@ var GazpromMobileOverlay = (() => {
     if (!main) return 0;
     const active = document.querySelector('.screen.active');
     const sid = active?.id || '';
-    const gap = 20;
+    const gap = 8;
     const baseMin = computeNavBlockPx();
     const cached = navBlockByScreen.get(sid) || baseMin;
     const nextBlock = capScreenBlockPx(cached + overlapPx + gap);
