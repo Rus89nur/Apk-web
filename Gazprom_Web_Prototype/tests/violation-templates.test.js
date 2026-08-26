@@ -23,13 +23,12 @@ describe('ViolationTemplates mesto suggestions', () => {
 
   const places = ['Котельная №1', 'Склад ГСМ', 'Лестница 2 этаж'];
 
-  it('при правке с исходным значением показывает другие ранее введённые места', () => {
-    const r = VT.filterMestoSuggestions(places, 'Котельная №1', 'Котельная №1');
-    expect(r).toEqual(['Склад ГСМ', 'Лестница 2 этаж']);
+  it('при фокусе и исходном значении список скрыт', () => {
+    expect(VT.filterMestoSuggestions(places, 'Котельная №1', 'Котельная №1')).toEqual([]);
   });
 
-  it('пустое поле — все места', () => {
-    expect(VT.filterMestoSuggestions(places, '', '')).toEqual(places);
+  it('пустое поле — без подсказок', () => {
+    expect(VT.filterMestoSuggestions(places, '', '')).toEqual([]);
   });
 
   it('фильтр по подстроке при новом вводе', () => {

@@ -104,18 +104,16 @@ const ViolationTemplates = (() => {
   }
 
   /**
-   * При пустом поле или исходном значении при правке — все места.
-   * Иначе фильтр по подстроке. Точное совпадение с запросом не показываем.
+   * Подсказки только после начала ввода: пустое поле и нетронутое значение при правке — без списка.
    */
   function filterMestoSuggestions(items, query, originalValue) {
     const list = (items || []).map((m) => String(m || '').trim()).filter(Boolean);
     const q = String(query || '').trim().toLowerCase();
     const original = String(originalValue || '').trim().toLowerCase();
-    const showAll = !q || q === original;
-    const filtered = showAll
-      ? list
-      : list.filter((m) => m.toLowerCase().includes(q));
-    return filtered.filter((m) => m.toLowerCase() !== q).slice(0, 15);
+    if (!q || q === original) return [];
+    return list
+      .filter((m) => m.toLowerCase().includes(q) && m.toLowerCase() !== q)
+      .slice(0, 15);
   }
 
   return {

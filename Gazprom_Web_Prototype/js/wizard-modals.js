@@ -550,10 +550,6 @@ const WizardModals = (() => {
         clearTimeout(mestoTimer);
         mestoTimer = setTimeout(refreshMestoSuggestions, 120);
       });
-      mestoInput.addEventListener('focus', () => {
-        clearTimeout(mestoTimer);
-        refreshMestoSuggestions();
-      });
       mestoInput.addEventListener('blur', () => {
         setTimeout(hideMestoSuggestions, 150);
       });
