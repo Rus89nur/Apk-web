@@ -3989,13 +3989,9 @@
       overflow: auto;
       min-height: 88px;
       max-height: none;
-    }
-    .vyvody-group textarea.vyvody-textarea[readonly] {
-      resize: none;
-      overflow: hidden;
-      background: #f9fafb;
-      color: var(--text-secondary);
-      cursor: default;
+      -webkit-user-select: text;
+      user-select: text;
+      cursor: text;
     }
     .vyvody-actions {
       display: flex;
@@ -5878,8 +5874,9 @@
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations .viol-search-toolbar {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: center;
         gap: 8px;
         margin-bottom: 10px;
       }
@@ -5889,6 +5886,16 @@
         width: 100%;
         min-width: 0;
         max-width: none;
+      }
+
+      /* Одна строка, без iOS-zoom: 16px при фиксированной высоте */
+      body.gazprom-mobile-shell .wizard-panel--violations .viol-search-toolbar input[type="search"] {
+        height: 40px;
+        min-height: 40px;
+        max-height: 40px;
+        padding: 8px 12px;
+        line-height: 24px;
+        font-size: 16px;
       }
 
       body.gazprom-mobile-shell .wizard-panel--violations .viol-filters {
@@ -6151,9 +6158,9 @@
         width: 100%;
         resize: vertical;
         max-height: none;
-      }
-      body.gazprom-mobile-shell .wizard-panel--conclusions #wVyvody[readonly] {
-        resize: none;
+        -webkit-user-select: text;
+        user-select: text;
+        cursor: text;
       }
 
       body.gazprom-mobile-shell .wizard-panel--conclusions .vyvody-actions {

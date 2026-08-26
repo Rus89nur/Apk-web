@@ -524,7 +524,7 @@ const WizardController = (() => {
       <h3>Выводы комиссии</h3>
       <div class="form-group vyvody-group">
         <label>Выводы комиссии</label>
-        <textarea class="form-control vyvody-textarea" id="wVyvody" rows="1" placeholder="Введите выводы комиссии…"${isEdit ? '' : ' readonly'}>${vyvody}</textarea>
+        <textarea class="form-control vyvody-textarea" id="wVyvody" rows="1" placeholder="Введите выводы комиссии…">${vyvody}</textarea>
         <div class="vyvody-actions">
           ${editBtn}
           <div class="vyvody-templates">${templateBtns}</div>
@@ -831,6 +831,12 @@ const WizardController = (() => {
         draft.komissijaVyvody = text;
         await saveDraft();
         render();
+        const ta = document.getElementById('wVyvody');
+        if (ta) {
+          ta.focus();
+          const len = ta.value.length;
+          ta.setSelectionRange(len, len);
+        }
       });
     });
 
