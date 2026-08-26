@@ -20,7 +20,6 @@
       <button class="btn-primary" data-go="wizard">Создать новый акт</button>
       <p id="homeSubAction" hidden>или <button class="btn-ghost" data-go="wizard">начать новый акт</button></p>
     </div>
-    <p id="homeStatsLine">Нарушений пока нет</p>
     <div id="homeStatCurrent">—</div>
     <div id="homeStatTotal">0</div>
     <div id="homeStatDrafts">0</div>
@@ -82,11 +81,6 @@
 
         const drafts = document.getElementById('homeStatDrafts')?.textContent;
         drafts === '0' ? pass('Черновики', drafts) : warn('Черновики', drafts);
-
-        const statsLine = document.getElementById('homeStatsLine')?.textContent || '';
-        statsLine.includes('Нарушений')
-          ? pass('Строка статистики на главной', statsLine)
-          : fail('Строка статистики на главной', statsLine);
 
         // 5. График проверок
         const label = document.getElementById('progressLabel')?.textContent || '';

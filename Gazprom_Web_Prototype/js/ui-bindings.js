@@ -164,7 +164,6 @@ const GazpromUI = (() => {
     if (elCurrent) elCurrent.textContent = currentNum;
     if (elTotal) elTotal.textContent = String(akts.length);
     if (elDrafts) elDrafts.textContent = String(drafts);
-    renderHomeStatsLine(data);
 
     const hint = document.getElementById('homeDataHint');
     if (hint) hint.hidden = GazpromStore.hasData(data);
@@ -205,44 +204,6 @@ const GazpromUI = (() => {
     }
 
     renderScheduleProgress(data);
-  }
-
-  function renderHomeStatsLine(data) {
-    const el = document.getElementById('homeStatsLine');
-    if (!el) return;
-
-    const akts = data.akts || [];
-    const eliminations = data.eliminations || [];
-    let total = 0;
-    let done = 0;
-    let overdue = 0;
-
-    akts.forEach((akt) => {
-      (akt.violations || []).forEach((violation) => {
-        total += 1;
-        const rec = AktUtils.findViolationElimination(eliminations, akt.id, violation.id);
-        if (rec?.isEliminated) {
-          done += 1;
-          return;
-        }
-        if (AktUtils.isViolationEliminationOverdue(rec, akt)) overdue += 1;
-      });
-    });
-
-    if (total === 0) {
-      el.textContent = 'Нарушений пока нет';
-      el.classList.remove('home-stats-line--alert');
-      return;
-    }
-
-    const open = total - done;
-    const parts = [`Нарушений: ${total}`, `устранено ${done}`];
-    if (overdue > 0) parts.push(`просрочено ${overdue}`);
-    else if (open > 0) parts.push(`в работе ${open}`);
-    else parts.push('все устранены');
-
-    el.textContent = parts.join(' · ');
-    el.classList.toggle('home-stats-line--alert', overdue > 0);
   }
 
   function renderScheduleProgress(data) {

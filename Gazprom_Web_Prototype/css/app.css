@@ -370,18 +370,7 @@
     .home-greeting {
       font-size: 1.1rem;
       color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-    .home-stats-line {
-      margin: 0 0 28px;
-      text-align: center;
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-    .home-stats-line--alert {
-      color: #c62828;
+      margin-bottom: 28px;
     }
     .home-data-hint {
       max-width: 520px;
@@ -7151,11 +7140,6 @@
       body.gazprom-mobile-shell .home-greeting {
         font-size: 1rem;
         margin-bottom: 8px;
-      }
-
-      body.gazprom-mobile-shell .home-stats-line {
-        font-size: 0.82rem;
-        margin-bottom: 12px;
       }
 
       body.gazprom-mobile-shell .progress-hint {
