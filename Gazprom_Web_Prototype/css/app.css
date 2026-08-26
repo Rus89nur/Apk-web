@@ -5528,6 +5528,8 @@
         width: 100%;
         max-width: 100%;
         overscroll-behavior: none;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
       }
 
       body.gazprom-mobile-shell {
@@ -5566,6 +5568,7 @@
         touch-action: auto;
         -webkit-user-select: text;
         user-select: text;
+        font-size: 16px;
       }
 
       body.gazprom-mobile-shell #dataStatusBar.data-status {
@@ -5654,15 +5657,188 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
+      body.gazprom-mobile-shell .violations-screen-header {
+        padding: 12px 12px 10px;
+      }
+
+      body.gazprom-mobile-shell .violations-screen-nav {
+        margin-bottom: 10px;
+        padding-bottom: 8px;
+        font-size: 14px;
+      }
+
+      body.gazprom-mobile-shell .violations-screen-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+      }
+
+      body.gazprom-mobile-shell .violations-screen-toolbar .form-control,
+      body.gazprom-mobile-shell .violations-screen-toolbar input[type='search'],
+      body.gazprom-mobile-shell .violations-screen-toolbar select {
+        flex: 1 1 auto;
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        min-height: 44px;
+        font-size: 16px;
+      }
+
       body.gazprom-mobile-shell .violations-screen-actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 8px;
         width: 100%;
+        margin-left: 0;
       }
 
       body.gazprom-mobile-shell .violations-screen-actions .btn-primary {
         grid-column: 1 / -1;
+        min-height: 44px;
+      }
+
+      body.gazprom-mobile-shell .violations-screen-actions .btn-secondary {
+        grid-column: 1 / -1;
+        min-height: 44px;
+      }
+
+      body.gazprom-mobile-shell .vr-screen-source {
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      /* Реестр: карточки вместо широкой таблицы (вид и примечание видны, без iOS-zoom) */
+      body.gazprom-mobile-shell #vrScreenTableWrap {
+        overflow: visible;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table,
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table tbody {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table thead {
+        display: none;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table tbody tr {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        margin: 0 0 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface, #fff);
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table tbody tr + tr td {
+        border-top: none;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table tbody tr:has(td[colspan]) {
+        border: none;
+        padding: 24px 8px;
+        margin: 0;
+        background: transparent;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .list-table td,
+      body.gazprom-mobile-shell #vrScreenTableWrap th:nth-child(3),
+      body.gazprom-mobile-shell #vrScreenTableWrap td:nth-child(3),
+      body.gazprom-mobile-shell #vrScreenTableWrap th:nth-child(4),
+      body.gazprom-mobile-shell #vrScreenTableWrap td:nth-child(4) {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        padding: 0;
+        border: none;
+        white-space: normal;
+        word-break: break-word;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-num {
+        width: auto;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-num::before {
+        content: '№ ';
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableBody .vr-cell-title {
+        font-size: 15px;
+        line-height: 1.45;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableBody .vr-cell-ref,
+      body.gazprom-mobile-shell #vrScreenTableBody .vr-cell-formula {
+        font-size: 13px !important;
+        line-height: 1.45;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-vid,
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-note {
+        width: auto;
+        font-size: 14px;
+        color: var(--text);
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-vid::before,
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-note::before {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 4px;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-vid::before {
+        content: 'Вид нарушения';
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-note::before {
+        content: 'Примечание';
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-vid-badge {
+        font-size: 13px;
+        padding: 6px 10px;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-actions {
+        width: auto;
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      body.gazprom-mobile-shell #vrScreenTableWrap .vr-col-actions .btn-ghost {
+        flex: 1 1 0;
+        min-height: 44px;
+        font-size: 18px;
+      }
+
+      body.gazprom-mobile-shell .vt-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      body.gazprom-mobile-shell .vt-toolbar .form-control {
+        min-width: 0;
+        min-height: 44px;
+        font-size: 16px;
       }
 
       body.gazprom-mobile-shell .main {
