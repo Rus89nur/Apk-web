@@ -116,6 +116,7 @@ let swReloadArmed = false;
 
 const UPDATE_TARGET_KEY = 'gazprom-update-target';
 const UPDATE_ATTEMPTS_KEY = 'gazprom-update-attempts';
+const KNOWN_BUILD_KEY = 'gazprom-known-build';
 const MAX_SILENT_UPDATE_ATTEMPTS = 3;
 
 function hasEditingOverlay() {
@@ -150,11 +151,56 @@ function parseBuildNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function readKnownBuild() {
+  try {
+    return parseBuildNumber(localStorage.getItem(KNOWN_BUILD_KEY));
+  } catch {
+    return 0;
+  }
+}
+
+function rememberKnownBuild(build = window.GAZPROM_ASSET_V) {
+  const n = parseBuildNumber(build);
+  if (!n) return readKnownBuild();
+  const known = readKnownBuild();
+  if (n <= known) return known;
+  try {
+    localStorage.setItem(KNOWN_BUILD_KEY, String(n));
+  } catch {
+    /* ignore */
+  }
+  return n;
+}
+
+function minAcceptedBuild(localBuild = window.GAZPROM_ASSET_V) {
+  return Math.max(parseBuildNumber(localBuild), readKnownBuild());
+}
+
 function isNewerBuild(remoteBuild, localBuild = window.GAZPROM_ASSET_V) {
   return parseBuildNumber(remoteBuild) > parseBuildNumber(localBuild);
 }
 
+function parseRemoteBuildFromHtml(html) {
+  const match = String(html || '').match(/GAZPROM_ASSET_V\s*=\s*'(\d+)'/);
+  return match?.[1] || null;
+}
+
+async function fetchRemoteBuild() {
+  const url = new URL(location.href);
+  url.searchParams.set('build-check', String(Date.now()));
+  const res = await fetch(url.toString(), { cache: 'no-store' });
+  if (!res.ok) return null;
+  return parseRemoteBuildFromHtml(await res.text());
+}
+
+function reloadAppShell() {
+  const url = new URL(location.href);
+  url.searchParams.set('_refresh', String(Date.now()));
+  location.replace(url.toString());
+}
+
 function canSilentUpdateTo(remoteBuild) {
+  if (parseBuildNumber(remoteBuild) < minAcceptedBuild()) return false;
   if (!isNewerBuild(remoteBuild)) return false;
   try {
     const target = sessionStorage.getItem(UPDATE_TARGET_KEY);
@@ -203,23 +249,33 @@ function updateSettingsUpdateBanner(remoteBuild) {
   }
 }
 
-async function forceRefreshApp() {
-  clearSilentUpdateState();
+async function forceRefreshApp({ silent = false } = {}) {
+  const floor = minAcceptedBuild();
+  let remoteBuild = null;
   try {
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map((key) => caches.delete(key)));
-    }
-    if ('serviceWorker' in navigator) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((reg) => reg.unregister()));
-    }
+    remoteBuild = await fetchRemoteBuild();
   } catch (err) {
     console.warn('forceRefreshApp', err);
   }
-  const url = new URL(location.href);
-  url.searchParams.set('_refresh', String(Date.now()));
-  location.replace(url.toString());
+  const remoteN = parseBuildNumber(remoteBuild);
+  if (!remoteN) {
+    if (!silent) {
+      GazpromToast.error('Не удалось проверить версию на сервере. Чтобы не откатиться, приложение не перезагружаю.');
+    }
+    return false;
+  }
+  if (remoteN < floor) {
+    if (!silent) {
+      GazpromToast.error(
+        `На сайте сейчас web-${remoteN}, у вас уже web-${floor}. Обновление отменено, чтобы не откатиться.`
+      );
+    }
+    return false;
+  }
+  clearSilentUpdateState();
+  if (!silent) GazpromToast.info('Обновление приложения…');
+  reloadAppShell();
+  return true;
 }
 
 async function applySilentUpdate(remoteBuild) {
@@ -229,23 +285,20 @@ async function applySilentUpdate(remoteBuild) {
     return false;
   }
   markSilentUpdateAttempt(remoteBuild);
-  await forceRefreshApp();
-  return true;
+  return forceRefreshApp({ silent: true });
 }
 
 async function checkRemoteBuildVersion() {
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
   try {
-    const url = new URL(location.href);
-    url.searchParams.set('build-check', String(Date.now()));
-    const res = await fetch(url.toString(), { cache: 'no-store' });
-    if (!res.ok) return;
-    const html = await res.text();
-    const match = html.match(/GAZPROM_ASSET_V\s*=\s*'(\d+)'/);
-    if (!match) return;
-    const remoteBuild = match[1];
+    const remoteBuild = await fetchRemoteBuild();
     const localBuild = String(window.GAZPROM_ASSET_V || '');
-    if (remoteBuild && localBuild && isNewerBuild(remoteBuild, localBuild)) {
+    if (
+      remoteBuild &&
+      localBuild &&
+      parseBuildNumber(remoteBuild) >= minAcceptedBuild() &&
+      isNewerBuild(remoteBuild, localBuild)
+    ) {
       pendingRemoteBuild = remoteBuild;
       updateSettingsUpdateBanner(remoteBuild);
       await applySilentUpdate(remoteBuild);
@@ -801,9 +854,16 @@ function init() {
   ViolationTypesEditor.init();
   MlTrainingWizard.init();
   document.getElementById('appForceRefreshBtn')?.addEventListener('click', async () => {
-    GazpromToast.info('Обновление приложения…');
     await forceRefreshApp();
   });
+  rememberKnownBuild();
+  const loadedBuild = parseBuildNumber(window.GAZPROM_ASSET_V);
+  const knownBuild = readKnownBuild();
+  if (loadedBuild && knownBuild && loadedBuild < knownBuild) {
+    GazpromToast.error(
+      `Загружена устаревшая сборка web-${loadedBuild} (уже была web-${knownBuild}). Подождите выкладку на сайт и нажмите «Обновить приложение».`
+    );
+  }
   syncAppBuildLabel();
   const settingsBuild = document.getElementById('settingsAppBuild');
   if (settingsBuild) settingsBuild.textContent = window.GAZPROM_WEB_BUILD || '';
