@@ -82,6 +82,7 @@ const GazpromBackup = (() => {
       violationRegistry: raw.violationRegistry || [],
       violationTypes: raw.violationTypes || [],
       typeMappings: raw.typeMappings || {},
+      violationTypeRegistries: raw.violationTypeRegistries || [],
       descriptionTemplates,
       [templateKey]: raw[templateKey] || raw.wordTemplate || null,
       wordTemplateName: raw.wordTemplateName || null,
@@ -411,6 +412,10 @@ const GazpromBackup = (() => {
     const violationTypes = [...(current.violationTypes || [])];
     (incoming.violationTypes || []).forEach((x) => byId(violationTypes, x));
     const typeMappings = { ...(current.typeMappings || {}), ...(incoming.typeMappings || {}) };
+    const violationTypeRegistries =
+      incoming.violationTypeRegistries?.length
+        ? incoming.violationTypeRegistries
+        : current.violationTypeRegistries || [];
 
     const templateKey =
       typeof DocGenerator !== 'undefined' && DocGenerator.TEMPLATE_KEY
@@ -445,6 +450,7 @@ const GazpromBackup = (() => {
       violationRegistry,
       violationTypes,
       typeMappings,
+      violationTypeRegistries,
       descriptionTemplates: mergedTemplates,
       [templateKey]: wordTemplate,
       wordTemplateName,
