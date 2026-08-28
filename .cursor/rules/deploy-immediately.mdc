@@ -22,7 +22,7 @@ alwaysApply: true
    - `index.html` / `js/app.js` → bump `?v=` у изменённых CSS/JS (и `sw.js?v=` в `app.js`)
 3. **Закоммитить** с понятным сообщением (`fix(web): …`, `release: web-N …`, `chore(deploy): …`)
 4. **Запушить в `main`** — workflow `.github/workflows/deploy-gazprom-web.yml` задеплоит автоматически
-5. **Подтвердить деплой**: дождаться успешного GitHub Actions и проверить URL Pages (`https://rus89nur.github.io/program/`)
+5. **Подтвердить деплой**: дождаться успешного GitHub Actions и проверить URL Pages (`https://rus89nur.github.io/Apk-web/`)
 
 ## Важно
 

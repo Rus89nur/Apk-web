@@ -5,7 +5,7 @@
 
 Актуальная сборка: **web-258** (в UI: **Главная** → внизу «Сборка: web-XX»; номер из `GAZPROM_ASSET_V` в `index.html`, дублируется в `app.js` → `GAZPROM_WEB_BUILD`). См. §3.3 — шаг «Нарушения»; **§3.7** — «Назад/Далее» и скролл над баром; **§3.11** — модалка нарушения; **§3.14** — справка; **§3.15** — справочники на телефоне; **§3.16** — главная; **§3.17** — обновление PWA без отката; §3.6 — устранение; **§3.12** — график; **§3.13** — одноколоночная сетка; §3.8 — история; §3.10 — нижняя навигация; **§3.19** — реестр нарушений и iOS-zoom.
 
-Деплой: GitHub Pages — https://rus89nur.github.io/program/  
+Деплой: GitHub Pages — https://rus89nur.github.io/Apk-web/  
 Локально: `python3 dev-server.py` или `python3 -m http.server 8765`
 
 ---
@@ -92,7 +92,7 @@
 - **`syncAppBuildLabel()`** в `app.js` — дублирует подпись при старте.
 - **web-119:** анимация `fadeIn` у `.screen.active` **без `transform`** — иначе `position: fixed` у `.app-build-id` «прыгает» внутри transformed-родителя при обновлении страницы.
 - **web-120:** критический CSS в `<head>` (`#appShellCritical`) — sidebar скрыт, bottom-nav виден, **без** `fadeIn` до первой навигации (`html:not(.gazprom-navigated)`); boot в `mobile-overlay.js` без scroll-snap замера при старте; класс `gazprom-navigated` на `<html>` выставляет `goTo()` в `app.js`.
-- **GitHub Pages:** изменения попадают в интернет только после **`git push origin main`** (workflow `deploy-gazprom-web.yml`). Локальные правки без push на https://rus89nur.github.io/program/ **не видны**.
+- **GitHub Pages:** изменения попадают в интернет только после **`git push origin main`** (workflow `deploy-gazprom-web.yml`). Локальные правки без push на https://rus89nur.github.io/Apk-web/ **не видны**.
 - **web-254 — деплой всегда с `main`:** в workflow `actions/checkout` с `ref: main`, `concurrency.cancel-in-progress: true`. Иначе запоздавший webhook старого коммита выкатывал прошлую сборку поверх новой (откат 253→244).
 - **web-254 — обновление только вверх:** в `index.html` (ранний fetch) и `app.js` (`isNewerBuild`) сравнивают номера: перезагрузка, только если **remote > local**. «Обновить приложение» при старом Pages больше не откатывает PWA.
 - **SW (web-112):** `index.html` не в install-кэше; navigate/document и `sw.js` — `fetch(..., { cache: 'no-store' })`; `reg.update()` при `visibilitychange`. Bump `CACHE_NAME`, `?v=` в `sw.js` и `GAZPROM_ASSET_V` при каждом релизе.
@@ -578,7 +578,7 @@ _Обновлено 26.08.2026 под **web-258**. При следующем р�
 
 ### Кэш PWA и GitHub Pages: старая «Сборка»
 
-1. **Не запушено в git** — на https://rus89nur.github.io/program/ останется старая версия (нужен `git push origin main`, workflow ~1–2 мин).
+1. **Не запушено в git** — на https://rus89nur.github.io/Apk-web/ останется старая версия (нужен `git push origin main`, workflow ~1–2 мин).
 2. **Закэширован SW** — закрыть вкладку полностью, открыть снова; при необходимости Safari → удалить данные сайта `github.io` или переустановить PWA с домашнего экрана.
 3. **web-112+:** подпись из `GAZPROM_ASSET_V` + ранний скрипт в `index.html`; SW тянет свежий HTML с сети (`no-store` для navigation).
 4. **web-254+:** если после «Обновить» цифра **уменьшилась** — на Pages снова старый деплой; проверить Actions и что клиент сравнивает номера **на больше**, не на «не равно».

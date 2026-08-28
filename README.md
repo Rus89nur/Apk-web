@@ -3,8 +3,8 @@
 Браузерная PWA «программа НЕТ» (акты проверок). Репозиторий содержит **только веб**.
 
 - Локально: `~/Desktop/Apk-web`
-- GitHub: [Rus89nur/program](https://github.com/Rus89nur/program)
-- Сайт: https://rus89nur.github.io/program/
+- GitHub: [Rus89nur/Apk-web](https://github.com/Rus89nur/Apk-web)
+- Сайт: https://rus89nur.github.io/Apk-web/
 
 iOS-приложение — отдельная папка и репозиторий `program-ios`.
 

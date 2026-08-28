@@ -17,7 +17,7 @@ Workflow: [`.github/workflows/deploy-gazprom-web.yml`](.github/workflows/deploy-
 
 1. В репозитории: Settings → Pages → Source: **GitHub Actions**
 2. Push в `main`
-3. URL: `https://rus89nur.github.io/program/`
+3. URL: `https://rus89nur.github.io/Apk-web/`
 
 После деплоя проверьте: HTTPS, установка PWA, офлайн-статика (SW v29), экспорт Excel/Word из `assets/vendor/`.
 
