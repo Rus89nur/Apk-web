@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Варианты — Справочник видов нарушений (v2)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0d47a1;
+      --primary-soft: #e3f2fd;
+      --accent: #00838f;
+      --success: #2e7d32;
+      --success-soft: #e8f5e9;
+      --warning: #ed6c02;
+      --warning-soft: #fff3e0;
+      --bg: #eef2f6;
+      --surface: #fff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --archived: #94a3b8;
+      --radius: 12px;
+      --shadow: 0 4px 20px rgba(13,71,161,.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Manrope, sans-serif; background: var(--bg); color: var(--text); padding: 20px 16px 80px; }
+    .wrap { max-width: 1200px; margin: 0 auto; }
+    h1 { font-family: Montserrat, sans-serif; font-size: 1.35rem; color: var(--primary); margin-bottom: 8px; }
+    .lead { color: var(--text-muted); font-size: 14px; line-height: 1.65; max-width: 900px; margin-bottom: 20px; }
+    .req-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 24px; font-size: 13px; line-height: 1.7; }
+    .req-box h2 { font-size: 14px; margin-bottom: 10px; }
+    .req-box ul { padding-left: 18px; color: var(--text-muted); }
+    .req-box li { margin-bottom: 4px; }
+    .req-box strong { color: var(--text); }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .tab { border: 2px solid var(--border); background: var(--surface); padding: 10px 14px; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+    .panel { display: none; }
+    .panel.visible { display: block; }
+
+    .meta { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; }
+    .meta h3 { font-size: 15px; margin-bottom: 6px; }
+    .meta p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; font-size: 12px; }
+    @media (max-width: 700px) { .pros-cons { grid-template-columns: 1fr; } }
+    .pro { background: var(--success-soft); padding: 10px; border-radius: 8px; }
+    .con { background: var(--warning-soft); padding: 10px; border-radius: 8px; }
+
+    .mock-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    @media (max-width: 900px) { .mock-grid { grid-template-columns: 1fr; } }
+
+    .phone, .desktop { background: var(--surface); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border); }
+    .phone { max-width: 360px; margin: 0 auto; }
+    .phone-notch { height: 28px; background: #0a1929; }
+    .phone-bar { padding: 12px 16px; background: var(--primary); color: #fff; font-weight: 700; font-size: 14px; }
+    .phone-body { padding: 14px; min-height: 420px; background: #f8fafc; }
+
+    .desktop-chrome { height: 36px; background: #e2e8f0; display: flex; align-items: center; padding: 0 12px; gap: 6px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #cbd5e1; }
+    .desktop-url { flex: 1; background: #fff; border-radius: 6px; font-size: 11px; padding: 4px 10px; color: var(--text-muted); margin-left: 8px; }
+    .desktop-body { display: grid; grid-template-columns: 180px 1fr; min-height: 380px; }
+    .sidebar { background: #0a1929; color: #94a3b8; padding: 16px 12px; font-size: 12px; }
+    .sidebar .active { color: #fff; background: rgba(255,255,255,.08); padding: 8px 10px; border-radius: 8px; margin-top: 8px; }
+    .main { padding: 16px; background: #f8fafc; }
+
+    .chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+    .chip-active { background: var(--success-soft); color: var(--success); }
+    .chip-arch { background: #f1f5f9; color: var(--archived); }
+    .chip-warn { background: var(--warning-soft); color: var(--warning); }
+
+    .list-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 8px; font-size: 13px; }
+    .list-item.archived { opacity: .85; border-style: dashed; }
+    .list-item .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .list-item .sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .list-item select { width: 100%; margin-top: 8px; padding: 8px; border-radius: 8px; border: 1px solid var(--border); font: inherit; font-size: 12px; }
+
+    .search { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font: inherit; margin-bottom: 10px; }
+    .filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: 12px; font-weight: 600; cursor: pointer; }
+    .filter-btn.on { background: var(--primary-soft); border-color: var(--primary); color: var(--primary); }
+
+    .flow { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; font-size: 12px; font-family: ui-monospace, monospace; line-height: 1.8; white-space: pre-wrap; color: var(--text-muted); }
+    .flow strong { color: var(--text); font-family: Manrope, sans-serif; }
+
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 20px; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+    .compare-table th, .compare-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .compare-table th { background: #f8fafc; font-size: 12px; }
+    .badge-rec { background: var(--primary); color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+
+    .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-top: 16px; }
+    .diagram-row { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+    .box { padding: 12px 16px; border-radius: 10px; border: 2px solid var(--border); font-size: 12px; font-weight: 600; text-align: center; min-width: 120px; }
+    .box-old { border-color: var(--archived); background: #f8fafc; }
+    .box-new { border-color: var(--success); background: var(--success-soft); }
+    .box-report { border-color: var(--primary); background: var(--primary-soft); }
+    .arrow { font-size: 20px; color: var(--text-muted); }
+
+    .rec-banner { background: linear-gradient(135deg, #0d47a1, #00838f); color: #fff; border-radius: var(--radius); padding: 18px 20px; margin-top: 24px; }
+    .rec-banner h3 { font-size: 16px; margin-bottom: 8px; }
+    .rec-banner p { font-size: 13px; line-height: 1.65; opacity: .95; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Варианты реализации: справочник видов нарушений</h1>
+    <p class="lead">
+      Цель: один реестр (старые + новые виды), сопоставление для отчётов, в актах — как записано,
+      в дашбордах/устранении/выгрузках — по новым видам. Меньше логики, чем сейчас — особенно на iOS.
+    </p>
+
+    <div class="req-box">
+      <h2>Ваши требования (зафиксированы в макетах)</h2>
+      <ul>
+        <li><strong>Справочник</strong> — все виды: активные, архивные, будущие добавления</li>
+        <li><strong>Сопоставление</strong> — старый вид → новый вид (для аналитики)</li>
+        <li><strong>В акте</strong> — хранится то, что выбрали (старый или новый)</li>
+        <li><strong>В отчётах</strong> — всегда группировка по новым видам через карту соответствий</li>
+        <li><strong>Лёгкость</strong> — без мастера, pending-seeds, migrateStoredVids при каждом открытии</li>
+      </ul>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-v="logic">Логика данных</button>
+      <button class="tab" data-v="1">Вариант 1 — Один экран</button>
+      <button class="tab" data-v="2">Вариант 2 — Два экрана</button>
+      <button class="tab" data-v="3">Вариант 3 — iOS-first</button>
+      <button class="tab" data-v="4">Вариант 4 — Только таблица</button>
+      <button class="tab" data-v="compare">Сравнение</button>
+    </div>
+
+    <!-- LOGIC -->
+    <section class="panel visible" id="panel-logic">
+      <div class="meta">
+        <h3>Единая логика для всех вариантов UI</h3>
+        <p>Отличие только в интерфейсе настроек. Движок данных один — простой и быстрый.</p>
+      </div>
+      <div class="diagram">
+        <div class="diagram-row">
+          <div class="box box-old">Старый акт<br><small>vid: «Земляные работы»</small></div>
+          <span class="arrow">→</span>
+          <div class="box">Хранение<br><small>без изменений</small></div>
+        </div>
+        <div class="diagram-row">
+          <div class="box box-new">Новый акт<br><small>vid: «Нарушение … земляных»</small></div>
+          <span class="arrow">→</span>
+          <div class="box">Хранение<br><small>без изменений</small></div>
+        </div>
+        <div class="diagram-row">
+          <div class="box">Карта<br><small>Земляные → Нарушение …</small></div>
+          <span class="arrow">→</span>
+          <div class="box box-report">Дашборд / Excel / Устранение<br><small>resolveVid() только здесь</small></div>
+        </div>
+      </div>
+      <div class="flow" style="margin-top:16px"><strong>Структура данных (упрощённая)</strong>
+
+violationTypes: [
+  { id, title, status: "active" | "archived" }
+]
+
+typeMap: { "Земляные работы": "Нарушение … земляных работ" }
+  ↑ ключ = title старого вида, значение = title нового (или id→id)
+
+При старте приложения (1 раз):
+  buildResolveCache(typeMap)  // Map, O(1) на каждый vid
+
+В мастере акта:
+  новое нарушение → select только active
+  редактирование → saved vid + active (без подмены)
+
+В отчётах / устранении / дашборде:
+  displayVid = resolveCache.get(v.vid) ?? v.vid
+
+<strong>Убрать:</strong> pending, dismissedMappingSeeds, migrateStoredVids,
+  purge-флаги в ensureCatalog, дубль replacedBy + typeMappings</div>
+    </section>
+
+    <!-- V1 -->
+    <section class="panel" id="panel-1">
+      <div class="meta">
+        <h3>Вариант 1 — Один экран «Справочник + сопоставление»</h3>
+        <p>Один список с фильтром Все / Активные / Архив. У архивных строк — выпадающий «→ новый вид». Минимум навигации, хорошо на десктопе и телефоне.</p>
+        <div class="pros-cons">
+          <div class="pro"><strong>+</strong> Меньше экранов; всё видно в одном месте; проще код редактора</div>
+          <div class="con"><strong>−</strong> Длинный список при 30+ видах; сопоставление менее наглядно, чем split-view</div>
+        </div>
+      </div>
+      <div class="mock-grid">
+        <div class="desktop">
+          <div class="desktop-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="desktop-url">Настройки / Виды нарушений</span></div>
+          <div class="desktop-body">
+            <div class="sidebar"><div style="color:#fff;font-weight:700;margin-bottom:12px">Газпром</div><div class="active">🏷️ Виды нарушений</div></div>
+            <div class="main">
+              <input class="search" placeholder="🔍 Поиск…" value="">
+              <div class="filter-row">
+                <button class="filter-btn on">Все (24)</button>
+                <button class="filter-btn">Активные (13)</button>
+                <button class="filter-btn">Архив (11)</button>
+                <button class="filter-btn">Без пары (1)</button>
+              </div>
+              <div class="list-item">
+                <div class="row"><span>Нарушение требований пожарной безопасности<span class="chip chip-active">активный</span></span><span style="color:var(--text-muted);font-size:11px">64 в актах</span></div>
+              </div>
+              <div class="list-item archived">
+                <div class="row"><span>Пожароопасные работы<span class="chip chip-arch">архив</span></span><span style="color:var(--text-muted);font-size:11px">47 в актах</span></div>
+                <div class="sub">Сопоставить с новым видом:</div>
+                <select><option>Нарушение требований пожарной безопасности</option></select>
+              </div>
+              <div class="list-item archived">
+                <div class="row"><span>Земляные работы<span class="chip chip-arch">архив</span><span class="chip chip-warn">нет пары</span></span><span>12</span></div>
+                <select><option>— выберите новый вид —</option><option>Нарушение … земляных работ</option></select>
+              </div>
+              <button style="margin-top:10px;padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-weight:700;width:100%">+ Добавить вид</button>
+            </div>
+          </div>
+        </div>
+        <div class="flow"><strong>Когда выбирать</strong>
+Повседневная работа: редко меняете классификатор, нужен один простой экран.
+
+<strong>iOS</strong>
+Один ViewController / один SwiftUI List с секциями.
+
+<strong>Сложность реализации</strong>
+★☆☆ — самый простой UI, ~200 строк вместо ~900</div>
+      </div>
+    </section>
+
+    <!-- V2 -->
+    <section class="panel" id="panel-2">
+      <div class="meta">
+        <h3>Вариант 2 — Два экрана: «Справочник» и «Сопоставления»</h3>
+        <p>Справочник — только просмотр и добавление. Отдельная таблица «Старый → Новый» для настройки карты. Разделение «данные» и «миграция».</p>
+        <div class="pros-cons">
+          <div class="pro"><strong>+</strong> Понятно админу; таблица пар — наглядно; справочник не перегружен</div>
+          <div class="con"><strong>−</strong> Два экрана; на iOS — ещё один push</div>
+        </div>
+      </div>
+      <div class="mock-grid">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-bar">Сопоставления</div>
+          <div class="phone-body">
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Для отчётов и дашборда. Акты не меняются.</p>
+            <table style="width:100%;font-size:11px;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden">
+              <tr style="background:#f1f5f9"><th style="padding:8px;text-align:left">Старый</th><th></th><th style="padding:8px;text-align:left">Новый</th></tr>
+              <tr><td style="padding:8px;border-top:1px solid var(--border)">Пожароопасные работы</td><td style="padding:4px">→</td><td style="padding:8px;border-top:1px solid var(--border)">Наруш. пожарной безоп.</td></tr>
+              <tr><td style="padding:8px;border-top:1px solid var(--border)">Земляные работы</td><td style="padding:4px;color:var(--warning)">?</td><td style="padding:8px;border-top:1px solid var(--border);color:var(--warning)">— не задано —</td></tr>
+            </table>
+            <div style="margin-top:14px;padding:10px;background:var(--warning-soft);border-radius:8px;font-size:11px">⚠️ 1 вид без пары — в отчётах останется отдельной строкой</div>
+          </div>
+        </div>
+        <div class="flow"><strong>Когда выбирать</strong>
+Крупная смена нормативки: нужно один раз настроить 10–15 пар и больше не трогать.
+
+<strong>Данные</strong>
+typeMap отдельно от violationTypes — проще синхронизировать с iOS.
+
+<strong>Сложность</strong>
+★★☆ — два простых экрана, без мастера и wizard-step</div>
+      </div>
+    </section>
+
+    <!-- V3 -->
+    <section class="panel" id="panel-3">
+      <div class="meta">
+        <h3>Вариант 3 — iOS-first: bottom sheet + lazy load</h3>
+        <p>На телефоне — карточка в настройках открывает bottom sheet: сначала только активные (20 записей max), архив и карта — по кнопке «Показать архив». Кэш resolve строится один раз при запуске.</p>
+        <div class="pros-cons">
+          <div class="pro"><strong>+</strong> Быстрый старт на iOS; мало DOM/View при открытии; архив не грузится до запроса</div>
+          <div class="con"><strong>−</strong> Сопоставление в sheet тесновато; на десктопе лучше полноценный экран</div>
+        </div>
+      </div>
+      <div class="mock-grid">
+        <div class="phone">
+          <div class="phone-notch"></div>
+          <div class="phone-bar">⋯ Виды нарушений</div>
+          <div class="phone-body" style="position:relative;padding-bottom:200px">
+            <div style="position:absolute;bottom:0;left:0;right:0;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.12);padding:16px;max-height:280px">
+              <div style="width:40px;height:4px;background:#cbd5e1;border-radius:2px;margin:0 auto 12px"></div>
+              <strong style="font-size:14px">Активные виды</strong>
+              <div class="list-item" style="margin-top:10px;padding:10px"><span style="font-size:12px">Наруш. пожарной безоп.</span></div>
+              <div class="list-item" style="padding:10px"><span style="font-size:12px">Наруш. … земляных работ</span></div>
+              <button style="width:100%;margin-top:8px;padding:10px;border:1px dashed var(--border);background:transparent;border-radius:10px;font-size:12px">📦 Архив и сопоставления (11)</button>
+            </div>
+          </div>
+        </div>
+        <div class="flow"><strong>Когда выбирать</strong>
+iOS — основная платформа; веб — вторичен.
+
+<strong>Оптимизация</strong>
+• ensureCatalog() без purge/sync на каждый get
+• resolveCache: Map, пересборка только при save typeMap
+• Архив: отдельный JSON / lazy fetch
+
+<strong>Сложность</strong>
+★★☆ UI + ★★★ sync iOS/web</div>
+      </div>
+    </section>
+
+    <!-- V4 -->
+    <section class="panel" id="panel-4">
+      <div class="meta">
+        <h3>Вариант 4 — Минимум UI: только таблица соответствий</h3>
+        <p>Справочник пополняется автоматически из актов (orphan → archived). Пользователь только настраивает пары и добавляет новые active. Нет ручного «архивирования».</p>
+        <div class="pros-cons">
+          <div class="pro"><strong>+</strong> Максимально лёгкий UI; виды из старых актов сами попадают в архив</div>
+          <div class="con"><strong>−</strong> Меньше контроля; «мусорные» строки в архиве если опечатка в акте</div>
+        </div>
+      </div>
+      <div class="mock-grid">
+        <div class="desktop">
+          <div class="desktop-chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="desktop-url">Настройки / Сопоставление видов</span></div>
+          <div class="desktop-body" style="grid-template-columns:1fr">
+            <div class="main">
+              <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px">Новые виды — при создании нарушения. Старые — подтянуты из актов автоматически.</p>
+              <div class="list-item"><strong>Активные (из Smart Forms)</strong><div class="sub">13 видов — используются в новых актах</div></div>
+              <div class="list-item archived"><strong>Требуют сопоставления</strong>
+                <div class="sub" style="margin-top:8px">Земляные работы (12) → <select style="width:auto;display:inline;padding:4px"><option>выбрать…</option></select></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flow"><strong>Когда выбирать</strong>
+Хотите «настроил один раз и забыл»; минимум кнопок.
+
+<strong>Риск</strong>
+Опечатка «Земляные работы » (пробел) = лишняя строка в архиве.
+Решение: нормализация trim при сохранении.</div>
+      </div>
+    </section>
+
+    <!-- COMPARE -->
+    <section class="panel" id="panel-compare">
+      <table class="compare-table">
+        <thead>
+          <tr><th>Критерий</th><th>1. Один экран</th><th>2. Два экрана</th><th>3. iOS-first</th><th>4. Только таблица</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Простота UI</td><td>★★★</td><td>★★☆</td><td>★★★ (mobile)</td><td>★★★★</td></tr>
+          <tr><td>Наглядность сопоставления</td><td>★★☆</td><td>★★★</td><td>★★☆</td><td>★★★</td></tr>
+          <tr><td>Скорость на iOS</td><td>★★☆</td><td>★★☆</td><td>★★★</td><td>★★★</td></tr>
+          <tr><td>Контроль справочника</td><td>★★★</td><td>★★★</td><td>★★☆</td><td>★★☆</td></tr>
+          <tr><td>Сложность кода (web+iOS)</td><td>★★☆</td><td>★★☆</td><td>★★★</td><td>★☆☆</td></tr>
+        </tbody>
+      </table>
+
+      <div class="rec-banner">
+        <h3>Рекомендация для вашего кейса</h3>
+        <p>
+          <strong>Вариант 1 (один экран)</strong> для веба + та же модель данных на iOS с <strong>lazy-архивом (идея из варианта 3)</strong>.
+          Сопоставление — inline у архивных строк, без мастера и без migrateStoredVids.
+          Отчёты/дашборд/устранение — единый <code>resolveVid</code> из кэша; в акте — всегда сырое значение.
+          Это убирает ~60% текущего кода ViolationTypesEditor и тяжёлые ensureCatalog при каждом открытии.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    document.querySelectorAll('.tab').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t === tab));
+        document.querySelectorAll('.panel').forEach((p) => p.classList.remove('visible'));
+        document.getElementById('panel-' + tab.dataset.v).classList.add('visible');
+      });
+    });
+    document.querySelectorAll('.filter-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        btn.closest('.filter-row')?.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('on'));
+        btn.classList.add('on');
+      });
+    });
+  </script>
+</body>
+</html>
