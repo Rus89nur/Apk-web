@@ -534,6 +534,21 @@ const AktUtils = (() => {
     );
   }
 
+  /** Свободные номера актов за календарный год (занятые нельзя выбрать). */
+  function availableAktNumbers(akts, year, excludeId = null, minPool = 200) {
+    const occupied = occupiedNumbers(akts, excludeId, year);
+    const occupiedInts = [...occupied]
+      .map((s) => parseInt(s, 10))
+      .filter((n) => Number.isFinite(n));
+    const maxOccupied = occupiedInts.length ? Math.max(...occupiedInts) : 0;
+    const pool = Math.max(minPool, maxOccupied + 1);
+    const nums = [];
+    for (let n = 1; n <= pool; n++) {
+      if (!occupied.has(String(n))) nums.push(String(n));
+    }
+    return nums;
+  }
+
   function defaultOrg(catalog) {
     const orgs = catalog?.organizations || [];
     if (orgs.length) return { ...orgs[0] };
@@ -699,6 +714,7 @@ const AktUtils = (() => {
     nextAktNumber,
     nextAktNumberForYear,
     occupiedNumbers,
+    availableAktNumbers,
     createEmptyDraft,
     clone,
     defaultOrg,

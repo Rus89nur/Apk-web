@@ -77,6 +77,27 @@ describe('AktUtils', () => {
     expect(AktUtils.nextAktNumber(akts)).toBe('13');
   });
 
+  it('availableAktNumbers skips numbers taken in that year', () => {
+    const akts = [
+      { id: 'a', number: '2', date: '2026-01-01T12:00:00.000Z' },
+      { id: 'b', number: '5', date: '2026-06-01T12:00:00.000Z' },
+      { id: 'c', number: '2', date: '2025-06-01T12:00:00.000Z' },
+    ];
+    const free2026 = AktUtils.availableAktNumbers(akts, 2026, null, 6);
+    expect(free2026).toEqual(['1', '3', '4', '6']);
+    const free2025 = AktUtils.availableAktNumbers(akts, 2025, null, 4);
+    expect(free2025).toEqual(['1', '3', '4']);
+  });
+
+  it('availableAktNumbers keeps the number of the akt being edited', () => {
+    const akts = [
+      { id: 'a', number: '2', date: '2026-01-01T12:00:00.000Z' },
+      { id: 'b', number: '3', date: '2026-06-01T12:00:00.000Z' },
+    ];
+    const free = AktUtils.availableAktNumbers(akts, 2026, 'a', 4);
+    expect(free).toEqual(['1', '2', '4']);
+  });
+
   it('nextAktNumberForYear uses max in same calendar year only', () => {
     const akts = [
       { id: 'a', number: '28', date: '2026-05-01T00:00:00.000Z' },

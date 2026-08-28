@@ -58,6 +58,31 @@ const ShortAktForm = (() => {
     return !occupied.has(String(number));
   }
 
+  function yearFromDateInput(value) {
+    if (!value) return new Date().getFullYear();
+    return new Date(value + 'T12:00:00').getFullYear();
+  }
+
+  function numberSelectHtml(catalog, year, preferred, excludeId) {
+    const available = AktUtils.availableAktNumbers(catalog.akts || [], year, excludeId);
+    const preferredStr = preferred != null && preferred !== '' ? String(preferred) : '';
+    const selected = available.includes(preferredStr)
+      ? preferredStr
+      : AktUtils.nextAktNumberForYear(catalog.akts || [], year, excludeId);
+    return available
+      .map(
+        (n) =>
+          `<option value="${AktUtils.escapeHtml(n)}"${String(n) === String(selected) ? ' selected' : ''}>${AktUtils.escapeHtml(n)}</option>`
+      )
+      .join('');
+  }
+
+  function fillNumberSelect(catalog, selectEl, dateValue, preferred, excludeId) {
+    if (!selectEl) return;
+    const year = yearFromDateInput(dateValue);
+    selectEl.innerHTML = numberSelectHtml(catalog, year, preferred, excludeId);
+  }
+
   function syncEliminations(catalog, akt) {
     return AktUtils.syncViolationEliminationsForAkt(catalog, akt);
   }
@@ -81,12 +106,7 @@ const ShortAktForm = (() => {
     const year = new Date((akt?.date || inspectionDate) + 'T12:00:00').getFullYear();
     const defaultNumber =
       akt?.number || AktUtils.nextAktNumberForYear(catalog.akts || [], year, akt?.id);
-    const numberOptions = Array.from({ length: 200 }, (_, i) => String(i + 1))
-      .map(
-        (n) =>
-          `<option value="${n}"${String(defaultNumber) === n ? ' selected' : ''}>${n}</option>`
-      )
-      .join('');
+    const numberOptions = numberSelectHtml(catalog, year, defaultNumber, akt?.id);
 
     const orgOptions = orgs
       .map(
@@ -174,12 +194,22 @@ const ShortAktForm = (() => {
 
     const inspection = body.querySelector('#shortAktInspection');
     const report = body.querySelector('#shortAktReport');
-    if (inspection && report && !editingAkt) {
+    const numberSelect = body.querySelector('#shortAktNumber');
+    if (inspection) {
       inspection.addEventListener('change', () => {
         if (!inspection.value) return;
-        report.value = AktUtils.toDateInputValue(
-          AktUtils.addMonthsIso(inspection.value + 'T12:00:00', 1)
+        fillNumberSelect(
+          catalog,
+          numberSelect,
+          inspection.value,
+          numberSelect?.value,
+          editingAkt?.id
         );
+        if (report && !editingAkt) {
+          report.value = AktUtils.toDateInputValue(
+            AktUtils.addMonthsIso(inspection.value + 'T12:00:00', 1)
+          );
+        }
       });
     }
 
