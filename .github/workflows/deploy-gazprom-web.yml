@@ -3,8 +3,6 @@ name: Deploy Gazprom Web
 on:
   push:
     branches: [main]
-    paths:
-      - 'Gazprom_Web_Prototype/**'
   workflow_dispatch:
 
 permissions:
@@ -24,7 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       # Всегда публикуем актуальный main. Задержанный webhook старого
-      # push иначе выкатывает прошлую сборку поверх новой (откат 253→244).
+      # push иначе выкатывает прошлую сборку поверх новой.
       - uses: actions/checkout@v4
         with:
           ref: main
@@ -32,10 +30,20 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
+      - name: Prepare Pages artifact
+        run: |
+          mkdir -p _site
+          for item in *; do
+            case "$item" in
+              _site|.git|.github|.cursor|node_modules) continue ;;
+            esac
+            cp -R "$item" _site/
+          done
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: Gazprom_Web_Prototype
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

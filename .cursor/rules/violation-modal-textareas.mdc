@@ -1,6 +1,6 @@
 ---
 description: Поля textarea в модалке «Новое нарушение» — одна строка и автовысота
-globs: Gazprom_Web_Prototype/js/wizard-modals.js,Gazprom_Web_Prototype/css/app.css
+globs: js/wizard-modals.js,css/app.css
 alwaysApply: false
 ---
 
