@@ -284,27 +284,56 @@ const AktUtils = (() => {
     return changed;
   }
 
-  function parseShortViolationCounts(akt) {
+  /** Вид из нарушения сокращённого акта: vid либо суффикс после префикса заголовка. */
+  function shortTypeFromViolation(v) {
+    const vid = String(v?.vid || '').trim();
+    if (vid) return vid;
+    if (!isShortViolationTitle(v?.title)) return '';
+    return String(v.title).replace(/^[^:]+:\s*/, '').trim();
+  }
+
+  /**
+   * Виды для степперов сокращённого акта: как select полного акта (active+pending),
+   * плюс фактически сохранённые в акте (чтобы не обнулить legacy-счётчики).
+   */
+  function getShortAktTypeTitles(catalog, akt) {
+    const titles = new Set();
+    if (typeof ViolationTypes !== 'undefined' && catalog) {
+      ViolationTypes.ensureCatalog(catalog);
+      ViolationTypes.getVidSelectTitles(catalog, '').forEach((t) => {
+        if (t) titles.add(t);
+      });
+    } else if (typeof ViolationTypes === 'undefined') {
+      SHORT_VIOLATION_TYPES.forEach((t) => titles.add(t));
+    }
+    for (const v of akt?.violations || []) {
+      const type = shortTypeFromViolation(v);
+      if (type) titles.add(type);
+    }
+    return [...titles].sort((a, b) => a.localeCompare(b, 'ru'));
+  }
+
+  function parseShortViolationCounts(akt, typeTitles) {
     const counts = {};
-    SHORT_VIOLATION_TYPES.forEach((t) => {
+    const titles = Array.isArray(typeTitles) ? typeTitles : SHORT_VIOLATION_TYPES;
+    titles.forEach((t) => {
       counts[t] = 0;
     });
     for (const v of akt?.violations || []) {
-      const vid = String(v.vid || '').trim();
-      if (vid && counts[vid] != null) {
-        counts[vid] += 1;
-        continue;
-      }
-      if (!isShortViolationTitle(v.title)) continue;
-      const raw = String(v.title).replace(/^[^:]+:\s*/, '').trim();
-      if (counts[raw] != null) counts[raw] += 1;
+      const type = shortTypeFromViolation(v);
+      if (!type) continue;
+      counts[type] = (counts[type] || 0) + 1;
     }
     return counts;
   }
 
-  function buildShortViolations(countsByType) {
+  function buildShortViolations(countsByType, typeTitles) {
+    const types =
+      Array.isArray(typeTitles) && typeTitles.length
+        ? typeTitles
+        : Object.keys(countsByType || {});
     const violations = [];
-    for (const type of SHORT_VIOLATION_TYPES) {
+    for (const type of types) {
       const count = Math.max(0, parseInt(countsByType[type], 10) || 0);
       for (let i = 0; i < count; i += 1) {
         violations.push({
@@ -650,6 +679,7 @@ const AktUtils = (() => {
     syncViolationEliminationsForAkt,
     extensionDeadlineHistory,
     sameDeadlineDay,
+    getShortAktTypeTitles,
     parseShortViolationCounts,
     buildShortViolations,
     addMonthsIso,

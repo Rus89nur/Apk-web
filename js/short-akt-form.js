@@ -63,11 +63,8 @@ const ShortAktForm = (() => {
   }
 
   function buildFormHtml(catalog, akt) {
-    const counts = akt ? AktUtils.parseShortViolationCounts(akt) : {};
-    const emptyCounts = {};
-    AktUtils.SHORT_VIOLATION_TYPES.forEach((t) => {
-      emptyCounts[t] = counts[t] || 0;
-    });
+    const types = AktUtils.getShortAktTypeTitles(catalog, akt);
+    const counts = akt ? AktUtils.parseShortViolationCounts(akt, types) : {};
 
     const inspectionDate = akt?.date
       ? AktUtils.toDateInputValue(akt.date)
@@ -105,11 +102,12 @@ const ShortAktForm = (() => {
       )
       .join('');
 
-    const steppers = AktUtils.SHORT_VIOLATION_TYPES.map((type) => {
-      const c = emptyCounts[type] || 0;
-      const shortLabel =
-        type.length > 48 ? `${type.slice(0, 45)}…` : type;
-      return `
+    const steppersBlock = types.length
+      ? `<div class="short-akt-steppers">${types
+          .map((type) => {
+            const c = counts[type] || 0;
+            const shortLabel = type.length > 48 ? `${type.slice(0, 45)}…` : type;
+            return `
         <div class="short-akt-stepper" data-short-type="${AktUtils.escapeHtml(type)}">
           <label class="short-akt-stepper__label" title="${AktUtils.escapeHtml(type)}">${AktUtils.escapeHtml(shortLabel)}</label>
           <div class="short-akt-stepper__ctrl">
@@ -118,9 +116,11 @@ const ShortAktForm = (() => {
             <button type="button" class="btn-ghost btn-sm" data-short-inc aria-label="Увеличить">+</button>
           </div>
         </div>`;
-    }).join('');
+          })
+          .join('')}</div>`
+      : `<p class="short-akt-hint">Нет видов нарушений. Добавьте их в Настройках → Виды нарушений.</p>`;
 
-    const total = Object.values(emptyCounts).reduce((s, n) => s + n, 0);
+    const total = types.reduce((s, t) => s + (counts[t] || 0), 0);
 
     return `
       <p class="short-akt-hint">Минимальный набор полей, как в iOS. Нарушения сохраняются с префиксом «Сокращенный:».</p>
@@ -143,7 +143,7 @@ const ShortAktForm = (() => {
         </select>
       </div>
       <h4 class="short-akt-section-title">Распределение нарушений по видам</h4>
-      <div class="short-akt-steppers">${steppers}</div>
+      ${steppersBlock}
       <p class="short-akt-total" id="shortAktTotal">Итого нарушений: <strong>${total}</strong></p>
     `;
   }
@@ -152,8 +152,9 @@ const ShortAktForm = (() => {
     const body = document.getElementById('shortAktModalBody');
     if (!body) return;
 
+    const types = AktUtils.getShortAktTypeTitles(catalog, editingAkt);
     const counts = {};
-    AktUtils.SHORT_VIOLATION_TYPES.forEach((t) => {
+    types.forEach((t) => {
       counts[t] = 0;
     });
     body.querySelectorAll('.short-akt-stepper').forEach((row) => {
@@ -210,7 +211,8 @@ const ShortAktForm = (() => {
     if (!obj) throw new Error('Выберите объект');
 
     const counts = body._shortCounts || {};
-    const violations = AktUtils.buildShortViolations(counts);
+    const types = AktUtils.getShortAktTypeTitles(catalog, editingAkt);
+    const violations = AktUtils.buildShortViolations(counts, types);
     const totalViol = violations.length;
     if (totalViol === 0) throw new Error('Укажите хотя бы одно нарушение');
 

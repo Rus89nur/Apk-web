@@ -7,11 +7,24 @@ import { describe, it, expect, beforeAll } from 'vitest';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
+function runScript(ctx, file, globalName) {
+  const expose = `\nif (typeof ${globalName} !== "undefined") this.${globalName} = ${globalName};\n`;
+  vm.runInContext(readFileSync(join(root, file), 'utf8') + expose, ctx);
+}
+
 function loadScripts() {
   const ctx = { console, Date, Math, JSON, parseInt, String, Number, isNaN: Number.isNaN };
   vm.createContext(ctx);
-  const expose = '\nif (typeof AktUtils !== "undefined") this.AktUtils = AktUtils;\n';
-  vm.runInContext(readFileSync(join(root, 'js/akt-utils.js'), 'utf8') + expose, ctx);
+  runScript(ctx, 'js/akt-utils.js', 'AktUtils');
+  return ctx;
+}
+
+function loadScriptsWithCatalog() {
+  const ctx = { console, Date, Math, JSON, parseInt, String, Number, isNaN: Number.isNaN };
+  vm.createContext(ctx);
+  runScript(ctx, 'js/akt-utils.js', 'AktUtils');
+  runScript(ctx, 'js/violation-templates.js', 'ViolationTemplates');
+  runScript(ctx, 'js/violation-types.js', 'ViolationTypes');
   return ctx;
 }
 
@@ -261,6 +274,32 @@ describe('AktUtils', () => {
     expect(list[0].vid).toBe('Работы на высоте');
   });
 
+  it('getShortAktTypeTitles без ViolationTypes даёт SHORT_VIOLATION_TYPES', () => {
+    const titles = AktUtils.getShortAktTypeTitles();
+    expect(titles).toHaveLength(AktUtils.SHORT_VIOLATION_TYPES.length);
+    AktUtils.SHORT_VIOLATION_TYPES.forEach((t) => expect(titles).toContain(t));
+  });
+
+  it('parseShortViolationCounts считает произвольный vid вне SHORT_VIOLATION_TYPES', () => {
+    const counts = AktUtils.parseShortViolationCounts({
+      violations: [
+        { title: 'Сокращенный: Прочие несоответствия', vid: 'Прочие несоответствия' },
+        { title: 'Сокращенный: Прочие несоответствия', vid: 'Прочие несоответствия' },
+      ],
+    });
+    expect(counts['Прочие несоответствия']).toBe(2);
+  });
+
+  it('buildShortViolations пишет переданный новый вид', () => {
+    const list = AktUtils.buildShortViolations(
+      { 'Прочие несоответствия': 1 },
+      ['Прочие несоответствия']
+    );
+    expect(list).toHaveLength(1);
+    expect(list[0].title).toBe('Сокращенный: Прочие несоответствия');
+    expect(list[0].vid).toBe('Прочие несоответствия');
+  });
+
   it('capitalizeFirstLetter uppercases first letter in Russian text', () => {
     expect(AktUtils.capitalizeFirstLetter('не проведён инструктаж')).toBe('Не проведён инструктаж');
     expect(AktUtils.capitalizeFirstLetter('  иванов')).toBe('  Иванов');
@@ -360,5 +399,70 @@ describe('AktUtils', () => {
     expect(AktUtils.toDateInputValue(draft.actUtverzdenDate)).toBe(
       AktUtils.toDateInputValue(expected.actUtverzdenDate)
     );
+  });
+});
+
+describe('AktUtils short types from catalog', () => {
+  let AktUtils;
+  let ViolationTemplates;
+
+  beforeAll(() => {
+    const ctx = loadScriptsWithCatalog();
+    AktUtils = ctx.AktUtils;
+    ViolationTemplates = ctx.ViolationTemplates;
+  });
+
+  function emptyClassifier() {
+    return {
+      akts: [],
+      violationTypes: [],
+      typeMappings: {},
+      violationTypesPurgedV2: true,
+      mappingSeedsRestoredV3: true,
+      dismissedMappingSeeds: [...(ViolationTemplates.MAPPING_SEED_TYPES || [])],
+    };
+  }
+
+  it('getShortAktTypeTitles берёт active+pending из каталога, не 17 legacy', () => {
+    const catalog = {
+      akts: [],
+      violationTypes: [
+        { id: 'a', title: 'Прочие несоответствия', status: 'active' },
+        { id: 'p', title: 'Нарушение требований пожарной безопасности', status: 'pending' },
+      ],
+      typeMappings: {},
+      violationTypesPurgedV2: true,
+      mappingSeedsRestoredV3: true,
+      dismissedMappingSeeds: [...(ViolationTemplates.MAPPING_SEED_TYPES || [])],
+    };
+    const titles = AktUtils.getShortAktTypeTitles(catalog);
+    expect(titles).toContain('Прочие несоответствия');
+    expect(titles).toContain('Нарушение требований пожарной безопасности');
+    expect(titles).not.toContain('Работы на высоте');
+    expect(titles).not.toContain('Пожарная безопасность');
+  });
+
+  it('getShortAktTypeTitles включает pending seed после ensureCatalog', () => {
+    const catalog = { akts: [] };
+    const titles = AktUtils.getShortAktTypeTitles(catalog);
+    expect(titles).toContain(
+      'Нарушение требований по безопасному производству работ на высоте'
+    );
+    expect(titles).not.toContain('Работы на высоте');
+  });
+
+  it('getShortAktTypeTitles объединяет legacy-vid из акта с каталогом', () => {
+    const catalog = emptyClassifier();
+    const akt = {
+      violations: [{ title: 'Сокращенный: Работы на высоте', vid: 'Работы на высоте' }],
+    };
+    const titles = AktUtils.getShortAktTypeTitles(catalog, akt);
+    expect(titles).toContain('Работы на высоте');
+  });
+
+  it('getShortAktTypeTitles не откатывается на legacy при пустом классификаторе', () => {
+    const titles = AktUtils.getShortAktTypeTitles(emptyClassifier());
+    expect(titles).toHaveLength(0);
+    expect(titles).not.toContain('Работы на высоте');
   });
 });
