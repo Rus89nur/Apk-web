@@ -7899,6 +7899,93 @@
       #screen-violation-types .vt-btn-restore__short { display: inline; }
     }
 
+    .vt-screen-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin: 0 0 12px;
+    }
+    .vt-filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .vt-filter-btn {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 999px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .vt-filter-btn.active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .vt-folder { margin-bottom: 12px; }
+    .vt-folder__head {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .vt-folder__title { flex: 1; font-weight: 700; font-size: 14px; }
+    .vt-folder__count {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+    .vt-folder__chevron { color: var(--text-muted); font-size: 12px; }
+    .vt-folder__body {
+      padding: 10px 0 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .vt-folder-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 14px;
+      background: var(--surface);
+    }
+    .vt-folder-item--archived { border-style: dashed; background: #fafbfc; }
+    .vt-folder-item__head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+    }
+    .vt-folder-item__title { font-size: 13px; line-height: 1.45; flex: 1; min-width: 180px; }
+    .vt-folder-item__meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .vt-folder-item__actions { gap: 4px; }
+    .vt-inline-map-label {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin: 10px 0 6px;
+    }
+    .vt-inline-map-select { font-size: 13px; }
+
     /* ===== ML Training Wizard ===== */
     #screen-ml-training .ml-wizard {
       display: flex;

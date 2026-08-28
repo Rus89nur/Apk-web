@@ -106,6 +106,7 @@ const CatalogService = (() => {
       violationRegistry: data.violationRegistry || [],
       violationTypes: data.violationTypes || [],
       typeMappings: data.typeMappings || {},
+      violationTypeRegistries: data.violationTypeRegistries || [],
       descriptionTemplates: data.descriptionTemplates || ['', '', ''],
       [templateKey]: data[templateKey] || null,
       wordTemplateName: data.wordTemplateName || null,

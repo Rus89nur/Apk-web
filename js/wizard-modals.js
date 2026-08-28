@@ -142,34 +142,19 @@ const WizardModals = (() => {
     window.__gazpromSavingViolation = false;
   }
 
-  /** Подставить сохранённый вид в select (после mount DOM). */
+  /** Подставить сохранённый вид в select (после mount DOM) — без подмены на новый. */
   function applyViolationVidSelect(rawVid) {
     const vidEl = document.getElementById('mvVid');
     if (!vidEl) return;
-    const catalog = ctx?.getCatalog?.();
     const raw = String(rawVid || '').trim();
     if (!raw) return;
-    const resolved =
-      catalog && typeof ViolationTypes !== 'undefined'
-        ? ViolationTypes.resolveVid(catalog, raw)
-        : raw;
-    const value = resolved || raw;
-    const isLegacyOnly =
-      typeof ViolationTypes !== 'undefined' &&
-      typeof ViolationTypes.isLegacyBuiltinVidTitle === 'function' &&
-      ViolationTypes.isLegacyBuiltinVidTitle(value);
-    if (
-      !isLegacyOnly &&
-      !Array.from(vidEl.options).some((o) => o.value === value)
-    ) {
+    if (!Array.from(vidEl.options).some((o) => o.value === raw)) {
       const opt = document.createElement('option');
-      opt.value = value;
-      opt.textContent = value;
+      opt.value = raw;
+      opt.textContent = raw;
       vidEl.insertBefore(opt, vidEl.options[1] || null);
     }
-    if (Array.from(vidEl.options).some((o) => o.value === value)) {
-      vidEl.value = value;
-    } else if (Array.from(vidEl.options).some((o) => o.value === raw)) {
+    if (Array.from(vidEl.options).some((o) => o.value === raw)) {
       vidEl.value = raw;
     }
   }
@@ -325,10 +310,6 @@ const WizardModals = (() => {
     }
 
     const savedVid = String(v?.vid || '').trim();
-    const resolvedVid =
-      catalog && typeof ViolationTypes !== 'undefined'
-        ? ViolationTypes.resolveVid(catalog, savedVid)
-        : savedVid;
     const vidTitles =
       catalog && typeof ViolationTypes !== 'undefined'
         ? ViolationTypes.getVidSelectTitles(catalog, savedVid)
@@ -336,7 +317,7 @@ const WizardModals = (() => {
     const vidOpts = vidTitles
       .map(
         (t) =>
-          `<option value="${AktUtils.escapeHtml(t)}" ${resolvedVid === t || savedVid === t ? 'selected' : ''}>${AktUtils.escapeHtml(t)}</option>`
+          `<option value="${AktUtils.escapeHtml(t)}" ${savedVid === t ? 'selected' : ''}>${AktUtils.escapeHtml(t)}</option>`
       )
       .join('');
 

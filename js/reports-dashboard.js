@@ -107,9 +107,13 @@ const ReportsDashboard = (() => {
   }
 
   function getViolationKind(v) {
-    const vid = String(v.vid || '').trim();
-    if (vid) {
-      const out = vid;
+    const raw = String(v.vid || '').trim();
+    if (raw) {
+      const resolved =
+        activeCatalog && typeof ViolationTypes !== 'undefined'
+          ? ViolationTypes.resolveVid(activeCatalog, raw) || raw
+          : raw;
+      const out = resolved || raw;
       return out.length > 80 ? `${out.slice(0, 77)}…` : out;
     }
     const title = String(v.title || '').trim();

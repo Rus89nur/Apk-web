@@ -1,12 +1,15 @@
 /**
- * Классификатор видов нарушений: активные, архив, соответствия старый → новый.
+ * Классификатор видов нарушений: реестры (папки), активные, архив, сопоставления.
+ * В актах хранится исходный vid; resolveVid — только для отчётов и дашбордов.
  */
 const ViolationTypes = (() => {
   const STATUS_ACTIVE = 'active';
   const STATUS_ARCHIVED = 'archived';
   const STATUS_PENDING = 'pending';
-  /** Слева в «Сопоставить»: новый вид без устаревшего предшественника. */
-  const STANDALONE_MAP_FROM = '__vt_standalone__';
+
+  const REGISTRY_CURRENT = 'smart-forms';
+  const REGISTRY_LEGACY = 'legacy-ios';
+  const REGISTRY_FROM_DATA = 'from-data';
 
   function getTypes(catalog) {
     return catalog?.violationTypes || [];
@@ -16,6 +19,24 @@ const ViolationTypes = (() => {
     return catalog?.typeMappings && typeof catalog.typeMappings === 'object'
       ? catalog.typeMappings
       : {};
+  }
+
+  function defaultRegistries() {
+    return [
+      { id: REGISTRY_CURRENT, title: 'Новые виды (Smart Forms)', order: 1 },
+      { id: REGISTRY_LEGACY, title: 'Старые виды (iOS)', order: 2 },
+      { id: REGISTRY_FROM_DATA, title: 'Прочие из актов', order: 3 },
+    ];
+  }
+
+  function getRegistries(catalog) {
+    ensureCatalog(catalog);
+    const list = catalog?.violationTypeRegistries;
+    return Array.isArray(list) && list.length ? [...list].sort((a, b) => (a.order || 0) - (b.order || 0)) : defaultRegistries();
+  }
+
+  function findRegistry(catalog, registryId) {
+    return getRegistries(catalog).find((r) => r.id === registryId) || null;
   }
 
   function findById(catalog, id) {
@@ -29,16 +50,6 @@ const ViolationTypes = (() => {
     return getTypes(catalog).find((x) => x.title === t) || null;
   }
 
-  function builtinTypeTitles() {
-    const legacy =
-      typeof ViolationTemplates !== 'undefined' && Array.isArray(ViolationTemplates.VIOLATION_TYPES)
-        ? ViolationTemplates.VIOLATION_TYPES
-        : [];
-    const seeds = mappingSeedTypes();
-    return new Set([...legacy, ...seeds].map((t) => String(t || '').trim()).filter(Boolean));
-  }
-
-  /** Только 17 устаревших встроенных видов (без 13 новых Smart Forms). */
   function legacyBuiltinTitles() {
     const legacy =
       typeof ViolationTemplates !== 'undefined' && Array.isArray(ViolationTemplates.VIOLATION_TYPES)
@@ -47,47 +58,71 @@ const ViolationTypes = (() => {
     return new Set(legacy.map((t) => String(t || '').trim()).filter(Boolean));
   }
 
-  /** Однократно убрать зашитые 17+13 видов — дальше только ручное добавление и привязки из реестра. */
-  function purgeBuiltinDefaults(catalog) {
-    if (!catalog || catalog.violationTypesPurgedV2) return false;
-    const builtin = builtinTypeTitles();
-    const kept = getTypes(catalog).filter((t) => !builtin.has(t.title));
-    catalog.violationTypes = kept;
-    catalog.violationTypesPurgedV2 = true;
+  function currentBuiltinTitles() {
+    return new Set(mappingSeedTypes().map((t) => String(t || '').trim()).filter(Boolean));
+  }
+
+  function mappingSeedTypes() {
+    return typeof ViolationTemplates !== 'undefined' &&
+      Array.isArray(ViolationTemplates.MAPPING_SEED_TYPES)
+      ? ViolationTemplates.MAPPING_SEED_TYPES
+      : [];
+  }
+
+  function isLegacyBuiltinVidTitle(vid) {
+    const s = String(vid || '').trim();
+    return s ? legacyBuiltinTitles().has(s) : false;
+  }
+
+  /** Однократно: два реестра (старые archived + новые active), сброс сопоставлений. */
+  function bootstrapDualRegistriesV4(catalog) {
+    if (!catalog || catalog.violationTypesDualRegistriesV4) return false;
+
+    const legacy = [...legacyBuiltinTitles()];
+    const current = mappingSeedTypes();
+    const legacySet = legacyBuiltinTitles();
+    const currentSet = currentBuiltinTitles();
+
+    catalog.violationTypeRegistries = defaultRegistries();
+
+    const oldByTitle = new Map(getTypes(catalog).map((t) => [t.title, t]));
+    const next = [];
+    const usedIds = new Set();
+
+    const pushType = (title, status, registryId) => {
+      const prev = oldByTitle.get(title);
+      const id = prev?.id && !usedIds.has(prev.id) ? prev.id : AktUtils.uuid();
+      usedIds.add(id);
+      next.push({ id, title, status, registryId });
+      oldByTitle.delete(title);
+    };
+
+    legacy.forEach((title) => pushType(title, STATUS_ARCHIVED, REGISTRY_LEGACY));
+    current.forEach((title) => pushType(title, STATUS_ACTIVE, REGISTRY_CURRENT));
+
+    for (const t of oldByTitle.values()) {
+      let registryId = REGISTRY_FROM_DATA;
+      if (legacySet.has(t.title)) registryId = REGISTRY_LEGACY;
+      else if (currentSet.has(t.title)) registryId = REGISTRY_CURRENT;
+      next.push({
+        id: t.id || AktUtils.uuid(),
+        title: t.title,
+        status: STATUS_ARCHIVED,
+        registryId,
+      });
+    }
+
+    catalog.violationTypes = next;
+    catalog.typeMappings = {};
+    catalog.violationTypes.forEach((t) => {
+      delete t.replacedBy;
+      delete t.standalone;
+    });
+    catalog.dismissedMappingSeeds = [];
+    catalog.violationTypesDualRegistriesV4 = true;
     return true;
   }
 
-  /**
-   * После web-229 seeds массово попадали в dismissedMappingSeeds и пропадали из «Сопоставить».
-   * Однократно снимаем блокировку, если все seed-виды исчезли из классификатора.
-   */
-  function restoreMappingSeedsAfterOverPurge(catalog) {
-    if (!catalog?.violationTypesPurgedV2 || catalog.mappingSeedsRestoredV3) return false;
-
-    const seeds = mappingSeedTypes();
-    if (!seeds.length) {
-      catalog.mappingSeedsRestoredV3 = true;
-      return false;
-    }
-
-    const dismissed = getDismissedMappingSeeds(catalog);
-    const hasAnySeedType = seeds.some((title) => findByTitle(catalog, title));
-    const allSeedsDismissed = seeds.every((title) => dismissed.has(String(title || '').trim()));
-
-    if (allSeedsDismissed && !hasAnySeedType) {
-      for (const title of seeds) {
-        dismissed.delete(String(title || '').trim());
-      }
-      catalog.dismissedMappingSeeds = [...dismissed];
-      catalog.mappingSeedsRestoredV3 = true;
-      return true;
-    }
-
-    catalog.mappingSeedsRestoredV3 = true;
-    return false;
-  }
-
-  /** Цепочка replacedBy/typeMappings без ensureCatalog (для purgeBuiltinRegistryVids). */
   function resolveVidChain(catalog, vid) {
     const raw = String(vid || '').trim();
     if (!raw) return '';
@@ -111,59 +146,6 @@ const ViolationTypes = (() => {
       if (!current) return raw;
     }
     return raw;
-  }
-
-  /** Однократно сбросить устаревшие виды в записях реестра (из встроенного Excel). */
-  function purgeBuiltinRegistryVids(catalog) {
-    if (!catalog || catalog.registryBuiltinVidsPurgedV2) return false;
-    const legacy = legacyBuiltinTitles();
-    let changed = false;
-    for (const item of catalog.violationRegistry || []) {
-      const raw = String(item.vid || '').trim();
-      if (!raw || !legacy.has(raw)) continue;
-      item.vid = '';
-      changed = true;
-    }
-    catalog.registryBuiltinVidsPurgedV2 = true;
-    return changed;
-  }
-
-  function isBuiltinVidTitle(vid) {
-    const s = String(vid || '').trim();
-    if (!s) return false;
-    return builtinTypeTitles().has(s);
-  }
-
-  function isLegacyBuiltinVidTitle(vid) {
-    const s = String(vid || '').trim();
-    if (!s) return false;
-    return legacyBuiltinTitles().has(s);
-  }
-
-  function mappingSeedTypes() {
-    return typeof ViolationTemplates !== 'undefined' &&
-      Array.isArray(ViolationTemplates.MAPPING_SEED_TYPES)
-      ? ViolationTemplates.MAPPING_SEED_TYPES
-      : [];
-  }
-
-  function getDismissedMappingSeeds(catalog) {
-    if (!Array.isArray(catalog?.dismissedMappingSeeds)) {
-      if (catalog) catalog.dismissedMappingSeeds = [];
-      return new Set();
-    }
-    return new Set(
-      catalog.dismissedMappingSeeds.map((t) => String(t || '').trim()).filter(Boolean)
-    );
-  }
-
-  function dismissMappingSeed(catalog, title) {
-    const normalized = String(title || '').trim();
-    if (!normalized || !catalog) return false;
-    const dismissed = getDismissedMappingSeeds(catalog);
-    if (dismissed.has(normalized)) return false;
-    catalog.dismissedMappingSeeds = [...dismissed, normalized];
-    return true;
   }
 
   function collectVidCounts(catalog) {
@@ -197,6 +179,7 @@ const ViolationTypes = (() => {
         id: AktUtils.uuid(),
         title: vid,
         status: STATUS_ARCHIVED,
+        registryId: REGISTRY_FROM_DATA,
       });
       titles.add(vid);
       changed = true;
@@ -219,28 +202,6 @@ const ViolationTypes = (() => {
     return changed;
   }
 
-  function syncMappingSeedTypes(catalog) {
-    const seeds = mappingSeedTypes();
-    if (!seeds.length) return false;
-    const types = getTypes(catalog);
-    const existingTitles = new Set(types.map((t) => t.title));
-    const dismissed = getDismissedMappingSeeds(catalog);
-    let changed = false;
-    for (const title of seeds) {
-      const normalized = String(title || '').trim();
-      if (!normalized || existingTitles.has(normalized) || dismissed.has(normalized)) continue;
-      types.push({
-        id: AktUtils.uuid(),
-        title: normalized,
-        status: STATUS_PENDING,
-      });
-      existingTitles.add(normalized);
-      changed = true;
-    }
-    if (changed) catalog.violationTypes = types;
-    return changed;
-  }
-
   function ensureCatalog(catalog) {
     if (!catalog) return false;
     let changed = false;
@@ -253,16 +214,13 @@ const ViolationTypes = (() => {
       catalog.typeMappings = {};
       changed = true;
     }
-    if (!Array.isArray(catalog.dismissedMappingSeeds)) {
-      catalog.dismissedMappingSeeds = [];
+    if (!Array.isArray(catalog.violationTypeRegistries)) {
+      catalog.violationTypeRegistries = defaultRegistries();
       changed = true;
     }
 
-    if (purgeBuiltinDefaults(catalog)) changed = true;
-    if (restoreMappingSeedsAfterOverPurge(catalog)) changed = true;
-    if (purgeBuiltinRegistryVids(catalog)) changed = true;
+    if (bootstrapDualRegistriesV4(catalog)) changed = true;
     if (syncOrphanVids(catalog)) changed = true;
-    if (syncMappingSeedTypes(catalog)) changed = true;
     if (syncMappingsFromTypes(catalog)) changed = true;
 
     return changed;
@@ -278,17 +236,18 @@ const ViolationTypes = (() => {
     return getTypes(catalog).filter((t) => t.status === STATUS_PENDING);
   }
 
-  /** Активные + ожидающие привязки — правая колонка «Сопоставить». */
   function getMapTargetTypes(catalog) {
-    ensureCatalog(catalog);
-    return getTypes(catalog).filter(
-      (t) => t.status === STATUS_ACTIVE || t.status === STATUS_PENDING
-    );
+    return getActiveTypes(catalog);
   }
 
   function getArchivedTypes(catalog) {
     ensureCatalog(catalog);
     return getTypes(catalog).filter((t) => t.status === STATUS_ARCHIVED);
+  }
+
+  function getTypesByRegistry(catalog, registryId) {
+    ensureCatalog(catalog);
+    return getTypes(catalog).filter((t) => (t.registryId || REGISTRY_FROM_DATA) === registryId);
   }
 
   function getActiveTitles(catalog) {
@@ -314,7 +273,6 @@ const ViolationTypes = (() => {
     const raw = String(vid || '').trim();
     if (!raw) return '';
     if (!catalog) return raw;
-
     ensureCatalog(catalog);
     return resolveVidChain(catalog, vid);
   }
@@ -331,37 +289,30 @@ const ViolationTypes = (() => {
     return collectVidCounts(catalog).get(type.title) || 0;
   }
 
-  function addType(catalog, title, { forMapping = false } = {}) {
+  function addType(catalog, title, { registryId = REGISTRY_CURRENT } = {}) {
     const t = String(title || '').trim();
     if (!t) return null;
     ensureCatalog(catalog);
     const existing = findByTitle(catalog, t);
     if (existing) {
-      if (forMapping && existing.status === STATUS_ARCHIVED) {
-        existing.status = STATUS_PENDING;
-        delete existing.replacedBy;
-        return existing;
-      }
       if (existing.status === STATUS_ARCHIVED) {
         existing.status = STATUS_ACTIVE;
+        existing.registryId = registryId || REGISTRY_CURRENT;
         delete existing.replacedBy;
+        const mappings = { ...getMappings(catalog) };
+        delete mappings[existing.id];
+        catalog.typeMappings = mappings;
       }
       return existing;
     }
     const item = {
       id: AktUtils.uuid(),
       title: t,
-      status: forMapping ? STATUS_PENDING : STATUS_ACTIVE,
+      status: STATUS_ACTIVE,
+      registryId: registryId || REGISTRY_CURRENT,
     };
     catalog.violationTypes = [...getTypes(catalog), item];
     return item;
-  }
-
-  function activateType(catalog, id) {
-    const t = findById(catalog, id);
-    if (!t || t.status !== STATUS_PENDING) return false;
-    t.status = STATUS_ACTIVE;
-    return true;
   }
 
   function deleteType(catalog, id) {
@@ -371,11 +322,6 @@ const ViolationTypes = (() => {
     const usage = usageCount(catalog, t);
     if (usage > 0) {
       return { ok: false, reason: 'in_use', count: usage };
-    }
-
-    const seedTitles = new Set(mappingSeedTypes());
-    if (t.status === STATUS_PENDING && seedTitles.has(t.title)) {
-      dismissMappingSeed(catalog, t.title);
     }
 
     const types = getTypes(catalog).filter((x) => x.id !== id);
@@ -398,11 +344,8 @@ const ViolationTypes = (() => {
     const t = findById(catalog, id);
     if (!t || t.status === STATUS_ARCHIVED) return false;
     t.status = STATUS_ARCHIVED;
+    if (!t.registryId) t.registryId = REGISTRY_FROM_DATA;
     return true;
-  }
-
-  function isStandaloneMapFrom(fromId) {
-    return fromId === STANDALONE_MAP_FROM;
   }
 
   function countMappedFrom(catalog, toId) {
@@ -421,49 +364,14 @@ const ViolationTypes = (() => {
       .map((t) => t.title);
   }
 
-  function activateStandaloneType(catalog, toId) {
-    ensureCatalog(catalog);
-    const to = findById(catalog, toId);
-    if (!to) return false;
-    if (to.status !== STATUS_PENDING && to.status !== STATUS_ACTIVE) return false;
-    to.status = STATUS_ACTIVE;
-    to.standalone = true;
-    return true;
-  }
-
-  function restoreType(catalog, id) {
-    const t = findById(catalog, id);
-    if (!t || t.status !== STATUS_ARCHIVED) {
-      return { ok: false, reason: 'not_archived' };
-    }
-
-    const duplicate = getActiveTypes(catalog).find(
-      (x) => x.id !== t.id && x.title === t.title
-    );
-    if (duplicate) {
-      return { ok: false, reason: 'duplicate', title: t.title };
-    }
-
-    t.status = STATUS_ACTIVE;
-    delete t.replacedBy;
-
-    const mappings = { ...getMappings(catalog) };
-    delete mappings[id];
-    catalog.typeMappings = mappings;
-
-    return { ok: true };
-  }
-
   function setMapping(catalog, fromId, toId) {
     if (!fromId || !toId || fromId === toId) return false;
     ensureCatalog(catalog);
     const from = findById(catalog, fromId);
     const to = findById(catalog, toId);
     if (!from || !to) return false;
-    if (to.status === STATUS_PENDING) {
+    if (to.status !== STATUS_ACTIVE) {
       to.status = STATUS_ACTIVE;
-    } else if (to.status !== STATUS_ACTIVE) {
-      return false;
     }
     delete to.standalone;
 
@@ -503,33 +411,6 @@ const ViolationTypes = (() => {
     return stats;
   }
 
-  function migrateStoredVids(catalog) {
-    ensureCatalog(catalog);
-    let updated = 0;
-
-    const rewrite = (v) => {
-      const raw = String(v?.vid || '').trim();
-      if (!raw) return;
-      const resolved = resolveVid(catalog, raw);
-      if (resolved && resolved !== raw) {
-        v.vid = resolved;
-        updated += 1;
-      }
-    };
-
-    const scanAkts = (akts) => {
-      (akts || []).forEach((akt) => {
-        (akt.violations || []).forEach(rewrite);
-      });
-    };
-    scanAkts(catalog.akts);
-    scanAkts(catalog.trash);
-    if (catalog.editableAkt?.akt) scanAkts([catalog.editableAkt.akt]);
-    (catalog.violationRegistry || []).forEach(rewrite);
-
-    return updated;
-  }
-
   function formatVidDisplay(catalog, vid) {
     const raw = String(vid || '').trim();
     if (!raw) return { display: '', original: '', migrated: false };
@@ -541,7 +422,6 @@ const ViolationTypes = (() => {
     };
   }
 
-  /** Уникальные виды, уже привязанные в реестре (для выбора в форме нарушения). */
   function getRegistryVidTitles(catalog) {
     ensureCatalog(catalog);
     const titles = new Set();
@@ -552,23 +432,15 @@ const ViolationTypes = (() => {
     return [...titles].sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  /** Список для select: активные + ожидающие привязки + сохранённое значение при редактировании. */
+  /** Select: только активные + сохранённое значение при редактировании (без подмены). */
   function getVidSelectTitles(catalog, rawVid) {
     ensureCatalog(catalog);
     const raw = String(rawVid || '').trim();
-    const merged = new Set([
-      ...getActiveTitles(catalog),
-      ...getPendingTypes(catalog).map((t) => t.title),
-    ]);
-    if (raw) {
-      const resolved = resolveVid(catalog, raw);
-      if (resolved) merged.add(resolved);
-      if (raw !== resolved) merged.add(raw);
-    }
+    const merged = new Set(getActiveTitles(catalog));
+    if (raw) merged.add(raw);
     return [...merged].sort((a, b) => a.localeCompare(b, 'ru'));
   }
 
-  /** Добавить вид в классификатор при сохранении привязки (если ещё нет). */
   function ensureActiveType(catalog, title) {
     const t = String(title || '').trim();
     if (!t) return null;
@@ -579,15 +451,19 @@ const ViolationTypes = (() => {
     STATUS_ACTIVE,
     STATUS_ARCHIVED,
     STATUS_PENDING,
-    STANDALONE_MAP_FROM,
-    isStandaloneMapFrom,
+    REGISTRY_CURRENT,
+    REGISTRY_LEGACY,
+    REGISTRY_FROM_DATA,
     ensureCatalog,
     getTypes,
     getMappings,
+    getRegistries,
+    findRegistry,
     getActiveTypes,
     getPendingTypes,
     getMapTargetTypes,
     getArchivedTypes,
+    getTypesByRegistry,
     getActiveTitles,
     getUnmappedArchived,
     findById,
@@ -596,26 +472,19 @@ const ViolationTypes = (() => {
     usageCount,
     collectVidCounts,
     addType,
-    activateType,
     deleteType,
     archiveType,
-    restoreType,
     setMapping,
     clearMapping,
     countMappedFrom,
     getMappedFromTitles,
-    activateStandaloneType,
     isMappedToActive,
-    dismissMappingSeed,
     buildKindStats,
-    migrateStoredVids,
     formatVidDisplay,
     getRegistryVidTitles,
     getVidSelectTitles,
     ensureActiveType,
-    purgeBuiltinDefaults,
-    purgeBuiltinRegistryVids,
-    isBuiltinVidTitle,
+    bootstrapDualRegistriesV4,
     isLegacyBuiltinVidTitle,
     legacyBuiltinTitles,
   };

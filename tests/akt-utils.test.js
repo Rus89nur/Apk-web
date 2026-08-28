@@ -417,23 +417,20 @@ describe('AktUtils short types from catalog', () => {
       akts: [],
       violationTypes: [],
       typeMappings: {},
-      violationTypesPurgedV2: true,
-      mappingSeedsRestoredV3: true,
-      dismissedMappingSeeds: [...(ViolationTemplates.MAPPING_SEED_TYPES || [])],
+      violationTypesDualRegistriesV4: true,
+      violationTypeRegistries: [],
     };
   }
 
-  it('getShortAktTypeTitles берёт active+pending из каталога, не 17 legacy', () => {
+  it('getShortAktTypeTitles берёт активные виды из каталога, не legacy', () => {
     const catalog = {
       akts: [],
       violationTypes: [
-        { id: 'a', title: 'Прочие несоответствия', status: 'active' },
-        { id: 'p', title: 'Нарушение требований пожарной безопасности', status: 'pending' },
+        { id: 'a', title: 'Прочие несоответствия', status: 'active', registryId: 'smart-forms' },
+        { id: 'b', title: 'Нарушение требований пожарной безопасности', status: 'active', registryId: 'smart-forms' },
       ],
       typeMappings: {},
-      violationTypesPurgedV2: true,
-      mappingSeedsRestoredV3: true,
-      dismissedMappingSeeds: [...(ViolationTemplates.MAPPING_SEED_TYPES || [])],
+      violationTypesDualRegistriesV4: true,
     };
     const titles = AktUtils.getShortAktTypeTitles(catalog);
     expect(titles).toContain('Прочие несоответствия');
@@ -442,7 +439,7 @@ describe('AktUtils short types from catalog', () => {
     expect(titles).not.toContain('Пожарная безопасность');
   });
 
-  it('getShortAktTypeTitles включает pending seed после ensureCatalog', () => {
+  it('getShortAktTypeTitles включает активные виды Smart Forms после ensureCatalog', () => {
     const catalog = { akts: [] };
     const titles = AktUtils.getShortAktTypeTitles(catalog);
     expect(titles).toContain(
