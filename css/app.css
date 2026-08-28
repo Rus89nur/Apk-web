@@ -1311,7 +1311,13 @@
     .short-akt-hint {
       font-size: 13px;
       color: var(--text-muted);
+      margin: 0 0 8px;
+    }
+    .short-akt-status {
+      font-size: 13px;
+      font-weight: 600;
       margin: 0 0 16px;
+      color: var(--text);
     }
     .short-akt-section-title {
       margin: 20px 0 12px;

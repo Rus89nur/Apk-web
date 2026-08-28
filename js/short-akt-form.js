@@ -143,6 +143,7 @@ const ShortAktForm = (() => {
 
     return `
       <p class="short-akt-hint">Минимальный набор полей, как в iOS. Нарушения сохраняются с префиксом «Сокращенный:».</p>
+      <p class="short-akt-status">${akt && !AktUtils.isDraft(akt) ? 'Статус: готовый акт' : 'Статус: черновик'}</p>
       <div class="form-grid">
         <label class="form-label">Номер акта</label>
         <select class="form-control" id="shortAktNumber">${numberOptions}</select>
@@ -277,26 +278,50 @@ const ShortAktForm = (() => {
     };
   }
 
+  async function persistAkt(catalog, akt) {
+    const idx = (catalog.akts || []).findIndex((a) => a.id === akt.id);
+    if (idx >= 0) {
+      catalog.akts[idx] = akt;
+    } else {
+      catalog.akts = [...(catalog.akts || []), akt];
+    }
+    syncEliminations(catalog, akt);
+    await GazpromStore.set(catalog);
+    if (typeof GazpromUI !== 'undefined') {
+      GazpromUI.renderHome(catalog);
+    }
+  }
+
   async function handleSave() {
     try {
+      const wasEdit = Boolean(editingAkt);
       const catalog = await GazpromStore.get();
       const akt = readForm(catalog);
-      const idx = (catalog.akts || []).findIndex((a) => a.id === akt.id);
-      if (idx >= 0) {
-        catalog.akts[idx] = akt;
-      } else {
-        catalog.akts = [...(catalog.akts || []), akt];
-      }
-      syncEliminations(catalog, akt);
-      await GazpromStore.set(catalog);
-      if (typeof GazpromUI !== 'undefined') {
-        GazpromUI.renderHome(catalog);
-      }
+      await persistAkt(catalog, akt);
       close();
-      GazpromToast.success(editingAkt ? `Акт № ${akt.number} сохранён` : `Сокращённый акт № ${akt.number} создан`);
+      GazpromToast.success(wasEdit ? `Акт № ${akt.number} сохранён` : `Сокращённый акт № ${akt.number} создан`);
       await GazpromUI.refreshAll();
     } catch (e) {
       GazpromToast.error(e.message || 'Ошибка сохранения');
+    }
+  }
+
+  async function handleToggleReady() {
+    try {
+      const catalog = await GazpromStore.get();
+      const akt = readForm(catalog);
+      const becomingReady = AktUtils.isDraft(akt);
+      akt.urlToFllACT = becomingReady ? `web:completed/${akt.id}` : null;
+      await persistAkt(catalog, akt);
+      close();
+      GazpromToast.success(
+        becomingReady
+          ? `Акт № ${akt.number} отмечен готовым`
+          : `Акт № ${akt.number} возвращён в черновик`
+      );
+      await GazpromUI.refreshAll();
+    } catch (e) {
+      GazpromToast.error(e.message || 'Не удалось сменить статус');
     }
   }
 
@@ -325,15 +350,23 @@ const ShortAktForm = (() => {
       return;
     }
 
+    const readyLabel =
+      editingAkt && !AktUtils.isDraft(editingAkt)
+        ? '↩ Вернуть в черновик'
+        : '✓ Отметить готовым';
     openModal(
       title,
       buildFormHtml(catalog, editingAkt),
       `
         <button type="button" class="btn-secondary" data-short-close>Отмена</button>
+        <button type="button" class="btn-secondary" id="shortAktReadyBtn">${readyLabel}</button>
         <button type="button" class="btn-primary" id="shortAktSaveBtn">Сохранить</button>
       `
     );
     bindFormHandlers(catalog);
+    document.getElementById('shortAktReadyBtn')?.addEventListener('click', () => {
+      void handleToggleReady();
+    });
     document.getElementById('shortAktSaveBtn')?.addEventListener('click', () => {
       void handleSave();
     });
