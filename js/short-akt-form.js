@@ -106,10 +106,9 @@ const ShortAktForm = (() => {
       ? `<div class="short-akt-steppers">${types
           .map((type) => {
             const c = counts[type] || 0;
-            const shortLabel = type.length > 48 ? `${type.slice(0, 45)}…` : type;
             return `
         <div class="short-akt-stepper" data-short-type="${AktUtils.escapeHtml(type)}">
-          <label class="short-akt-stepper__label" title="${AktUtils.escapeHtml(type)}">${AktUtils.escapeHtml(shortLabel)}</label>
+          <label class="short-akt-stepper__label">${AktUtils.escapeHtml(type)}</label>
           <div class="short-akt-stepper__ctrl">
             <button type="button" class="btn-ghost btn-sm" data-short-dec aria-label="Уменьшить">−</button>
             <span class="short-akt-stepper__val" data-short-val>${c}</span>
