@@ -243,8 +243,15 @@ const SpravkaWizard = (() => {
     });
     const prev = document.getElementById('spravkaPrev');
     const next = document.getElementById('spravkaNext');
-    if (prev) prev.disabled = step === 0;
-    if (next) next.textContent = step === TOTAL_STEPS - 1 ? 'Готово' : 'Далее →';
+    if (prev) {
+      prev.disabled = step === 0;
+      prev.textContent = window.GazpromGameLayer?.spravkaPrevLabel?.() || '← Назад';
+    }
+    if (next) {
+      next.textContent =
+        window.GazpromGameLayer?.spravkaNextLabel?.(step, TOTAL_STEPS) ||
+        (step === TOTAL_STEPS - 1 ? 'Готово' : 'Далее →');
+    }
   }
 
   function updateSummary() {
@@ -863,17 +870,21 @@ const SpravkaWizard = (() => {
       commitStep(step);
       step -= 1;
       render();
+      window.GazpromGameLayer?.onSpravkaStep?.(step, { advanced: false });
     });
     document.getElementById('spravkaNext')?.addEventListener('click', async () => {
       commitStep(step);
       if (!validateStep(step)) return;
       if (step >= TOTAL_STEPS - 1) {
+        await saveDraft();
+        window.GazpromGameLayer?.onDraftSaved?.('spravka');
         goTo('home');
         return;
       }
       step += 1;
       await saveDraft();
       render();
+      window.GazpromGameLayer?.onSpravkaStep?.(step, { advanced: true });
     });
     document.querySelectorAll('#spravkaStepper .wizard-step').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -881,8 +892,10 @@ const SpravkaWizard = (() => {
         if (Number.isNaN(target) || target === step) return;
         commitStep(step);
         if (target > step && !validateStep(step)) return;
+        const advanced = target > step;
         step = target;
         render();
+        window.GazpromGameLayer?.onSpravkaStep?.(step, { advanced });
       });
     });
     document.getElementById('spravkaNewBtn')?.addEventListener('click', async () => {

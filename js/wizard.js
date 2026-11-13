@@ -169,6 +169,7 @@ const WizardController = (() => {
   }
 
   function setStep(newStep) {
+    const prevStep = step;
     commitStep(step);
     descEditMode = false;
     predOrgFilters = new Set();
@@ -177,6 +178,7 @@ const WizardController = (() => {
     syncStepperUI();
     render({ skipLayoutSync: true });
     updateSummary();
+    window.GazpromGameLayer?.onWizardStep?.(step, { advanced: step > prevStep });
     requestAnimationFrame(() => {
       const phoneMq =
         window.GAZPROM_PHONE_LAYOUT_MQ ||
@@ -225,9 +227,14 @@ const WizardController = (() => {
     });
     const prev = document.getElementById('wizardPrev');
     const next = document.getElementById('wizardNext');
-    if (prev) prev.style.visibility = step === 0 ? 'hidden' : 'visible';
+    if (prev) {
+      prev.style.visibility = step === 0 ? 'hidden' : 'visible';
+      prev.textContent = window.GazpromGameLayer?.wizardPrevLabel?.() || '← Назад';
+    }
     if (next) {
-      next.textContent = step === TOTAL_STEPS - 1 ? '💾 Сохранить черновик' : 'Далее →';
+      next.textContent =
+        window.GazpromGameLayer?.wizardNextLabel?.(step, TOTAL_STEPS) ||
+        (step === TOTAL_STEPS - 1 ? '💾 Сохранить черновик' : 'Далее →');
     }
   }
 
@@ -1149,6 +1156,7 @@ const WizardController = (() => {
     await saveDraft();
     await GazpromStore.persistCatalog(catalog);
     await GazpromUI.refreshAll();
+    window.GazpromGameLayer?.onDraftSaved?.('wizard');
     GazpromToast.success(`Черновик акта № ${draft.number} сохранён`);
   }
 

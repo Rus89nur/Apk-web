@@ -76,6 +76,8 @@ function goTo(screenId, options = {}) {
   if (screenId === 'reports') {
     void GazpromStore.get().then((data) => ReportsDashboard.render(data));
   }
+  window.GazpromGameLayer?.onScreen?.(screenId);
+
   requestAnimationFrame(() => {
     window.GazpromMobileOverlay?.ensureScrollClearance?.('goTo-' + screenId);
   });
@@ -867,6 +869,28 @@ function init() {
   syncAppBuildLabel();
   const settingsBuild = document.getElementById('settingsAppBuild');
   if (settingsBuild) settingsBuild.textContent = window.GAZPROM_WEB_BUILD || '';
+  window.GazpromGameLayer?.init?.();
+  document.addEventListener('gazprom-ui-edition', () => {
+    try {
+      const stepBtn = document.querySelector('#wizardStepper .wizard-step.current');
+      if (stepBtn && window.GazpromGameLayer) {
+        const next = document.getElementById('wizardNext');
+        const prev = document.getElementById('wizardPrev');
+        const stepN = parseInt(stepBtn.dataset.step || '0', 10);
+        if (next) next.textContent = GazpromGameLayer.wizardNextLabel(stepN, 6);
+        if (prev) prev.textContent = GazpromGameLayer.wizardPrevLabel();
+      }
+      const spBtn = document.querySelector('#spravkaStepper .wizard-step.current');
+      if (spBtn && window.GazpromGameLayer) {
+        const next = document.getElementById('spravkaNext');
+        const prev = document.getElementById('spravkaPrev');
+        const stepN = parseInt(spBtn.dataset.step || '0', 10);
+        if (next) next.textContent = GazpromGameLayer.spravkaNextLabel(stepN, 7);
+        if (prev) prev.textContent = GazpromGameLayer.spravkaPrevLabel();
+      }
+    } catch (_) { /* ignore */ }
+    void GazpromUI.refreshAll?.();
+  });
   ViolationRegistry.bindScreen();
   DefaultsBootstrap.bindRegistryModal();
   EliminationEditor.bindFilters();

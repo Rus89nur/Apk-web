@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script>window.GAZPROM_ASSET_V = '269';</script>
+  <script>window.GAZPROM_ASSET_V = '270';</script>
   <script>
   (function () {
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
@@ -94,7 +94,7 @@
     });
   })();
   </script>
-  <meta name="theme-color" content="#0d47a1">
+  <meta name="theme-color" content="#2a6f6a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -103,21 +103,35 @@
   <title>Р.И. Шелудько — акты проверок</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=265" id="appCss">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/app.css?v=270" id="appCss">
+  <link rel="stylesheet" href="css/game-theme.css?v=270" id="gameThemeCss">
   <script>
   (function () {
-    var css = document.getElementById('appCss');
-    if (!css) return;
-    var base = String(css.getAttribute('href') || 'css/app.css').split('?')[0];
     var v = window.GAZPROM_ASSET_V || '103';
     var h = location.hostname;
     var dev = (h === 'localhost' || h === '127.0.0.1') ? ('&dev=' + Date.now()) : '';
-    css.href = base + '?v=' + v + dev;
+    ['appCss', 'gameThemeCss'].forEach(function (id) {
+      var css = document.getElementById(id);
+      if (!css) return;
+      var base = String(css.getAttribute('href') || '').split('?')[0];
+      if (!base) return;
+      css.href = base + '?v=' + v + dev;
+    });
   })();
   </script>
 </head>
 <body>
+  <script>
+  (function () {
+    var ed = 'game';
+    try {
+      var v = localStorage.getItem('gazprom-ui-edition');
+      if (v === 'classic' || v === 'game') ed = v;
+    } catch (e) { /* ignore */ }
+    document.body.classList.add(ed === 'classic' ? 'gazprom-ui-classic' : 'gazprom-ui-game');
+  })();
+  </script>
   <script>
   (function () {
     window.GAZPROM_PHONE_LAYOUT_MQ =
@@ -170,7 +184,7 @@
       </button>
       <div class="sidebar-footer" id="sidebarAppBuild" aria-label="Версия веб-приложения">
         <span class="sidebar-footer__brand">программа НЕТ</span>
-        Сборка: <span data-app-build>web-269</span> · PWA
+        Сборка: <span data-app-build>web-270</span> · PWA
       </div>
     </aside>
 
@@ -199,6 +213,8 @@
 
       <section class="screen active" id="screen-home">
         <div class="card home-hero">
+          <div class="home-brand-signal">Р.И. <span>Шелудько</span></div>
+          <div class="home-campaign-tag">Кампания инспектора · программа НЕТ</div>
           <div class="home-datetime" id="liveClock">—</div>
           <div class="home-greeting">Добрый день! Готовы к проверке?</div>
           <div class="home-data-hint" id="homeDataHint" hidden role="status">
@@ -214,10 +230,10 @@
             <div class="progress-hint">Нажмите на полосу — переключить «за месяц» / «за период»</div>
           </div>
           <div class="home-akt-actions">
-            <button class="btn-primary home-akt-actions__primary" type="button" data-go="wizard">Создать полный акт</button>
+            <button class="btn-primary home-akt-actions__primary" type="button" data-go="wizard" data-classic-label="Создать полный акт" data-game-label="Полный маршрут проверки">Создать полный акт</button>
             <div class="home-akt-actions__secondary">
-              <button class="btn-secondary home-akt-actions__sub" type="button" id="homeSpravkaBtn" data-go="spravka">Создать справку по ПБ</button>
-              <button class="btn-secondary home-akt-actions__sub" type="button" id="homeShortAktBtn">Начать новый сокращённый Акт</button>
+              <button class="btn-secondary home-akt-actions__sub" type="button" id="homeSpravkaBtn" data-go="spravka" data-classic-label="Создать справку по ПБ" data-game-label="Справка по ПБ — квест">Создать справку по ПБ</button>
+              <button class="btn-secondary home-akt-actions__sub" type="button" id="homeShortAktBtn" data-classic-label="Начать новый сокращённый Акт" data-game-label="Сокращённый рейд">Начать новый сокращённый Акт</button>
               <div class="home-akt-actions__extra" id="homeSubAction" hidden>
                 <button class="btn-secondary home-akt-actions__sub" type="button" data-go="wizard" data-wizard-new="1">Начать новый полный Акт</button>
               </div>
@@ -241,7 +257,7 @@
             <div class="stat-label">Черновиков</div>
           </div>
         </div>
-        <p class="app-build-id" id="appBuildId" aria-label="Версия веб-приложения">Сборка: web-269</p>
+        <p class="app-build-id" id="appBuildId" aria-label="Версия веб-приложения">Сборка: web-270</p>
       </section>
 
       <section class="screen" id="screen-wizard">
@@ -636,8 +652,17 @@
             <div class="card settings-tile settings-tile--ml" role="button" tabindex="0"><div class="icon">🤖</div><h4>Обучение модели</h4><p>ML по фото нарушений</p><span class="tile-count" data-ml-photos></span></div>
           </div>
         </div>
+        <div class="card settings-ui-edition" id="settingsUiEdition">
+          <h4>Внешний вид</h4>
+          <p style="font-size:14px;color:var(--text-muted);margin-top:4px;">Игровая «Кампания инспектора» или классический интерфейс. Выбор хранится только в этом браузере.</p>
+          <div class="settings-ui-edition__row">
+            <button type="button" class="btn-secondary settings-ui-edition__btn" id="uiEditionGameBtn">Игровой вид</button>
+            <button type="button" class="btn-secondary settings-ui-edition__btn" id="uiEditionClassicBtn">Классический вид</button>
+          </div>
+          <div class="game-achievements" id="gameAchievements" aria-label="Ачивки кампании"></div>
+        </div>
         <div class="card settings-app-update" id="settingsAppUpdate">
-          <p class="settings-app-update__label">Версия приложения: <strong id="settingsAppBuild">web-263</strong></p>
+          <p class="settings-app-update__label">Версия приложения: <strong id="settingsAppBuild">web-270</strong></p>
           <p class="settings-app-update__avail" id="settingsAppUpdateAvail" hidden></p>
           <p class="settings-app-update__hint">Кнопка подтягивает сборку с сайта и не откатится на более старую версию.</p>
           <button type="button" class="btn-secondary btn-sm" id="appForceRefreshBtn">Обновить приложение</button>
@@ -920,16 +945,17 @@
   <script src="js/backup-import.js?v=32"></script>
   <script src="js/spravka-utils.js?v=4"></script>
   <script src="js/akt-search.js"></script>
-  <script src="js/ui-bindings.js?v=39"></script>
+  <script src="js/ui-bindings.js?v=40"></script>
   <script src="js/catalog-editor.js?v=17"></script>
   <script src="js/schedule-editor.js?v=2"></script>
   <script src="js/elimination-editor.js?v=12"></script>
   <script src="js/report-exporter.js?v=2"></script>
   <script src="js/reports-dashboard.js?v=20"></script>
   <script src="js/wizard-modals.js?v=57"></script>
-  <script src="js/wizard.js?v=60"></script>
-  <script src="js/spravka-wizard.js?v=12"></script>
+  <script src="js/wizard.js?v=61"></script>
+  <script src="js/spravka-wizard.js?v=13"></script>
   <script src="js/short-akt-form.js?v=8"></script>
-  <script src="js/app.js?v=164"></script>
+  <script src="js/game-layer.js?v=1"></script>
+  <script src="js/app.js?v=165"></script>
 </body>
 </html>

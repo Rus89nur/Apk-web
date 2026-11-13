@@ -1,0 +1,476 @@
+/* Игровой слой «Кампания инспектора» — только при body.gazprom-ui-game */
+
+body.gazprom-ui-game {
+  --g-ink: #1a2e28;
+  --g-field: #e8f0ea;
+  --g-path: #2a6f6a;
+  --g-path-soft: #d5e8e4;
+  --g-accent: #c45c26;
+  --g-accent-hover: #a84c1e;
+  --g-xp: #d4a017;
+  --g-danger: #b3261e;
+  --g-surface: #f7fbf8;
+  --g-line: #b7c9bf;
+  --primary: var(--g-path);
+  --primary-hover: #1f5a56;
+  --primary-soft: var(--g-path-soft);
+  --accent: var(--g-accent);
+  --accent-soft: #f3e0d4;
+  --danger: var(--g-danger);
+  --bg: var(--g-field);
+  --surface: var(--g-surface);
+  --sidebar: #14302b;
+  --sidebar-hover: rgba(255, 255, 255, 0.1);
+  --sidebar-active: rgba(42, 111, 106, 0.55);
+  --border: var(--g-line);
+  --text: var(--g-ink);
+  --text-muted: #4a635a;
+  --shadow: 0 1px 2px rgba(26, 46, 40, 0.06), 0 10px 28px rgba(42, 111, 106, 0.1);
+  --radius: 10px;
+  --radius-lg: 14px;
+  font-family: 'Source Sans 3', 'Manrope', sans-serif;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, rgba(42, 111, 106, 0.12), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(196, 92, 38, 0.08), transparent 50%),
+    linear-gradient(180deg, #eef5f0 0%, var(--g-field) 40%, #e2ebe4 100%);
+  color: var(--g-ink);
+}
+
+body.gazprom-ui-game .sidebar-brand .logo,
+body.gazprom-ui-game .header-title,
+body.gazprom-ui-game .home-greeting,
+body.gazprom-ui-game .settings-section__title,
+body.gazprom-ui-game .wizard-step-label {
+  font-family: 'Exo 2', 'Montserrat', sans-serif;
+  letter-spacing: 0.01em;
+}
+
+body.gazprom-ui-game .sidebar-brand .logo {
+  font-weight: 800;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+body.gazprom-ui-game .sidebar-brand .logo span {
+  color: #f0c14b;
+}
+
+body.gazprom-ui-game .sidebar-brand small {
+  color: rgba(232, 240, 234, 0.75);
+}
+
+body.gazprom-ui-game .sidebar-footer__brand {
+  color: #f0c14b;
+  font-weight: 700;
+}
+
+/* —— XP HUD —— */
+.game-hud {
+  display: none;
+}
+
+body.gazprom-ui-game .game-hud {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 8px;
+  min-width: 0;
+}
+
+.game-hud__badge {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, var(--g-path), #1f5a56);
+  color: #fff;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(212, 160, 23, 0.55);
+}
+
+.game-hud__meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.game-hud__label {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.game-hud__track {
+  width: 110px;
+  max-width: 18vw;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(26, 46, 40, 0.12);
+  overflow: hidden;
+}
+
+.game-hud__fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--g-xp), #e8c04a);
+  transition: width 0.45s ease;
+}
+
+body.gazprom-ui-game .game-hud__fill.is-bump {
+  animation: game-xp-bar 0.55s ease;
+}
+
+@keyframes game-xp-bar {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(1.25); }
+  100% { filter: brightness(1); }
+}
+
+/* —— +XP toast —— */
+.game-xp-toast {
+  position: fixed;
+  top: calc(var(--header-h, 56px) + 12px);
+  right: 16px;
+  z-index: 12000;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: var(--g-ink);
+  color: #f7fbf8;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(26, 46, 40, 0.25);
+  opacity: 0;
+  transform: translateY(-8px) scale(0.96);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.game-xp-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.game-xp-toast__xp {
+  color: var(--g-xp);
+}
+
+/* —— Home: кампания —— */
+body.gazprom-ui-game #screen-home .home-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--g-line);
+  background:
+    linear-gradient(135deg, rgba(247, 251, 248, 0.96), rgba(232, 240, 234, 0.92)),
+    repeating-linear-gradient(
+      -18deg,
+      transparent,
+      transparent 14px,
+      rgba(42, 111, 106, 0.04) 14px,
+      rgba(42, 111, 106, 0.04) 15px
+    );
+}
+
+body.gazprom-ui-game #screen-home .home-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, var(--g-path), var(--g-accent));
+}
+
+body.gazprom-ui-game #screen-home .home-brand-signal {
+  display: block;
+  margin-bottom: 6px;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 800;
+  font-size: clamp(1.35rem, 3.2vw, 1.85rem);
+  color: var(--g-ink);
+  line-height: 1.15;
+}
+
+body.gazprom-ui-game #screen-home .home-brand-signal span {
+  color: var(--g-accent);
+}
+
+body.gazprom-ui-game #screen-home .home-campaign-tag {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--g-path);
+}
+
+body.gazprom-ui-classic .home-brand-signal,
+body.gazprom-ui-classic .home-campaign-tag,
+body:not(.gazprom-ui-game) .home-brand-signal,
+body:not(.gazprom-ui-game) .home-campaign-tag {
+  display: none;
+}
+
+body.gazprom-ui-game #screen-home .home-greeting {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--g-ink);
+}
+
+body.gazprom-ui-game #screen-home .home-akt-actions {
+  display: grid;
+  gap: 10px;
+}
+
+body.gazprom-ui-game #screen-home .home-akt-actions__primary,
+body.gazprom-ui-game #screen-home .home-akt-actions__sub {
+  border-radius: 10px;
+  text-align: left;
+  position: relative;
+  padding-left: 42px;
+}
+
+body.gazprom-ui-game #screen-home .home-akt-actions__primary::before,
+body.gazprom-ui-game #screen-home .home-akt-actions__sub::before {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  line-height: 1;
+}
+
+body.gazprom-ui-game #screen-home .btn-primary.home-akt-actions__primary {
+  background: linear-gradient(135deg, var(--g-path), #1f5a56);
+  border: none;
+}
+
+body.gazprom-ui-game #screen-home .btn-primary.home-akt-actions__primary::before {
+  content: '①';
+}
+
+body.gazprom-ui-game #screen-home #homeSpravkaBtn::before {
+  content: '②';
+  color: var(--g-path);
+}
+
+body.gazprom-ui-game #screen-home #homeShortAktBtn::before {
+  content: '③';
+  color: var(--g-accent);
+}
+
+body.gazprom-ui-game #screen-home .stat-card {
+  border-top: 3px solid var(--g-path);
+  background: var(--g-surface);
+}
+
+body.gazprom-ui-game #screen-home .progress-bar-fill {
+  background: linear-gradient(90deg, var(--g-path), var(--g-xp));
+}
+
+/* —— Wizard / spravka: маршрут миссии —— */
+body.gazprom-ui-game .wizard-stepper {
+  gap: 0;
+  padding: 8px 4px 12px;
+  background:
+    linear-gradient(180deg, rgba(247, 251, 248, 0.9), transparent);
+  border-bottom: 1px dashed var(--g-line);
+}
+
+body.gazprom-ui-game .wizard-step {
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+body.gazprom-ui-game .wizard-step.done .wizard-step-num {
+  background: var(--g-path);
+  color: #fff;
+}
+
+body.gazprom-ui-game .wizard-step.current {
+  border-color: rgba(42, 111, 106, 0.35);
+  background: rgba(42, 111, 106, 0.08);
+}
+
+body.gazprom-ui-game .wizard-step.current .wizard-step-num {
+  background: var(--g-accent);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.2);
+}
+
+body.gazprom-ui-game .wizard-step.current.is-pulse .wizard-step-num {
+  animation: game-step-pulse 0.7s ease;
+}
+
+@keyframes game-step-pulse {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+body.gazprom-ui-game .wizard-connector {
+  background: var(--g-line);
+  height: 3px;
+  border-radius: 2px;
+}
+
+body.gazprom-ui-game .wizard-connector.done {
+  background: linear-gradient(90deg, var(--g-path), var(--g-xp));
+}
+
+body.gazprom-ui-game .wizard-panel-active {
+  border-left: 4px solid var(--g-path);
+}
+
+body.gazprom-ui-game .summary-panel {
+  border: 1px solid var(--g-line);
+  background: linear-gradient(180deg, #f7fbf8, #eef5f0);
+}
+
+body.gazprom-ui-game #wizardNext,
+body.gazprom-ui-game #spravkaNext {
+  background: linear-gradient(135deg, var(--g-accent), var(--g-accent-hover));
+}
+
+body.gazprom-ui-game #wizardPrev,
+body.gazprom-ui-game #spravkaPrev {
+  background: var(--g-path);
+}
+
+/* —— Ключевые экраны: игровая рамка —— */
+body.gazprom-ui-game #screen-history > .card:first-child,
+body.gazprom-ui-game #screen-reports > .card:first-child,
+body.gazprom-ui-game #screen-elimination .elimination-toolbar,
+body.gazprom-ui-game #screen-settings .settings-section:first-child {
+  position: relative;
+}
+
+body.gazprom-ui-game #screen-history::before,
+body.gazprom-ui-game #screen-reports::before,
+body.gazprom-ui-game #screen-elimination::before {
+  content: attr(data-game-frame);
+  display: block;
+  margin-bottom: 10px;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--g-path);
+}
+
+body.gazprom-ui-game #screen-history {
+  --_frame: 'Архив миссий';
+}
+body.gazprom-ui-game #screen-history::before { content: 'Архив миссий'; }
+body.gazprom-ui-game #screen-reports::before { content: 'Сводка кампании'; }
+body.gazprom-ui-game #screen-elimination::before { content: 'Контроль устранения'; }
+
+body.gazprom-ui-game .filter-pill.active,
+body.gazprom-ui-game .btn-primary {
+  border-radius: 8px;
+}
+
+body.gazprom-ui-game .bottom-nav {
+  background: #14302b;
+  border-top: 1px solid rgba(240, 193, 75, 0.25);
+}
+
+body.gazprom-ui-game .bottom-nav-item.active {
+  color: #f0c14b;
+}
+
+/* —— Настройки: переключатель вида —— */
+.settings-ui-edition {
+  margin-top: 16px;
+}
+
+.settings-ui-edition__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.settings-ui-edition__btn.is-active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+body.gazprom-ui-game .settings-ui-edition {
+  border: 1px solid var(--g-line);
+  background:
+    linear-gradient(135deg, rgba(42, 111, 106, 0.08), transparent 55%),
+    var(--g-surface);
+}
+
+body.gazprom-ui-game .game-achievements {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+body.gazprom-ui-classic .game-achievements,
+body:not(.gazprom-ui-game) .game-achievements {
+  display: none;
+}
+
+.game-achievements__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  opacity: 0.45;
+}
+
+.game-achievements__item.is-unlocked {
+  opacity: 1;
+  border-color: rgba(42, 111, 106, 0.35);
+}
+
+.game-achievements__mark {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  background: var(--g-path-soft, #d5e8e4);
+  font-size: 14px;
+}
+
+.game-achievements__item.is-unlocked .game-achievements__mark {
+  background: rgba(212, 160, 23, 0.25);
+}
+
+.game-achievements__title {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.game-achievements__desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 900px) {
+  body.gazprom-ui-game .game-hud__track {
+    width: 72px;
+  }
+
+  body.gazprom-ui-game .game-hud__label {
+    max-width: 88px;
+  }
+}

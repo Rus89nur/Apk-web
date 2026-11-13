@@ -170,16 +170,18 @@ const GazpromUI = (() => {
 
     const btn = document.querySelector('#screen-home .btn-primary[data-go="wizard"]');
     if (btn) {
-      btn.textContent = editable
-        ? `Продолжить полный акт № ${editable.number}`
-        : 'Создать полный акт';
+      btn.textContent = window.GazpromGameLayer?.homeWizardCta?.(editable)
+        || (editable
+          ? `Продолжить полный акт № ${editable.number}`
+          : 'Создать полный акт');
     }
     const subAction = document.getElementById('homeSubAction');
     if (subAction) {
       subAction.hidden = !editable;
       if (editable) {
+        const newWizardLabel = window.GazpromGameLayer?.homeNewWizardLabel?.() || 'Начать новый полный Акт';
         subAction.innerHTML =
-          '<button class="btn-secondary home-akt-actions__sub" type="button" data-go="wizard" data-wizard-new="1">Начать новый полный Акт</button>';
+          `<button class="btn-secondary home-akt-actions__sub" type="button" data-go="wizard" data-wizard-new="1">${newWizardLabel}</button>`;
       }
     }
 
@@ -188,19 +190,28 @@ const GazpromUI = (() => {
     if (typeof SpravkaUtils !== 'undefined') {
       const editableSpravka = SpravkaUtils.getEditableSpravka(data);
       if (spravkaBtn) {
-        spravkaBtn.textContent = editableSpravka && SpravkaUtils.isDraft(editableSpravka)
-          ? `Продолжить справку (${AktUtils.formatDateShort(editableSpravka.date)})`
-          : 'Создать справку по ПБ';
+        spravkaBtn.textContent = window.GazpromGameLayer?.homeSpravkaCta?.(editableSpravka)
+          || (editableSpravka && SpravkaUtils.isDraft(editableSpravka)
+            ? `Продолжить справку (${AktUtils.formatDateShort(editableSpravka.date)})`
+            : 'Создать справку по ПБ');
       }
       if (spravkaSub) {
         spravkaSub.hidden = !(editableSpravka && SpravkaUtils.isDraft(editableSpravka));
         if (!spravkaSub.hidden) {
+          const newSpravkaLabel = window.GazpromGameLayer?.homeNewSpravkaLabel?.() || 'Начать новую справку';
           spravkaSub.innerHTML =
-            '<button class="btn-secondary home-akt-actions__sub" type="button" data-go="spravka" data-spravka-new="1">Начать новую справку</button>';
+            `<button class="btn-secondary home-akt-actions__sub" type="button" data-go="spravka" data-spravka-new="1">${newSpravkaLabel}</button>`;
         }
       }
     } else if (spravkaBtn) {
-      spravkaBtn.textContent = 'Создать справку по ПБ';
+      spravkaBtn.textContent = window.GazpromGameLayer?.homeSpravkaCta?.(null) || 'Создать справку по ПБ';
+    }
+
+    const shortAktBtn = document.getElementById('homeShortAktBtn');
+    if (shortAktBtn?.hasAttribute('data-game-label') && window.GazpromGameLayer) {
+      shortAktBtn.textContent = GazpromGameLayer.isGame()
+        ? shortAktBtn.getAttribute('data-game-label')
+        : shortAktBtn.getAttribute('data-classic-label') || shortAktBtn.textContent;
     }
 
     renderScheduleProgress(data);
