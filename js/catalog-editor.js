@@ -69,12 +69,21 @@ const CatalogEditor = (() => {
     return root;
   }
 
+  function closeEditorForms() {
+    document.querySelectorAll('.catalog-form-overlay[data-catalog-editor-form]').forEach((form) => {
+      form.remove();
+      GazpromMobileOverlay.unlock();
+    });
+  }
+
   function close() {
-    GazpromMobileOverlay.unlock();
+    closeEditorForms();
+    const wasOpen = root && !root.hidden;
     if (root) {
       root.hidden = true;
       root.innerHTML = '';
     }
+    if (wasOpen) GazpromMobileOverlay.unlock();
     if (escListener) {
       document.removeEventListener('keydown', escListener);
       escListener = null;
@@ -158,8 +167,10 @@ const CatalogEditor = (() => {
 
   function renderList(cfg, catalog, query) {
     const el = ensureRoot();
+    const alreadyOpen = !el.hidden;
     el.hidden = false;
-    GazpromMobileOverlay.lock();
+    /* Повторный lock после «Добавить» оставлял gazprom-scroll-lock и блокировал меню. */
+    if (!alreadyOpen) GazpromMobileOverlay.lock();
     addEscListener();
 
     const all = [...(catalog[cfg.listKey] || [])];
@@ -238,6 +249,7 @@ const CatalogEditor = (() => {
 
     const form = document.createElement('div');
     form.className = 'catalog-form-overlay';
+    form.setAttribute('data-catalog-editor-form', '');
     form.innerHTML = `
       <div class="catalog-form-dialog card">
         <h3>${item ? 'Изменить запись' : 'Добавить запись'}</h3>
@@ -255,6 +267,7 @@ const CatalogEditor = (() => {
     setTimeout(() => firstInput?.focus(), 50);
 
     const remove = () => {
+      if (!form.isConnected) return;
       form.remove();
       GazpromMobileOverlay.unlock();
     };
@@ -280,10 +293,17 @@ const CatalogEditor = (() => {
       const idx = list.findIndex((x) => x.id === record.id);
       if (idx >= 0) list[idx] = record;
       else list.push(record);
-      await saveList(catalog, cfg.listKey, list);
-      remove();
-      const fresh = await GazpromStore.get();
-      renderList(cfg, fresh, prevQuery);
+      const saveBtn = form.querySelector('[data-save]');
+      if (saveBtn) saveBtn.disabled = true;
+      try {
+        await saveList(catalog, cfg.listKey, list);
+        remove();
+        const fresh = await GazpromStore.get();
+        renderList(cfg, fresh, prevQuery);
+      } catch (err) {
+        if (saveBtn) saveBtn.disabled = false;
+        GazpromToast.error(err?.message || 'Не удалось сохранить запись');
+      }
     };
   }
 
