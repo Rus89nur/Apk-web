@@ -373,3 +373,47 @@ html[data-appearance="system"][data-scheme="dark"] .preset-registry-row__text {
 html[data-appearance="system"][data-scheme="dark"] .reports-bar-row__val--overdue {
   color: #ffb4ab;
 }
+
+/* Ночь, редактирование акта: поля выбора такие же, как уже выбранные — серое поле, белый текст. */
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .chip-catalog,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template-empty,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewPersonBtn,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewOrgBtn,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewObjBtn,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewPredBtn,
+html[data-appearance="system"][data-scheme="dark"] #wizardModalRoot .viol-registry-result-item,
+html[data-appearance="system"][data-scheme="dark"] #wizardModalRoot .viol-registry-result-item.selected {
+  background: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+  border-color: transparent;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .chip-catalog:hover,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template:hover,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template-empty:hover,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewPersonBtn:hover,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewOrgBtn:hover,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewObjBtn:hover,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard #wNewPredBtn:hover,
+html[data-appearance="system"][data-scheme="dark"] #wizardModalRoot .viol-registry-result-item:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard select,
+html[data-appearance="system"][data-scheme="dark"] #wizardModalRoot select {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+  border-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23f5f5f7' stroke-width='1.6' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .commission-catalog-label {
+  color: #f5f5f7;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .commission-divider {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
