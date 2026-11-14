@@ -123,16 +123,35 @@ const GazpromUI = (() => {
     const timeEl = document.getElementById('headerSyncTime');
     if (!btn || !statusEl || !timeEl) return;
 
+    const offline = typeof GazpromOffline !== 'undefined' && GazpromOffline.isOffline();
+    const label = typeof GazpromOffline !== 'undefined'
+      ? GazpromOffline.headerLabel({ offline, busy })
+      : {
+          status: busy ? 'Обновление…' : 'Локально сохранено',
+          timeMode: busy ? 'keep' : 'show',
+          offline: false,
+        };
+
     if (busy) {
       btn.classList.add('header-sync--busy');
-      statusEl.textContent = 'Обновление…';
+      btn.classList.remove('header-sync--offline');
+      statusEl.textContent = label.status;
       return;
     }
 
     btn.classList.remove('header-sync--busy');
-    if (!lastSyncAt) lastSyncAt = new Date();
-    statusEl.textContent = 'Синхронизировано';
-    timeEl.textContent = formatSyncTime(lastSyncAt);
+    btn.classList.toggle('header-sync--offline', !!offline);
+    statusEl.textContent = label.status;
+
+    if (offline || label.timeMode === 'hide') {
+      timeEl.textContent = 'только это устройство';
+      btn.title = 'Офлайн: акты и справочники хранятся в этом браузере (IndexedDB)';
+    } else {
+      if (!lastSyncAt) lastSyncAt = new Date();
+      timeEl.textContent = formatSyncTime(lastSyncAt);
+      btn.title = 'Данные на этом устройстве · обновить экраны из IndexedDB';
+    }
+    btn.setAttribute('aria-label', btn.title);
   }
 
   function formatDateShort(iso) {
@@ -561,6 +580,7 @@ const GazpromUI = (() => {
 
   return {
     refreshAll,
+    updateHeaderSync,
     renderHome,
     renderHistory,
     renderElimination,

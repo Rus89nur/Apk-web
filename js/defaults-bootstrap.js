@@ -26,10 +26,15 @@ const DefaultsBootstrap = (() => {
 
   async function loadManifest() {
     if (manifestCache) return manifestCache;
-    const res = await fetch(MANIFEST_URL, { cache: 'no-cache' });
-    if (!res.ok) throw new Error('Не удалось загрузить каталог пресетов');
-    manifestCache = await res.json();
-    return manifestCache;
+    try {
+      const res = await fetch(MANIFEST_URL, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('Не удалось загрузить каталог пресетов');
+      manifestCache = await res.json();
+      return manifestCache;
+    } catch (err) {
+      console.warn('[DefaultsBootstrap] loadManifest failed:', err);
+      return null;
+    }
   }
 
   function ensureLibraries(catalog) {
@@ -149,15 +154,15 @@ const DefaultsBootstrap = (() => {
 
   async function getBuiltinRegistryMeta(id) {
     const manifest = await loadManifest();
-    return manifest.registries?.find((r) => r.id === id)
-      || manifest.registries?.[0]
+    return manifest?.registries?.find((r) => r.id === id)
+      || manifest?.registries?.[0]
       || { id: 'builtin-registry-v1', json: LEGACY_REGISTRY_JSON, name: 'Реестр_нарушений-2' };
   }
 
   async function getBuiltinTemplateMeta(id) {
     const manifest = await loadManifest();
-    return manifest.templates?.find((t) => t.id === id)
-      || manifest.templates?.[0]
+    return manifest?.templates?.find((t) => t.id === id)
+      || manifest?.templates?.[0]
       || { id: 'builtin-template-v1', docx: LEGACY_TEMPLATE_DOCX, name: 'Шаблон_12.10.25.docx' };
   }
 
@@ -202,7 +207,7 @@ const DefaultsBootstrap = (() => {
 
   async function applyTemplatePreset(presetId) {
     const catalog = ensureLibraries(await GazpromStore.get());
-    const manifest = await loadManifest();
+    const manifest = (await loadManifest()) || {};
     const builtin = manifest.templates?.find((t) => t.id === presetId);
 
     if (builtin) {
@@ -221,8 +226,8 @@ const DefaultsBootstrap = (() => {
 
   async function getBuiltinSpravkaTemplateMeta(id) {
     const manifest = await loadManifest();
-    return manifest.spravkaTemplates?.find((t) => t.id === id)
-      || manifest.spravkaTemplates?.[0]
+    return manifest?.spravkaTemplates?.find((t) => t.id === id)
+      || manifest?.spravkaTemplates?.[0]
       || { id: 'builtin-spravka-v1', docx: LEGACY_SPRAVKA_TEMPLATE_DOCX, name: 'Шаблон_справки_ПБ.docx' };
   }
 
@@ -239,7 +244,7 @@ const DefaultsBootstrap = (() => {
 
   async function applySpravkaTemplatePreset(presetId) {
     const catalog = ensureLibraries(await GazpromStore.get());
-    const manifest = await loadManifest();
+    const manifest = (await loadManifest()) || {};
     const builtin = manifest.spravkaTemplates?.find((t) => t.id === presetId);
 
     if (builtin) {
@@ -258,7 +263,7 @@ const DefaultsBootstrap = (() => {
 
   async function applyRegistryPreset(presetId, { merge = false } = {}) {
     const catalog = ensureLibraries(await GazpromStore.get());
-    const manifest = await loadManifest();
+    const manifest = (await loadManifest()) || {};
     const builtin = manifest.registries?.find((r) => r.id === presetId);
     let items = [];
 
@@ -300,7 +305,17 @@ const DefaultsBootstrap = (() => {
   }
 
   async function ensureSeeded() {
-    await loadManifest();
+    const manifest = await loadManifest();
+    if (!manifest) {
+      if (typeof GazpromOffline !== 'undefined') {
+        GazpromOffline.markPending('defaultsSeed');
+      }
+      return ensureLibraries(await GazpromStore.get());
+    }
+    if (typeof GazpromOffline !== 'undefined') {
+      GazpromOffline.clearPending('defaultsSeed');
+    }
+
     let catalog = ensureLibraries(await GazpromStore.get());
     if (!GazpromStore.isReady(catalog)) return catalog;
 
@@ -308,8 +323,8 @@ const DefaultsBootstrap = (() => {
     const migrated = migrateCatalog(catalog);
     let changed = migrated;
     const registry = catalog.violationRegistry || [];
-    const defaultRegistryId = manifestCache.registries?.[0]?.id || 'builtin-registry-v1';
-    const defaultTemplateId = manifestCache.templates?.[0]?.id || 'builtin-template-v1';
+    const defaultRegistryId = manifest.registries?.[0]?.id || 'builtin-registry-v1';
+    const defaultTemplateId = manifest.templates?.[0]?.id || 'builtin-template-v1';
 
     if (registry.length === 0 && catalog.violationRegistrySource !== 'custom') {
       try {
@@ -318,7 +333,7 @@ const DefaultsBootstrap = (() => {
           catalog.violationRegistry = items;
           catalog.violationRegistrySource = 'builtin';
           catalog.activeRegistryPresetId = defaultRegistryId;
-          catalog.violationRegistryLabel = manifestCache.registries[0].name;
+          catalog.violationRegistryLabel = manifest.registries[0].name;
           changed = true;
         }
       } catch (err) {
@@ -337,7 +352,7 @@ const DefaultsBootstrap = (() => {
 
     if (!hasSpravkaTemplate(catalog) && catalog.spravkaTemplateSource !== 'custom') {
       try {
-        const defaultSpravkaId = manifestCache.spravkaTemplates?.[0]?.id || 'builtin-spravka-v1';
+        const defaultSpravkaId = manifest.spravkaTemplates?.[0]?.id || 'builtin-spravka-v1';
         await applySpravkaTemplatePreset(defaultSpravkaId);
       } catch (err) {
         console.warn('[DefaultsBootstrap] spravka template seed failed:', err);
@@ -353,7 +368,7 @@ const DefaultsBootstrap = (() => {
   }
 
   async function listTemplatePresets(catalog) {
-    const manifest = await loadManifest();
+    const manifest = (await loadManifest()) || {};
     const c = ensureLibraries(catalog || (await GazpromStore.get()));
     migrateCatalog(c);
     const activeId = c.activeTemplatePresetId || manifest.templates?.[0]?.id;
@@ -385,7 +400,7 @@ const DefaultsBootstrap = (() => {
   }
 
   async function listSpravkaTemplatePresets(catalog) {
-    const manifest = await loadManifest();
+    const manifest = (await loadManifest()) || {};
     const c = ensureLibraries(catalog || (await GazpromStore.get()));
     migrateCatalog(c);
     const activeId = c.activeSpravkaTemplatePresetId || manifest.spravkaTemplates?.[0]?.id;
@@ -409,7 +424,7 @@ const DefaultsBootstrap = (() => {
   }
 
   async function listRegistryPresets(catalog) {
-    const manifest = await loadManifest();
+    const manifest = (await loadManifest()) || {};
     const c = ensureLibraries(catalog || (await GazpromStore.get()));
     migrateCatalog(c);
     const activeId = c.activeRegistryPresetId || manifest.registries?.[0]?.id;

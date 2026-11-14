@@ -1,8 +1,10 @@
-const CACHE_NAME = 'gazprom-web-v270';
+const CACHE_NAME = 'gazprom-web-v271';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
+  './',
+  './index.html',
   './manifest.json',
-  './css/app.css?v=266',
+  './css/app.css?v=267',
   './js/idb-connection.js?v=22',
   './js/file-utils.js?v=1',
   './js/data-store.js?v=28',
@@ -18,10 +20,11 @@ const STATIC_ASSETS = [
   './js/violation-types-editor.js?v=13',
   './js/ml-image-service.js?v=6',
   './js/ml-training-wizard.js?v=10',
-  './js/ui-bindings.js?v=39',
+  './js/offline-status.js?v=1',
+  './js/ui-bindings.js?v=40',
   './js/doc-generator.js?v=44',
   './js/template-builder-wizard.js?v=3',
-  './js/defaults-bootstrap.js?v=14',
+  './js/defaults-bootstrap.js?v=15',
   './js/violation-registry.js?v=16',
   './js/catalog-service.js?v=3',
   './js/backup-import.js?v=32',
@@ -36,7 +39,7 @@ const STATIC_ASSETS = [
   './js/short-akt-form.js?v=8',
   './js/report-exporter.js?v=2',
   './js/reports-dashboard.js?v=20',
-  './js/app.js?v=165',
+  './js/app.js?v=166',
   './assets/sample-demo.gazprombackup',
   './assets/defaults/manifest.json',
   './assets/defaults/violation-registry.json',
@@ -86,8 +89,26 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Стратегия: Network First — всегда берём свежий файл с сервера,
-// кэш используется только если сеть недоступна (офлайн-режим).
+function isNavigateRequest(request) {
+  return request.mode === 'navigate' || request.destination === 'document';
+}
+
+function isSwScript(url) {
+  return /\/sw\.js(\?|$)/i.test(url.pathname);
+}
+
+async function offlineFallback(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  if (isNavigateRequest(request)) {
+    return (await caches.match('./index.html')) || (await caches.match('./'));
+  }
+  return undefined;
+}
+
+// Стратегия: Network First — свежий ответ с сети; кэш для офлайна.
+// Shell (navigate/document) тоже кладём в CACHE_NAME, иначе после первого визита
+// офлайн часто не открывается. sw.js в runtime-кэш не пишем.
 self.addEventListener('fetch', (event) => {
   if (IS_LOCALHOST) return;
   const { request } = event;
@@ -96,12 +117,11 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  const isFreshShell =
-    request.mode === 'navigate' ||
-    request.destination === 'document' ||
-    url.pathname.endsWith('/sw.js');
+  const navigate = isNavigateRequest(request);
+  const swJs = isSwScript(url);
   const isAppAsset =
-    isFreshShell ||
+    navigate ||
+    swJs ||
     request.destination === 'script' ||
     request.destination === 'style' ||
     /\.(js|css|html)(\?|$)/i.test(url.pathname);
@@ -110,13 +130,19 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request, { cache: 'no-store' })
         .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic' && !isFreshShell) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          if (response && response.status === 200 && response.type === 'basic' && !swJs) {
+            const forRequest = response.clone();
+            const forIndex = navigate ? response.clone() : null;
+            const forRoot = navigate ? response.clone() : null;
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, forRequest);
+              if (forIndex) cache.put('./index.html', forIndex);
+              if (forRoot) cache.put('./', forRoot);
+            });
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => offlineFallback(request))
     );
     return;
   }
@@ -130,6 +156,6 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => offlineFallback(request))
   );
 });

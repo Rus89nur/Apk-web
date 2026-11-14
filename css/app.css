@@ -270,6 +270,17 @@
     .header-sync--busy .header-sync__status {
       color: var(--primary);
     }
+    .header-sync--offline .header-sync__icon {
+      color: var(--text-muted);
+    }
+    .header-sync--offline .header-sync__status {
+      color: var(--text-muted);
+      max-width: 11.5rem;
+      white-space: normal;
+    }
+    body.gazprom-offline .header-sync:not(.header-sync--busy) {
+      background: rgba(120, 120, 120, 0.08);
+    }
     @keyframes header-sync-spin {
       to { transform: rotate(360deg); }
     }

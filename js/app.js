@@ -109,6 +109,73 @@ function bindHeaderSync() {
   });
 }
 
+function isLocalHostPage() {
+  return location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+}
+
+function syncConnectivityUi() {
+  if (typeof GazpromOffline !== 'undefined') {
+    GazpromOffline.applyDocumentClass();
+  }
+  GazpromUI?.updateHeaderSync?.();
+}
+
+async function quietSwUpdate() {
+  if (!('serviceWorker' in navigator) || isLocalHostPage()) {
+    if (typeof GazpromOffline !== 'undefined') GazpromOffline.clearPending('swUpdate');
+    return;
+  }
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    await reg?.update?.();
+    if (typeof GazpromOffline !== 'undefined') {
+      GazpromOffline.clearPending('swUpdate');
+    }
+  } catch {
+    if (typeof GazpromOffline !== 'undefined') {
+      GazpromOffline.markPending('swUpdate');
+    }
+  }
+}
+
+async function flushOfflineSideEffects() {
+  if (typeof GazpromOffline === 'undefined') return;
+  await GazpromOffline.flushPending({
+    defaultsSeed: () => DefaultsBootstrap.ensureSeeded(),
+    buildCheck: () => checkRemoteBuildVersion(),
+    swUpdate: () => quietSwUpdate(),
+  });
+}
+
+async function onAppOnline() {
+  syncConnectivityUi();
+  try {
+    if (!shouldDeferAppReload()) {
+      await GazpromUI.refreshAll();
+    } else {
+      GazpromUI.updateHeaderSync?.();
+    }
+  } catch (err) {
+    console.warn('online refresh', err);
+  }
+  await flushOfflineSideEffects();
+  void quietSwUpdate();
+}
+
+function bindConnectivity() {
+  syncConnectivityUi();
+  window.addEventListener('online', () => {
+    void onAppOnline();
+  });
+  window.addEventListener('offline', () => {
+    if (typeof GazpromOffline !== 'undefined' && !isLocalHostPage()) {
+      GazpromOffline.markPending('buildCheck');
+      GazpromOffline.markPending('swUpdate');
+    }
+    syncConnectivityUi();
+  });
+}
+
 let backupImportInProgress = false;
 let swUpdatePending = false;
 let pendingRemoteBuild = null;
@@ -186,11 +253,15 @@ function parseRemoteBuildFromHtml(html) {
 }
 
 async function fetchRemoteBuild() {
-  const url = new URL(location.href);
-  url.searchParams.set('build-check', String(Date.now()));
-  const res = await fetch(url.toString(), { cache: 'no-store' });
-  if (!res.ok) return null;
-  return parseRemoteBuildFromHtml(await res.text());
+  try {
+    const url = new URL(location.href);
+    url.searchParams.set('build-check', String(Date.now()));
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) return null;
+    return parseRemoteBuildFromHtml(await res.text());
+  } catch {
+    return null;
+  }
 }
 
 function reloadAppShell() {
@@ -289,9 +360,21 @@ async function applySilentUpdate(remoteBuild) {
 }
 
 async function checkRemoteBuildVersion() {
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+  if (isLocalHostPage()) {
+    if (typeof GazpromOffline !== 'undefined') GazpromOffline.clearPending('buildCheck');
+    return;
+  }
   try {
     const remoteBuild = await fetchRemoteBuild();
+    if (!remoteBuild) {
+      if (typeof GazpromOffline !== 'undefined' && GazpromOffline.isOffline()) {
+        GazpromOffline.markPending('buildCheck');
+      }
+      return;
+    }
+    if (typeof GazpromOffline !== 'undefined') {
+      GazpromOffline.clearPending('buildCheck');
+    }
     const localBuild = String(window.GAZPROM_ASSET_V || '');
     if (
       remoteBuild &&
@@ -310,7 +393,9 @@ async function checkRemoteBuildVersion() {
     updateSettingsUpdateBanner(null);
     clearSilentUpdateState();
   } catch {
-    /* ignore network errors */
+    if (typeof GazpromOffline !== 'undefined' && GazpromOffline.isOffline()) {
+      GazpromOffline.markPending('buildCheck');
+    }
   }
 }
 
@@ -889,9 +974,17 @@ function init() {
 
   void GazpromStore.requestPersistence();
 
+  bindConnectivity();
+
   void DefaultsBootstrap.ensureSeeded()
     .then(() => GazpromUI.refreshAll())
-    .catch(console.error);
+    .catch((err) => {
+      console.error(err);
+      if (typeof GazpromOffline !== 'undefined') {
+        GazpromOffline.markPending('defaultsSeed');
+      }
+      syncConnectivityUi();
+    });
 }
 
 init();
