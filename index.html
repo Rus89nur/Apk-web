@@ -6,7 +6,20 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script>window.GAZPROM_ASSET_V = '271';</script>
+  <script>window.GAZPROM_ASSET_V = '272';</script>
+  <script>
+  (function () {
+    var mode = 'classic';
+    try {
+      if (localStorage.getItem('gazprom-appearance') === 'system') mode = 'system';
+    } catch (e) { /* ignore */ }
+    var dark = false;
+    try { dark = window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { /* ignore */ }
+    var root = document.documentElement;
+    root.setAttribute('data-appearance', mode);
+    root.setAttribute('data-scheme', dark ? 'dark' : 'light');
+  })();
+  </script>
   <script>
   (function () {
     if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
@@ -104,16 +117,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=267" id="appCss">
+  <link rel="stylesheet" href="css/app.css?v=272" id="appCss">
+  <link rel="stylesheet" href="css/appearance.css?v=272" id="appearanceCss">
   <script>
   (function () {
-    var css = document.getElementById('appCss');
-    if (!css) return;
-    var base = String(css.getAttribute('href') || 'css/app.css').split('?')[0];
     var v = window.GAZPROM_ASSET_V || '103';
     var h = location.hostname;
     var dev = (h === 'localhost' || h === '127.0.0.1') ? ('&dev=' + Date.now()) : '';
-    css.href = base + '?v=' + v + dev;
+    ['appCss', 'appearanceCss'].forEach(function (id) {
+      var css = document.getElementById(id);
+      if (!css) return;
+      var base = String(css.getAttribute('href') || '').split('?')[0];
+      if (!base) return;
+      css.href = base + '?v=' + v + dev;
+    });
   })();
   </script>
 </head>
@@ -168,9 +185,14 @@
       <button class="nav-item" data-screen="settings" type="button">
         <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="8" y2="8"/><line x1="18" x2="22" y1="16" y2="16"/></svg></span><span>Настройки</span>
       </button>
+      <div class="appearance-switch" role="group" aria-label="Стиль оформления">
+        <span class="appearance-switch__label">Стиль</span>
+        <button type="button" data-appearance-choice="classic" aria-pressed="true">Классический</button>
+        <button type="button" data-appearance-choice="system" aria-pressed="false">День и ночь</button>
+      </div>
       <div class="sidebar-footer" id="sidebarAppBuild" aria-label="Версия веб-приложения">
         <span class="sidebar-footer__brand">программа НЕТ</span>
-        Сборка: <span data-app-build>web-271</span> · PWA
+        Сборка: <span data-app-build>web-272</span> · PWA
       </div>
     </aside>
 
@@ -241,7 +263,7 @@
             <div class="stat-label">Черновиков</div>
           </div>
         </div>
-        <p class="app-build-id" id="appBuildId" aria-label="Версия веб-приложения">Сборка: web-271</p>
+        <p class="app-build-id" id="appBuildId" aria-label="Версия веб-приложения">Сборка: web-272</p>
       </section>
 
       <section class="screen" id="screen-wizard">
@@ -609,6 +631,16 @@
 
       <section class="screen" id="screen-settings">
         <div class="settings-section">
+          <h3 class="settings-section__title">Стиль</h3>
+          <div class="card appearance-panel">
+            <div class="appearance-choices" role="group" aria-label="Стиль оформления">
+              <button type="button" class="appearance-choice" data-appearance-choice="classic" aria-pressed="true">Классический</button>
+              <button type="button" class="appearance-choice" data-appearance-choice="system" aria-pressed="false">День и ночь</button>
+            </div>
+            <p class="appearance-hint">Днём — стекло и бумага, ночью — ночное стекло. Переключается само, как оформление iPhone.</p>
+          </div>
+        </div>
+        <div class="settings-section">
           <h3 class="settings-section__title">Шаблоны</h3>
           <div class="settings-grid">
             <div class="card settings-tile settings-tile--akt-template" role="button" tabindex="0"><div class="icon">📄</div><h4>Шаблоны актов</h4><p>Word-шаблон акта</p><span class="tile-count" data-akt-template-status></span></div>
@@ -931,6 +963,7 @@
   <script src="js/wizard.js?v=60"></script>
   <script src="js/spravka-wizard.js?v=12"></script>
   <script src="js/short-akt-form.js?v=8"></script>
+  <script src="js/appearance.js?v=272"></script>
   <script src="js/app.js?v=166"></script>
 </body>
 </html>
