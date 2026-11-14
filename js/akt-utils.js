@@ -672,6 +672,221 @@ const AktUtils = (() => {
     });
   }
 
+  /** Заглавная первая буква сегмента фамилии (дефис сохраняется). */
+  function capitalizeSurnamePart(part) {
+    const p = String(part || '');
+    if (!p) return p;
+    const first = p.charAt(0).toLocaleUpperCase('ru-RU');
+    return first + p.slice(1);
+  }
+
+  function capitalizeSurname(name) {
+    return String(name || '')
+      .split('-')
+      .map(capitalizeSurnamePart)
+      .join('-');
+  }
+
+  function fioInitialChar(token) {
+    const letters = String(token || '').match(/[А-Яа-яЁёA-Za-z]/);
+    return letters ? letters[0].toLocaleUpperCase('ru-RU') : '';
+  }
+
+  /**
+   * ФИО представителя → «И. И. Иванов» (пробел между инициалами).
+   * Не путать с formatFioForSign в doc-generator (там без пробела для Word).
+   */
+  function normalizeRepresentativeFio(raw) {
+    let s = String(raw ?? '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .replace(/\.{2,}/g, '.');
+    if (!s) return '';
+
+    const letter = '[А-Яа-яЁёA-Za-z]';
+    const tokens = s.split(' ').filter(Boolean);
+
+    function formatFromInitials(initials, surnameRaw) {
+      const cleanSurname = String(surnameRaw || '')
+        .replace(/^\.+/, '')
+        .replace(/\.+$/, '')
+        .trim();
+      if (!cleanSurname) {
+        return capitalizeFirstLetter(s);
+      }
+      const surname = capitalizeSurname(cleanSurname);
+      const uniq = initials.filter(Boolean).slice(0, 2);
+      if (uniq.length >= 2) return `${uniq[0]}. ${uniq[1]}. ${surname}`;
+      if (uniq.length === 1) return `${uniq[0]}. ${surname}`;
+      return surname;
+    }
+
+    // Один токен: «И.И.Иванов» / «И.Иванов» / «Иванов»
+    if (tokens.length === 1) {
+      const t = tokens[0];
+      const m2 = t.match(new RegExp(`^(${letter})\\.(${letter})\\.(.+)$`));
+      if (m2) return formatFromInitials([fioInitialChar(m2[1]), fioInitialChar(m2[2])], m2[3]);
+      const m1 = t.match(new RegExp(`^(${letter})\\.(.+)$`));
+      if (m1 && m1[2].replace(/\./g, '').length > 1) {
+        return formatFromInitials([fioInitialChar(m1[1])], m1[2]);
+      }
+      return capitalizeSurname(t.replace(/\.+$/, ''));
+    }
+
+    // Полное ФИО без точек: «Иванов Иван Иванович» / «Иванов Иван»
+    const looksLikeFullName = tokens.every((t) => !t.includes('.') && t.replace(/-/g, '').length > 1);
+    if (looksLikeFullName && tokens.length >= 3) {
+      const [last, first, middle] = tokens;
+      return formatFromInitials([fioInitialChar(first), fioInitialChar(middle)], last);
+    }
+    if (looksLikeFullName && tokens.length === 2) {
+      const [last, first] = tokens;
+      return formatFromInitials([fioInitialChar(first)], last);
+    }
+
+    // Инициалы спереди: «И. И. Иванов», «и.и. иванов», «и и иванов»
+    const initials = [];
+    let i = 0;
+    while (i < tokens.length - 1) {
+      const t = tokens[i];
+      const lettersOnly = t.replace(/\./g, '');
+      if (lettersOnly.length === 1 && new RegExp(`^${letter}$`).test(lettersOnly)) {
+        initials.push(fioInitialChar(lettersOnly));
+        i += 1;
+        continue;
+      }
+      if (new RegExp(`^(${letter}\\.)+${letter}\\.?$`).test(t) || new RegExp(`^(${letter}\\.)+$`).test(t)) {
+        const letters = t.match(new RegExp(letter, 'g')) || [];
+        letters.forEach((l) => initials.push(fioInitialChar(l)));
+        i += 1;
+        continue;
+      }
+      break;
+    }
+
+    if (initials.length >= 1 && i < tokens.length) {
+      return formatFromInitials(initials, tokens.slice(i).join(' '));
+    }
+
+    return capitalizeFirstLetter(s);
+  }
+
+  /** Уникальные непустые должности из представителей (и опционально комиссии). */
+  function collectJobTitleSuggestions(catalog) {
+    const seen = new Set();
+    const out = [];
+    const push = (v) => {
+      const s = String(v || '').trim();
+      if (!s) return;
+      const key = s.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(s);
+    };
+    (catalog?.predstavitely || []).forEach((p) => push(p?.jobTitle));
+    (catalog?.comissionPeople || []).forEach((p) => push(p?.jobTitle));
+    return out;
+  }
+
+  /** Уникальные организации: история представителей + справочник organizations. */
+  function collectOrganizationSuggestions(catalog) {
+    const seen = new Set();
+    const out = [];
+    const push = (v) => {
+      const s = String(v || '').trim();
+      if (!s) return;
+      const key = s.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(s);
+    };
+    (catalog?.predstavitely || []).forEach((p) => push(p?.organization));
+    (catalog?.organizations || []).forEach((o) => push(o?.title));
+    return out;
+  }
+
+  /**
+   * Фильтр подсказок поля (как filterMestoSuggestions):
+   * пустой query → []; excludes exact match; includes; лимит 15.
+   */
+  function filterFieldSuggestions(items, query, originalValue) {
+    const list = (items || []).map((m) => String(m || '').trim()).filter(Boolean);
+    const q = String(query || '').trim().toLowerCase();
+    const original = String(originalValue || '').trim().toLowerCase();
+    if (!q || q === original) return [];
+    return list
+      .filter((m) => m.toLowerCase().includes(q) && m.toLowerCase() !== q)
+      .slice(0, 15);
+  }
+
+  /**
+   * Привязка выпадающего списка подсказок под input (классы mesto-suggestions).
+   * @param {HTMLInputElement} input
+   * @param {HTMLElement} listEl
+   * @param {() => string[]} getItems
+   * @param {{ originalValue?: string }} [opts]
+   */
+  function bindFieldSuggestions(input, listEl, getItems, opts = {}) {
+    if (!input || !listEl || typeof getItems !== 'function') return () => {};
+    const originalValue = String(opts.originalValue || '').trim();
+    let timer = null;
+
+    function hide() {
+      listEl.hidden = true;
+      listEl.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+    }
+
+    function show() {
+      listEl.hidden = false;
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    function refresh() {
+      const items = filterFieldSuggestions(getItems(), input.value, originalValue);
+      if (!items.length) {
+        hide();
+        return;
+      }
+      listEl.innerHTML = items
+        .map(
+          (m) =>
+            `<button type="button" class="mesto-suggestion-item" data-suggest="${escapeHtml(m)}">${escapeHtml(m)}</button>`
+        )
+        .join('');
+      listEl.querySelectorAll('.mesto-suggestion-item').forEach((btn) => {
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
+        btn.addEventListener('click', () => {
+          input.value = btn.dataset.suggest || '';
+          hide();
+          input.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+      });
+      show();
+    }
+
+    const onInput = () => {
+      clearTimeout(timer);
+      timer = setTimeout(refresh, 120);
+    };
+    const onBlur = () => {
+      setTimeout(hide, 150);
+    };
+
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('aria-autocomplete', 'list');
+    input.setAttribute('aria-expanded', 'false');
+    input.addEventListener('input', onInput);
+    input.addEventListener('blur', onBlur);
+
+    return () => {
+      clearTimeout(timer);
+      input.removeEventListener('input', onInput);
+      input.removeEventListener('blur', onBlur);
+      hide();
+    };
+  }
+
   return {
     uuid,
     toDateInputValue,
@@ -724,5 +939,10 @@ const AktUtils = (() => {
     isAutoCapitalizeField,
     applyAutoCapitalize,
     bindAutoCapitalize,
+    normalizeRepresentativeFio,
+    collectJobTitleSuggestions,
+    collectOrganizationSuggestions,
+    filterFieldSuggestions,
+    bindFieldSuggestions,
   };
 })();

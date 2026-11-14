@@ -68,7 +68,7 @@ const CatalogService = (() => {
     const catalog = await load();
     const p = {
       id: AktUtils.uuid(),
-      fio: fio.trim(),
+      fio: AktUtils.normalizeRepresentativeFio(fio),
       jobTitle: (jobTitle || '').trim(),
       organization: (organization || '').trim(),
     };

@@ -483,4 +483,69 @@ describe('AktUtils short types from catalog', () => {
     expect(titles).toHaveLength(0);
     expect(titles).not.toContain('Работы на высоте');
   });
+
+  describe('normalizeRepresentativeFio', () => {
+    it('полное ФИО → «И. И. Иванов»', () => {
+      expect(AktUtils.normalizeRepresentativeFio('Иванов Иван Иванович')).toBe('И. И. Иванов');
+    });
+
+    it('варианты с точками / без пробелов / нижний регистр → «И. И. Иванов»', () => {
+      expect(AktUtils.normalizeRepresentativeFio('И. И. Иванов')).toBe('И. И. Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('И.И.Иванов')).toBe('И. И. Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('И.И. Иванов')).toBe('И. И. Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('и.и. иванов')).toBe('И. И. Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('и и иванов')).toBe('И. И. Иванов');
+    });
+
+    it('два слова → «И. Иванов»', () => {
+      expect(AktUtils.normalizeRepresentativeFio('Иванов Иван')).toBe('И. Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('И. Иванов')).toBe('И. Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('И.Иванов')).toBe('И. Иванов');
+    });
+
+    it('одно слово → «Иванов»', () => {
+      expect(AktUtils.normalizeRepresentativeFio('Иванов')).toBe('Иванов');
+      expect(AktUtils.normalizeRepresentativeFio('иванов')).toBe('Иванов');
+    });
+
+    it('пустая / пробелы → пустая строка', () => {
+      expect(AktUtils.normalizeRepresentativeFio('')).toBe('');
+      expect(AktUtils.normalizeRepresentativeFio('   ')).toBe('');
+      expect(AktUtils.normalizeRepresentativeFio(null)).toBe('');
+    });
+
+    it('дефис в фамилии сохраняется', () => {
+      expect(AktUtils.normalizeRepresentativeFio('Иванов-Петров Иван Иванович')).toBe('И. И. Иванов-Петров');
+    });
+  });
+
+  describe('field suggestions helpers', () => {
+    it('collectJobTitleSuggestions берёт уникальные должности', () => {
+      const catalog = {
+        predstavitely: [
+          { jobTitle: 'Директор' },
+          { jobTitle: 'директор' },
+          { jobTitle: 'Инженер' },
+          { jobTitle: '' },
+        ],
+        comissionPeople: [{ jobTitle: 'Начальник' }],
+      };
+      expect(AktUtils.collectJobTitleSuggestions(catalog)).toEqual(['Директор', 'Инженер', 'Начальник']);
+    });
+
+    it('collectOrganizationSuggestions из представителей и organizations', () => {
+      const catalog = {
+        predstavitely: [{ organization: 'ООО А' }, { organization: 'ооо а' }],
+        organizations: [{ title: 'ООО Б' }, { title: 'ООО А' }],
+      };
+      expect(AktUtils.collectOrganizationSuggestions(catalog)).toEqual(['ООО А', 'ООО Б']);
+    });
+
+    it('filterFieldSuggestions как mesto: includes, без exact, лимит', () => {
+      const items = ['Главный инженер', 'Инженер ОТ', 'Директор'];
+      expect(AktUtils.filterFieldSuggestions(items, '', '')).toEqual([]);
+      expect(AktUtils.filterFieldSuggestions(items, 'инж', '')).toEqual(['Главный инженер', 'Инженер ОТ']);
+      expect(AktUtils.filterFieldSuggestions(items, 'Директор', '')).toEqual([]);
+    });
+  });
 });

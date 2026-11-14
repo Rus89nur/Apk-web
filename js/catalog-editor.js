@@ -41,7 +41,7 @@ const CatalogEditor = (() => {
       title: 'Представители',
       icon: '👤',
       fields: [
-        { key: 'fio',          label: 'ФИО',          required: true, placeholder: 'Петров Пётр Петрович' },
+        { key: 'fio',          label: 'ФИО',          required: true, placeholder: 'И. И. Иванов' },
         { key: 'jobTitle',     label: 'Должность',    placeholder: 'Директор' },
         { key: 'organization', label: 'Организация',  placeholder: 'ООО «…»' },
       ],
@@ -234,17 +234,38 @@ const CatalogEditor = (() => {
   /* ——— Форма добавления / редактирования ——— */
 
   function openForm(cfg, catalog, item, prevQuery = '') {
+    const isPred = cfg.listKey === 'predstavitely';
+    const suggestKeys = isPred ? new Set(['jobTitle', 'organization']) : new Set();
+
     const fieldsHtml = cfg.fields
-      .map(
-        (f) => `
+      .map((f) => {
+        let value = item?.[f.key] || '';
+        if (isPred && f.key === 'fio' && value) {
+          value = AktUtils.normalizeRepresentativeFio(value);
+        }
+        const suggestWrap = suggestKeys.has(f.key);
+        const inputHtml = `
+        <input class="form-control" data-field="${f.key}"
+               value="${escHtml(value)}"
+               placeholder="${escHtml(f.placeholder || '')}"
+               ${suggestWrap ? 'autocomplete="off"' : ''}
+               ${f.required ? 'required' : ''}>`;
+        if (!suggestWrap) {
+          return `
       <div class="form-group">
         <label class="form-label">${f.label}${f.required ? ' <span style="color:var(--danger)">*</span>' : ''}</label>
-        <input class="form-control" data-field="${f.key}"
-               value="${escHtml(item?.[f.key] || '')}"
-               placeholder="${escHtml(f.placeholder || '')}"
-               ${f.required ? 'required' : ''}>
-      </div>`
-      )
+        ${inputHtml}
+      </div>`;
+        }
+        return `
+      <div class="form-group">
+        <label class="form-label">${f.label}${f.required ? ' <span style="color:var(--danger)">*</span>' : ''}</label>
+        <div class="field-suggest-wrap">
+          ${inputHtml}
+          <div class="mesto-suggestions" data-suggest-for="${f.key}" hidden></div>
+        </div>
+      </div>`;
+      })
       .join('');
 
     const form = document.createElement('div');
@@ -266,6 +287,29 @@ const CatalogEditor = (() => {
     const firstInput = form.querySelector('input');
     setTimeout(() => firstInput?.focus(), 50);
 
+    if (isPred) {
+      const fioInput = form.querySelector('[data-field="fio"]');
+      fioInput?.addEventListener('blur', () => {
+        if (!fioInput) return;
+        fioInput.value = AktUtils.normalizeRepresentativeFio(fioInput.value);
+      });
+
+      const jobInput = form.querySelector('[data-field="jobTitle"]');
+      const jobList = form.querySelector('[data-suggest-for="jobTitle"]');
+      if (jobInput && jobList) {
+        AktUtils.bindFieldSuggestions(jobInput, jobList, () => AktUtils.collectJobTitleSuggestions(catalog), {
+          originalValue: item?.jobTitle || '',
+        });
+      }
+      const orgInput = form.querySelector('[data-field="organization"]');
+      const orgList = form.querySelector('[data-suggest-for="organization"]');
+      if (orgInput && orgList) {
+        AktUtils.bindFieldSuggestions(orgInput, orgList, () => AktUtils.collectOrganizationSuggestions(catalog), {
+          originalValue: item?.organization || '',
+        });
+      }
+    }
+
     const remove = () => {
       if (!form.isConnected) return;
       form.remove();
@@ -275,14 +319,23 @@ const CatalogEditor = (() => {
 
     form.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') remove();
-      if (e.key === 'Enter' && !e.shiftKey) form.querySelector('[data-save]')?.click();
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const t = e.target;
+        if (t && t.closest && t.closest('.mesto-suggestions')) return;
+        form.querySelector('[data-save]')?.click();
+      }
     });
 
     form.querySelector('[data-save]').onclick = async () => {
       const record = item ? { ...item } : { id: AktUtils.uuid() };
       for (const f of cfg.fields) {
         const input = form.querySelector(`[data-field="${f.key}"]`);
-        record[f.key] = input?.value?.trim() || '';
+        let val = input?.value?.trim() || '';
+        if (isPred && f.key === 'fio') {
+          val = AktUtils.normalizeRepresentativeFio(val);
+          if (input) input.value = val;
+        }
+        record[f.key] = val;
         if (f.required && !record[f.key]) {
           GazpromToast.error(`Заполните поле: ${f.label}`);
           input?.focus();

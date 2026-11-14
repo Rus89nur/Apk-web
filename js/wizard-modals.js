@@ -900,12 +900,24 @@ const WizardModals = (() => {
       pred: {
         title: 'Новый представитель',
         html: `
-          <div class="form-group"><label>ФИО</label><input class="form-control" id="qaTitle" placeholder="Например: Петров Пётр Петрович"></div>
-          <div class="form-group"><label>Должность</label><input class="form-control" id="qaSub" placeholder="Например: Главный инженер"></div>
-          <div class="form-group"><label>Организация</label><input class="form-control" id="qaOrg" value="${AktUtils.escapeHtml(ctx.getDraft().organization?.title || '')}"></div>
+          <div class="form-group"><label>ФИО</label><input class="form-control" id="qaTitle" placeholder="Например: И. И. Иванов" autocomplete="off"></div>
+          <div class="form-group"><label>Должность</label>
+            <div class="field-suggest-wrap">
+              <input class="form-control" id="qaSub" placeholder="Например: Главный инженер" autocomplete="off">
+              <div class="mesto-suggestions" id="qaSubSuggestions" hidden></div>
+            </div>
+          </div>
+          <div class="form-group"><label>Организация</label>
+            <div class="field-suggest-wrap">
+              <input class="form-control" id="qaOrg" value="${AktUtils.escapeHtml(ctx.getDraft().organization?.title || '')}" autocomplete="off">
+              <div class="mesto-suggestions" id="qaOrgSuggestions" hidden></div>
+            </div>
+          </div>
         `,
         save: async () => {
-          const fio = document.getElementById('qaTitle')?.value?.trim();
+          const fioInput = document.getElementById('qaTitle');
+          const fio = AktUtils.normalizeRepresentativeFio(fioInput?.value || '');
+          if (fioInput) fioInput.value = fio;
           if (!fio) { GazpromToast.error('Укажите ФИО'); return; }
           const job = document.getElementById('qaSub')?.value?.trim();
           const org = document.getElementById('qaOrg')?.value?.trim();
@@ -923,6 +935,31 @@ const WizardModals = (() => {
       `<button type="button" class="btn-ghost" data-close>Отмена</button>
        <button type="button" class="btn-primary" id="qaSave">Добавить</button>`
     );
+
+    if (type === 'pred') {
+      const fioInput = document.getElementById('qaTitle');
+      fioInput?.addEventListener('blur', () => {
+        if (!fioInput) return;
+        fioInput.value = AktUtils.normalizeRepresentativeFio(fioInput.value);
+      });
+      const catalog = typeof ctx.getCatalog === 'function' ? ctx.getCatalog() : null;
+      const jobInput = document.getElementById('qaSub');
+      const jobList = document.getElementById('qaSubSuggestions');
+      if (jobInput && jobList) {
+        AktUtils.bindFieldSuggestions(jobInput, jobList, () => {
+          const c = typeof ctx.getCatalog === 'function' ? ctx.getCatalog() : catalog;
+          return AktUtils.collectJobTitleSuggestions(c);
+        });
+      }
+      const orgInput = document.getElementById('qaOrg');
+      const orgList = document.getElementById('qaOrgSuggestions');
+      if (orgInput && orgList) {
+        AktUtils.bindFieldSuggestions(orgInput, orgList, () => {
+          const c = typeof ctx.getCatalog === 'function' ? ctx.getCatalog() : catalog;
+          return AktUtils.collectOrganizationSuggestions(c);
+        });
+      }
+    }
 
     document.getElementById('qaSave')?.addEventListener('click', async () => {
       const item = await f.save();

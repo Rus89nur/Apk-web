@@ -3029,6 +3029,9 @@
     .mv-mesto-field {
       position: relative;
     }
+    .field-suggest-wrap {
+      position: relative;
+    }
     .mesto-suggestions {
       position: absolute;
       left: 0;
