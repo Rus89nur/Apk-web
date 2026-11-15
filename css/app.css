@@ -6996,8 +6996,8 @@
       }
 
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
-        /* Список на максимум: ниже остаются подпись и поле формулировки целиком */
-        max-height: max(200px, calc(100dvh - 370px));
+        /* Ниже списка должны остаться подпись и поле «Формулировка» над кнопками */
+        max-height: max(140px, calc(100dvh - 560px));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
