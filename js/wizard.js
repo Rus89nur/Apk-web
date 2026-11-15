@@ -758,17 +758,17 @@ const WizardController = (() => {
     const isDone = !AktUtils.isDraft(draft);
     return `
       <h3>Генерация акта</h3>
-      <div class="wizard-checklist" style="margin-bottom:16px">
-        <div>✓ Акт № <strong>${AktUtils.escapeHtml(draft.number)}</strong> от ${AktUtils.formatDateShort(draft.date)}</div>
-        <div>✓ ${AktUtils.escapeHtml(org)}</div>
-        <div>✓ Комиссия: ${(draft.comission || []).length} чел. · Объект: ${AktUtils.escapeHtml((draft.objectsCheck || [])[0]?.title || '—')}</div>
-        <div>✓ Нарушений: ${(draft.violations || []).length} · Фото: ${photos}</div>
-        <div>✓ Статус: ${isDone ? '<span class="badge badge-green">Готов (веб)</span>' : '<span class="badge badge-orange">Черновик</span>'}</div>
+      <div class="wizard-checklist wizard-checklist--generate">
+        <div><span class="wizard-checklist__mark" aria-hidden="true">✓</span>Акт № <strong>${AktUtils.escapeHtml(draft.number)}</strong> от ${AktUtils.formatDateShort(draft.date)}</div>
+        <div><span class="wizard-checklist__mark" aria-hidden="true">✓</span>${AktUtils.escapeHtml(org)}</div>
+        <div><span class="wizard-checklist__mark" aria-hidden="true">✓</span>Комиссия: ${(draft.comission || []).length} чел. · Объект: ${AktUtils.escapeHtml((draft.objectsCheck || [])[0]?.title || '—')}</div>
+        <div><span class="wizard-checklist__mark" aria-hidden="true">✓</span>Нарушений: ${(draft.violations || []).length} · Фото: ${photos}</div>
+        <div><span class="wizard-checklist__mark" aria-hidden="true">✓</span>Статус: ${isDone ? '<span class="badge badge-green">Готов (веб)</span>' : '<span class="badge badge-orange">Черновик</span>'}</div>
       </div>
 
-      <div id="wDocxTemplateStatus" style="margin-bottom:16px;padding:12px 14px;border-radius:var(--radius);font-size:13px;background:var(--primary-soft);">
+      <div id="wDocxTemplateStatus" class="wizard-template-status wizard-template-status--pending">
         <span id="wDocxTemplateStatusText">⏳ Проверка шаблона…</span>
-        <button type="button" class="btn-ghost btn-sm" style="margin-left:12px;" data-go="settings">Открыть настройки</button>
+        <button type="button" class="btn-ghost btn-sm wizard-template-status__settings" data-go="settings">Открыть настройки</button>
       </div>
 
       <h3 style="margin-top:4px;font-size:14px">Предпросмотр содержания</h3>
@@ -1022,15 +1022,24 @@ const WizardController = (() => {
     DocGenerator.hasTemplate().then((has) => {
       const statusEl = document.getElementById('wDocxTemplateStatusText');
       const generateBtn = document.getElementById('wGenerateDocx');
-      if (!statusEl) return;
+      const statusBox = statusEl.closest('#wDocxTemplateStatus');
+      if (!statusEl || !statusBox) return;
+      const setStatusClass = (kind) => {
+        statusBox.classList.remove(
+          'wizard-template-status--pending',
+          'wizard-template-status--ok',
+          'wizard-template-status--warn'
+        );
+        statusBox.classList.add(`wizard-template-status--${kind}`);
+      };
       if (has) {
         DocGenerator.getTemplateName().then((name) => {
           statusEl.textContent = `✅ Шаблон загружен${name ? ': ' + name : ''}. Нажмите «Сформировать акт Word» для генерации.`;
-          statusEl.closest('#wDocxTemplateStatus').style.background = 'var(--success-soft, #e8f5e9)';
+          setStatusClass('ok');
         });
       } else {
         statusEl.textContent = '⚠️ Шаблон Word не загружен. Загрузите .docx-шаблон в Настройках → Шаблон акта.';
-        statusEl.closest('#wDocxTemplateStatus').style.background = 'var(--warning-soft, #fff8e1)';
+        setStatusClass('warn');
         if (generateBtn) {
           generateBtn.disabled = true;
           generateBtn.style.opacity = '0.5';

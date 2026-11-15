@@ -1853,11 +1853,48 @@
     }
     .wizard-add-row .form-control { flex: 1; min-width: 180px; }
     .wizard-checklist {
-      background: var(--bg);
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 16px;
       font-size: 14px;
       line-height: 1.8;
+      color: var(--text);
+    }
+    .wizard-checklist__mark {
+      display: inline-block;
+      min-width: 1.25em;
+      margin-right: 4px;
+      color: var(--success);
+      font-weight: 700;
+    }
+    .wizard-template-status {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+      margin-bottom: 16px;
+      padding: 12px 14px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.45;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+    .wizard-template-status--pending {
+      background: var(--primary-soft);
+    }
+    .wizard-template-status--ok {
+      background: color-mix(in srgb, var(--success) 14%, var(--surface));
+      border-color: color-mix(in srgb, var(--success) 38%, var(--border));
+    }
+    .wizard-template-status--warn {
+      background: color-mix(in srgb, var(--warning) 14%, var(--surface));
+      border-color: color-mix(in srgb, var(--warning) 38%, var(--border));
+    }
+    .wizard-template-status__settings {
+      margin-left: auto;
     }
     .wizard-photo-thumb {
       padding: 0;

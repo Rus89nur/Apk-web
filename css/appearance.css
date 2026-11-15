@@ -361,15 +361,61 @@ html[data-appearance="system"][data-scheme="dark"] .badge-green,
 html[data-appearance="system"][data-scheme="dark"] .vt-badge--active,
 html[data-appearance="system"][data-scheme="dark"] .defaults-status--ok,
 html[data-appearance="system"][data-scheme="dark"] .preset-card__tag--builtin {
-  background: #e8f5e9;
-  color: #1b5e20;
+  background: rgba(76, 175, 80, 0.22);
+  color: #c8e6c9;
 }
 html[data-appearance="system"][data-scheme="dark"] .badge-orange,
 html[data-appearance="system"][data-scheme="dark"] .vt-badge--archived,
 html[data-appearance="system"][data-scheme="dark"] .vt-alert--warn,
 html[data-appearance="system"][data-scheme="dark"] .defaults-status--warn {
-  background: #fff3e0;
-  color: #e65100;
+  background: rgba(255, 152, 0, 0.22);
+  color: #ffcc80;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-checklist {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-checklist__mark {
+  color: #81c784;
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-template-status {
+  color: #f5f5f7;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-template-status--pending {
+  background: rgba(255, 255, 255, 0.1);
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-template-status--ok {
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(129, 199, 132, 0.35);
+}
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-template-status--warn {
+  background: rgba(255, 152, 0, 0.18);
+  border-color: rgba(255, 183, 77, 0.35);
+}
+html[data-scheme="dark"] #screen-wizard .wizard-checklist {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #f5f5f7;
+}
+html[data-scheme="dark"] #screen-wizard .wizard-checklist__mark {
+  color: #81c784;
+}
+html[data-scheme="dark"] #screen-wizard .wizard-template-status {
+  color: #f5f5f7;
+  border-color: rgba(255, 255, 255, 0.14);
+}
+html[data-scheme="dark"] #screen-wizard .wizard-template-status--pending {
+  background: rgba(255, 255, 255, 0.1);
+}
+html[data-scheme="dark"] #screen-wizard .wizard-template-status--ok {
+  background: rgba(76, 175, 80, 0.18);
+  border-color: rgba(129, 199, 132, 0.35);
+}
+html[data-scheme="dark"] #screen-wizard .wizard-template-status--warn {
+  background: rgba(255, 152, 0, 0.18);
+  border-color: rgba(255, 183, 77, 0.35);
 }
 html[data-appearance="system"][data-scheme="dark"] .badge-grey,
 html[data-appearance="system"][data-scheme="dark"] .preset-card__tag {
