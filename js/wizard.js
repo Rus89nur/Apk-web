@@ -7,7 +7,9 @@ const WizardController = (() => {
   let draft = null;
   let step = 0;
   let autosaveTimer = null;
+  let dirtyIndicatorTimer = null;
   let dirty = false;
+  const DIRTY_BADGE_DELAY_MS = 1500;
   let descEditMode = false;
   let predOrgFilters = new Set();
   let violSearchQuery = '';
@@ -79,12 +81,17 @@ const WizardController = (() => {
 
   function scheduleAutosave() {
     dirty = true;
-    updateDirtyIndicator();
+    clearTimeout(dirtyIndicatorTimer);
+    dirtyIndicatorTimer = setTimeout(() => {
+      if (dirty) updateDirtyIndicator();
+    }, DIRTY_BADGE_DELAY_MS);
     clearTimeout(autosaveTimer);
     autosaveTimer = setTimeout(async () => {
       commitStep(step);
       await saveDraft();
       dirty = false;
+      clearTimeout(dirtyIndicatorTimer);
+      dirtyIndicatorTimer = null;
       updateDirtyIndicator();
     }, AUTOSAVE_MS);
   }
@@ -97,6 +104,8 @@ const WizardController = (() => {
   function resetAutosaveTimer() {
     clearTimeout(autosaveTimer);
     autosaveTimer = null;
+    clearTimeout(dirtyIndicatorTimer);
+    dirtyIndicatorTimer = null;
     dirty = false;
     updateDirtyIndicator();
   }
@@ -400,12 +409,14 @@ const WizardController = (() => {
 
     const orgSelectHint = selected?.title
       ? ''
-      : '<p class="wizard-hint">Выберите организацию из справочника</p>';
+      : '<p class="wizard-hint wizard-org-hint">Выберите организацию из справочника</p>';
 
     return `
       <h3>Организация проверки</h3>
-      ${orgSelectHint}
-      <div class="chip-list" id="wOrgChips">${selectedChip || ''}</div>
+      <div class="wizard-org-select-block">
+        ${orgSelectHint}
+        <div class="chip-list" id="wOrgChips">${selectedChip || ''}</div>
+      </div>
       <div class="commission-divider"></div>
       <div class="commission-catalog-section">
         <div class="commission-catalog-header">

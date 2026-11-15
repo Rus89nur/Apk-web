@@ -1794,9 +1794,21 @@
     }
     .wizard-empty p { color: var(--text-muted); margin: 12px 0 20px; }
     .wizard-toolbar {
+      position: relative;
       display: flex;
       justify-content: flex-end;
+      align-items: center;
+      min-height: 28px;
       margin-bottom: 12px;
+    }
+    .wizard-org-select-block {
+      min-height: 3.25rem;
+    }
+    .wizard-org-select-block .wizard-org-hint {
+      margin: 0 0 8px;
+    }
+    .wizard-org-select-block .chip-list:only-child {
+      min-height: 2.75rem;
     }
     .wizard-hint {
       font-size: 13px;
@@ -2266,10 +2278,18 @@
     .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
     .wizard-dirty-badge {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
       font-size: 12px;
       color: var(--warning);
       font-weight: 600;
-      margin-left: auto;
+      margin: 0;
+      white-space: nowrap;
+    }
+    .wizard-dirty-badge[hidden] {
+      display: none !important;
     }
 
     .history-search {
