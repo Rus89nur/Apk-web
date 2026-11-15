@@ -375,6 +375,19 @@ html[data-appearance="system"][data-scheme="dark"] .reports-bar-row__val--overdu
 }
 
 /* Ночь, редактирование акта: поля выбора такие же, как уже выбранные — серое поле, белый текст. */
+html[data-scheme="dark"] #screen-wizard .chip-commission-member {
+  background: rgba(255, 255, 255, 0.24);
+  color: #f5f5f7;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+html[data-scheme="dark"] #screen-wizard .chip-commission-member:hover,
+html[data-scheme="dark"] #screen-wizard .chip-commission-member:active,
+html[data-scheme="dark"] #screen-wizard .chip-commission-member:focus-visible {
+  background: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 html[data-appearance="system"][data-scheme="dark"] #screen-wizard .chip-catalog,
 html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template,
 html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template-empty,

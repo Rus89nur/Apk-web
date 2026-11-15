@@ -1833,17 +1833,31 @@
     }
     .chip-removable {
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s, opacity 0.15s;
+      transition: background 0.15s, opacity 0.15s;
+      -webkit-tap-highlight-color: transparent;
     }
     .chip-removable:hover {
-      cursor: pointer;
-      background: #fce4ec;
-      color: #c62828;
-      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--text-muted) 14%, var(--surface));
+      color: var(--text);
     }
     .chip-removable:active {
       cursor: grabbing;
-      transform: translateY(0);
+      opacity: 0.92;
+    }
+    /* Уже в составе комиссии — приглушённый серый, без красной подсветки */
+    .chip-commission-member {
+      background: #d8dee6;
+      color: #3d4756;
+      border: 1px solid #c5ccd6;
+      font-weight: 600;
+    }
+    .chip-commission-member:hover,
+    .chip-commission-member:active,
+    .chip-commission-member:focus-visible {
+      background: #c8d0db;
+      color: #2b3440;
+      border-color: #b8c2cf;
+      transform: none;
     }
     .chip-dragging {
       opacity: 0.4;

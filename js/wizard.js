@@ -333,7 +333,7 @@ const WizardController = (() => {
     const chips = (draft.comission || [])
       .map(
         (p) =>
-          `<span class="chip chip-removable" draggable="true" data-remove-person="${p.id}" data-person-id="${p.id}" title="Удерживайте для перетаскивания, нажмите чтобы убрать">${AktUtils.escapeHtml(p.fio)}${p.jobTitle ? ' — ' + AktUtils.escapeHtml(p.jobTitle) : ''}</span>`
+          `<span class="chip chip-removable chip-commission-member" draggable="true" data-remove-person="${p.id}" data-person-id="${p.id}" title="Удерживайте для перетаскивания, нажмите чтобы убрать">${AktUtils.escapeHtml(p.fio)}${p.jobTitle ? ' — ' + AktUtils.escapeHtml(p.jobTitle) : ''}</span>`
       )
       .join('');
 
