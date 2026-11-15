@@ -6459,12 +6459,13 @@
         word-break: break-word;
       }
 
-      /* contenteditable в shell иначе 16px — как <p class="wizard-org-hint"> */
+      /* iOS: font-size < 16px на поле ввода даёт auto-zoom; 16px + zoom ≈ 13px как org-hint */
       body.gazprom-mobile-shell .wizard-org-select-block p.wizard-object-filter[contenteditable='true'] {
-        font-size: 13px;
+        font-size: 16px;
         font-weight: 400;
-        line-height: inherit;
+        line-height: 1.4;
         color: var(--text-muted);
+        zoom: 0.8125;
       }
 
       /* Мастер: шаг 5 «Выводы комиссии» */
