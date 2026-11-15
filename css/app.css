@@ -1806,6 +1806,8 @@
     }
     .wizard-org-select-block .wizard-org-hint {
       margin: 0 0 8px;
+      font-size: 16px;
+      line-height: 1.4;
     }
     .wizard-org-select-block .chip-list:only-child {
       min-height: 2.75rem;
@@ -6457,15 +6459,6 @@
       body.gazprom-mobile-shell .wizard-panel--conclusions h3 {
         max-width: 100%;
         word-break: break-word;
-      }
-
-      /* iOS: font-size < 16px на поле ввода даёт auto-zoom; 16px + zoom ≈ 13px как org-hint */
-      body.gazprom-mobile-shell .wizard-org-select-block p.wizard-object-filter[contenteditable='true'] {
-        font-size: 16px;
-        font-weight: 400;
-        line-height: 1.4;
-        color: var(--text-muted);
-        zoom: 0.8125;
       }
 
       /* Мастер: шаг 5 «Выводы комиссии» */
