@@ -6997,7 +6997,7 @@
 
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
         /* Ниже списка должны остаться подпись и поле «Формулировка» над кнопками */
-        max-height: max(140px, calc(100dvh - 560px));
+        max-height: max(175px, calc((100dvh - 560px) * 1.25));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
