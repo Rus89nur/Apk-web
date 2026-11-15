@@ -124,15 +124,23 @@ var GazpromMobileOverlay = (() => {
 
       if (catalogEl) {
         const catRect = catalogEl.getBoundingClientRect();
-        const wantCatTop = Math.min(fieldRect.bottom + 16, maxBottom - 200);
+        const wantCatTop = fieldRect.bottom + 14;
         if (catRect.top > wantCatTop) {
-          delta += Math.min(catRect.top - wantCatTop, 340);
+          const catDelta = catRect.top - wantCatTop;
+          const maxDown = Math.max(0, fieldRect.top - minTop - 10);
+          delta += Math.min(catDelta, maxDown, 140);
         }
       }
 
       if (delta === 0) return;
       const maxTop = clampMainScrollTop(main);
       main.scrollTop = Math.max(0, Math.min(savedTop + delta, maxTop));
+
+      const afterTop = target.getBoundingClientRect().top;
+      if (afterTop < minTop) {
+        main.scrollTop -= minTop - afterTop;
+        clampMainScrollTop(main);
+      }
     };
 
     requestAnimationFrame(adjust);
@@ -693,10 +701,6 @@ var GazpromMobileOverlay = (() => {
     window.visualViewport.addEventListener('resize', () => {
       syncVisualViewport();
       syncWizardScreenKeyboard();
-      const focused = document.activeElement;
-      if (isWizardCatalogFilter(focused) && isMainKeyboardOpen()) {
-        scrollMainWizardFieldIntoView(focused, { revealCatalog: true });
-      }
       scheduleNavInsetSync();
       clampScrollX();
     });
