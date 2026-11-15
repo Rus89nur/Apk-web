@@ -90,11 +90,15 @@ var GazpromMobileOverlay = (() => {
     wObjectFilter: 'wObjectCatalogChips',
   };
 
+  const isWizardCatalogFilter = (el) =>
+    el?.id === 'wPredFilter' || el?.id === 'wObjectFilter';
+
   const scrollMainWizardFieldIntoView = (target, options = {}) => {
     if (!mq.matches || !isWizardScreenField(target)) return;
     const main = mainEl();
     if (!main) return;
     const revealCatalog = options.revealCatalog === true;
+    const catalogFilter = isWizardCatalogFilter(target);
     const catalogEl =
       revealCatalog && WIZARD_CATALOG_BY_FILTER[target.id]
         ? document.getElementById(WIZARD_CATALOG_BY_FILTER[target.id])
@@ -114,29 +118,23 @@ var GazpromMobileOverlay = (() => {
       let delta = 0;
       if (fieldRect.top < minTop) {
         delta -= minTop - fieldRect.top;
-      } else if (fieldRect.bottom > maxBottom) {
+      } else if (!catalogFilter && fieldRect.bottom > maxBottom) {
         delta += fieldRect.bottom - maxBottom;
       }
 
       if (catalogEl) {
         const catRect = catalogEl.getBoundingClientRect();
-        const wantCatTop = Math.min(maxBottom - 72, fieldRect.bottom + 16);
-        if (catRect.top > wantCatTop) {
-          delta += Math.min(catRect.top - wantCatTop, 200);
+        if (catRect.top > maxBottom - 24) {
+          delta += Math.min(catRect.top - maxBottom + 100, 96);
         }
       }
 
+      if (delta === 0) return;
       const maxTop = clampMainScrollTop(main);
-      const nextTop = Math.max(0, Math.min(savedTop + delta, maxTop));
-      main.scrollTop = nextTop;
+      main.scrollTop = Math.max(0, Math.min(savedTop + delta, maxTop));
     };
 
-    requestAnimationFrame(() => {
-      adjust();
-      if (revealCatalog) {
-        window.setTimeout(adjust, 120);
-      }
-    });
+    requestAnimationFrame(adjust);
   };
 
   /** Полосы с overflow-x: auto — свайп не блокируем (см. MOBILE_PHONE_MODE §3.8, web-82). */
@@ -471,6 +469,7 @@ var GazpromMobileOverlay = (() => {
 
   /** Тихая подстройка padding после остановки скролла — без принудительного scrollTop в цикле. */
   const bumpScrollClearanceAtRest = () => {
+    if (document.documentElement.classList.contains('gazprom-wizard-keyboard')) return 0;
     const overlapPx = measureScrollOverlap();
     if (overlapPx <= 0) return 0;
     const main = mainEl();
@@ -693,10 +692,6 @@ var GazpromMobileOverlay = (() => {
     window.visualViewport.addEventListener('resize', () => {
       syncVisualViewport();
       syncWizardScreenKeyboard();
-      const focused = document.activeElement;
-      if (focused?.id === 'wPredFilter' || focused?.id === 'wObjectFilter') {
-        scrollMainWizardFieldIntoView(focused, { revealCatalog: isMainKeyboardOpen() });
-      }
       scheduleNavInsetSync();
       clampScrollX();
     });
@@ -725,7 +720,9 @@ var GazpromMobileOverlay = (() => {
     'focusin',
     (e) => {
       scrollWizardModalFieldIntoView(e.target);
-      scrollMainWizardFieldIntoView(e.target);
+      if (!isWizardCatalogFilter(e.target)) {
+        scrollMainWizardFieldIntoView(e.target);
+      }
       syncWizardScreenKeyboard();
       if (document.getElementById('wizardModalRoot')?.contains(e.target)) {
         syncWizardModalViewport();
