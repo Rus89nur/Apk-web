@@ -1810,28 +1810,35 @@
     .wizard-org-select-block .chip-list:only-child {
       min-height: 2.75rem;
     }
-    .wizard-inline-filter {
+    .wizard-org-select-block .wizard-inline-filter {
       display: block;
       width: 100%;
       border: none;
       outline: none;
       background: transparent;
+      background-color: transparent;
       padding: 0;
       margin: 0 0 8px;
-      font: inherit;
-      line-height: inherit;
-      letter-spacing: inherit;
+      font-size: 13px;
+      font-weight: 400;
+      line-height: 1.4;
+      color: var(--text-muted);
+      caret-color: var(--text);
       -webkit-appearance: none;
       appearance: none;
       border-radius: 0;
       box-shadow: none;
+      min-height: 0;
     }
-    .wizard-inline-filter:focus {
+    .wizard-org-select-block .wizard-inline-filter::placeholder {
+      color: var(--text-muted);
+      opacity: 1;
+    }
+    .wizard-org-select-block .wizard-inline-filter:focus {
       outline: none;
       box-shadow: none;
-    }
-    .wizard-inline-filter:not(:placeholder-shown) {
-      color: var(--text);
+      border: none;
+      background: transparent;
     }
     .wizard-hint {
       font-size: 13px;
@@ -6467,6 +6474,25 @@
       body.gazprom-mobile-shell .wizard-panel--conclusions h3 {
         max-width: 100%;
         word-break: break-word;
+      }
+
+      /* Как .wizard-org-hint (13px), не как поле form-control и не 16px инпутов */
+      body.gazprom-mobile-shell .wizard-org-select-block input.wizard-inline-filter {
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.4;
+        color: var(--text-muted);
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        padding: 0;
+        margin: 0 0 8px;
+        min-height: 0;
+      }
+      body.gazprom-mobile-shell .wizard-org-select-block input.wizard-inline-filter:focus {
+        background: transparent;
+        box-shadow: none;
+        outline: none;
       }
 
       /* Мастер: шаг 5 «Выводы комиссии» */
