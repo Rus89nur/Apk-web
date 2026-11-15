@@ -368,9 +368,7 @@ const WizardModals = (() => {
             aria-expanded="false"
             aria-controls="mvMestoSuggestions"
             aria-autocomplete="list"
-            autocomplete="off"
-            autocorrect="off"
-            spellcheck="false">
+            autocomplete="off">
           <div class="mesto-suggestions" id="mvMestoSuggestions" hidden></div>
         </div>
       </div>

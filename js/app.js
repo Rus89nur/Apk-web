@@ -923,6 +923,7 @@ function init() {
   }
 
   AktUtils.bindAutoCapitalize();
+  AktUtils.bindNativeSpellcheck();
 
   bindHeaderSync();
   bindHistory();

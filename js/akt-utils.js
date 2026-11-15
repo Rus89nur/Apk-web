@@ -588,6 +588,25 @@ const AktUtils = (() => {
     return JSON.parse(JSON.stringify(obj));
   }
 
+  const SPELLCHECK_SKIP_TYPES = new Set([
+    'date',
+    'datetime-local',
+    'month',
+    'week',
+    'time',
+    'number',
+    'email',
+    'url',
+    'tel',
+    'password',
+    'file',
+    'hidden',
+    'checkbox',
+    'radio',
+    'range',
+    'color',
+  ]);
+
   const SKIP_INPUT_TYPES = new Set([
     'search',
     'date',
@@ -658,24 +677,89 @@ const AktUtils = (() => {
     }
   }
 
+  function isSpellcheckField(el) {
+    if (!el) return false;
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+      if (el.readOnly || el.disabled) return false;
+      if (el.dataset.noSpellcheck != null) return false;
+      if (el.dataset.fioBound === '1') return false;
+      if (el.id === 'backupPasteText') return false;
+      const type = (el.type || 'text').toLowerCase();
+      return !SPELLCHECK_SKIP_TYPES.has(type);
+    }
+    if (el.isContentEditable) {
+      return el.dataset.noSpellcheck == null;
+    }
+    return false;
+  }
+
+  function applyNativeSpellcheck(el) {
+    if (!el) return;
+    if (!isSpellcheckField(el)) {
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.isContentEditable) {
+        el.spellcheck = false;
+        if (el.dataset.fioBound === '1' || el.dataset.noSpellcheck != null) {
+          el.setAttribute('autocorrect', 'off');
+          el.setAttribute('autocapitalize', 'off');
+        }
+      }
+      return;
+    }
+    el.spellcheck = true;
+    el.setAttribute('lang', 'ru');
+    el.setAttribute('autocorrect', 'on');
+    if (!el.getAttribute('autocapitalize')) {
+      el.setAttribute('autocapitalize', 'sentences');
+    }
+  }
+
+  function scanNativeSpellcheck(root = document) {
+    root.querySelectorAll('input, textarea, [contenteditable="true"]').forEach(applyNativeSpellcheck);
+  }
+
+  let nativeSpellcheckObserver = null;
+
+  function bindNativeSpellcheck() {
+    scanNativeSpellcheck(document);
+    if (nativeSpellcheckObserver) return;
+    nativeSpellcheckObserver = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        for (const node of m.addedNodes) {
+          if (node.nodeType !== 1) continue;
+          if (node.matches?.('input, textarea, [contenteditable="true"]')) {
+            applyNativeSpellcheck(node);
+          }
+          node.querySelectorAll?.('input, textarea, [contenteditable="true"]').forEach(applyNativeSpellcheck);
+        }
+      }
+    });
+    if (document.body) {
+      nativeSpellcheckObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
   function bindRepresentativeFioInput(input) {
     if (!input || input.dataset.fioBound === '1') return;
     input.dataset.fioBound = '1';
     input.dataset.noCapitalize = '';
+    input.dataset.noSpellcheck = '';
     input.addEventListener('input', () => applyFioWordCapitalize(input));
     input.addEventListener('blur', () => {
       input.value = normalizeRepresentativeFio(input.value);
     });
+    applyNativeSpellcheck(input);
   }
 
   function bindFioWordsInput(input) {
     if (!input || input.dataset.fioBound === '1') return;
     input.dataset.fioBound = '1';
     input.dataset.noCapitalize = '';
+    input.dataset.noSpellcheck = '';
     input.addEventListener('input', () => applyFioWordCapitalize(input));
     input.addEventListener('blur', () => {
       input.value = capitalizeFioWords(input.value.trim()).replace(/\s+/g, ' ');
     });
+    applyNativeSpellcheck(input);
   }
 
   function isAutoCapitalizeField(el) {
@@ -979,6 +1063,8 @@ const AktUtils = (() => {
     isAutoCapitalizeField,
     applyAutoCapitalize,
     bindAutoCapitalize,
+    bindNativeSpellcheck,
+    applyNativeSpellcheck,
     capitalizeFioWords,
     bindRepresentativeFioInput,
     bindFioWordsInput,
