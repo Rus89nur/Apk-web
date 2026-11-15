@@ -10,6 +10,7 @@ describe('mobile wizard keyboard / pred catalog scroll', () => {
   it('hides bottom nav and scrolls catalog on pred filter', () => {
     expect(overlaySrc).toContain('gazprom-wizard-keyboard');
     expect(overlaySrc).toContain('scrollMainWizardFieldIntoView');
+    expect(overlaySrc).toContain('revealCatalog');
     expect(overlaySrc).toContain('wPredCatalogChips');
   });
 });
