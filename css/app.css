@@ -5670,7 +5670,7 @@
         inset: 0;
         z-index: 0;
         pointer-events: none;
-        background: color-mix(in srgb, var(--surface) 58%, transparent);
+        background: color-mix(in srgb, var(--surface) 38%, transparent);
         backdrop-filter: blur(20px) saturate(1.75);
         -webkit-backdrop-filter: blur(20px) saturate(1.75);
       }
@@ -5685,21 +5685,21 @@
 
       html[data-appearance='system'][data-scheme='light'] body.gazprom-mobile-shell .header::before,
       html[data-appearance='system'][data-scheme='light'] body.gazprom-mobile-shell .bottom-nav::before {
-        background: rgba(255, 255, 255, 0.62);
+        background: rgba(255, 255, 255, 0.4);
       }
 
       html[data-appearance='system'][data-scheme='light'] body.gazprom-mobile-shell .header::before {
-        border-bottom-color: rgba(255, 255, 255, 0.72);
+        border-bottom-color: rgba(255, 255, 255, 0.48);
       }
 
       html[data-appearance='system'][data-scheme='light'] body.gazprom-mobile-shell .bottom-nav::before {
-        border-top-color: rgba(255, 255, 255, 0.72);
+        border-top-color: rgba(255, 255, 255, 0.48);
       }
 
       html[data-appearance='system'][data-scheme='dark'] body.gazprom-mobile-shell .header::before,
       html[data-appearance='system'][data-scheme='dark'] body.gazprom-mobile-shell .bottom-nav::before {
-        background: rgba(28, 28, 30, 0.56);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        background: rgba(28, 28, 30, 0.36);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
       }
 
       html[data-appearance='system'][data-scheme='dark'] body.gazprom-mobile-shell .header::before {
