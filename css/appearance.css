@@ -155,7 +155,7 @@ html[data-appearance="system"][data-scheme="light"] .nav-item.active::before {
   background: var(--primary);
   box-shadow: none;
 }
-html[data-appearance="system"][data-scheme="light"] .header {
+html[data-appearance="system"][data-scheme="light"] .header:not(:where(body.gazprom-mobile-shell *)) {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(18px) saturate(1.6);
   -webkit-backdrop-filter: blur(18px) saturate(1.6);
@@ -170,7 +170,7 @@ html[data-appearance="system"][data-scheme="light"] .modal-dialog {
   background: #fff;
   border-color: rgba(28, 28, 30, 0.08);
 }
-html[data-appearance="system"][data-scheme="light"] .bottom-nav {
+html[data-appearance="system"][data-scheme="light"] .bottom-nav:not(:where(body.gazprom-mobile-shell *)) {
   background: rgba(255, 255, 255, 0.62);
   backdrop-filter: blur(20px) saturate(1.8);
   -webkit-backdrop-filter: blur(20px) saturate(1.8);
