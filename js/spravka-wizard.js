@@ -348,7 +348,7 @@ const SpravkaWizard = (() => {
     const selectedChips = (draft.objectsCheck || [])
       .map(
         (o) =>
-          `<button type="button" class="chip chip-removable" data-sp-remove-object="${AktUtils.escapeHtml(String(o.id))}" title="Нажмите, чтобы убрать">${AktUtils.escapeHtml(o.title)}${o.subTitle ? ' — ' + AktUtils.escapeHtml(o.subTitle) : ''}</button>`
+          `<button type="button" class="chip chip-removable" data-sp-remove-object="${AktUtils.escapeHtml(String(o.id))}" title="Нажмите, чтобы убрать">${AktUtils.formatObjectHtml(o)}</button>`
       )
       .join('');
 
@@ -356,7 +356,7 @@ const SpravkaWizard = (() => {
       .filter((o) => !selectedIds.has(String(o.id)))
       .map(
         (o) =>
-          `<button type="button" class="chip chip-catalog" data-sp-add-object="${AktUtils.escapeHtml(String(o.id))}" title="Нажмите, чтобы добавить">${AktUtils.escapeHtml(o.title)}${o.subTitle ? ' — ' + AktUtils.escapeHtml(o.subTitle) : ''}</button>`
+          `<button type="button" class="chip chip-catalog" data-sp-add-object="${AktUtils.escapeHtml(String(o.id))}" title="Нажмите, чтобы добавить">${AktUtils.formatObjectHtml(o)}</button>`
       )
       .join('');
 

@@ -166,7 +166,7 @@ const WizardController = (() => {
       .map((o) => {
         const violCount = objectViolCount(o);
         const violHint = violCount > 0 ? ` · ${violCount} наруш.` : '';
-        return `<span class="chip chip-catalog" data-select-object="${o.id}" title="Нажмите, чтобы выбрать">${AktUtils.escapeHtml(o.title)}${o.subTitle ? ' — ' + AktUtils.escapeHtml(o.subTitle) : ''}${violHint}</span>`;
+        return `<span class="chip chip-catalog" data-select-object="${o.id}" title="Нажмите, чтобы выбрать">${AktUtils.formatObjectHtml(o)}${violHint}</span>`;
       })
       .join('');
   }
@@ -521,7 +521,7 @@ const WizardController = (() => {
     const selectedViolHint =
       selected && objectViolCount(selected) > 0 ? ` · ${objectViolCount(selected)} наруш.` : '';
     const selectedChip = selected?.title
-      ? `<span class="chip chip-removable" data-clear-object title="Нажмите, чтобы убрать">${AktUtils.escapeHtml(selected.title)}${selected.subTitle ? ' — ' + AktUtils.escapeHtml(selected.subTitle) : ''}${selectedViolHint}</span>`
+      ? `<span class="chip chip-removable" data-clear-object title="Нажмите, чтобы убрать">${AktUtils.formatObjectHtml(selected)}${selectedViolHint}</span>`
       : '';
 
     const objectFilterEmpty = !String(objectSearchQuery || '').trim();

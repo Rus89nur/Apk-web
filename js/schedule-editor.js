@@ -354,7 +354,7 @@ const ScheduleEditor = (() => {
     if (objectId) {
       const obj = findObject(catalog, objectId);
       if (!obj) return '—';
-      return obj.subTitle ? `${obj.title} — ${obj.subTitle}` : obj.title;
+      return AktUtils.formatObjectDisplay(obj);
     }
     if (orgId) {
       const org = (catalog.organizations || []).find((o) => String(o.id) === String(orgId));

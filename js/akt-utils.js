@@ -40,6 +40,25 @@ const AktUtils = (() => {
     return `${escapeHtml(title)} (${escapeHtml(short)})`;
   }
 
+  function formatObjectDisplay(obj) {
+    if (!obj) return '';
+    const title = String(obj.title || '').trim();
+    const sub = String(obj.subTitle || '').trim();
+    if (!title) return sub;
+    if (!sub || sub === title) return title;
+    return `${title} (${sub})`;
+  }
+
+  /** «Объект (адрес/примечание)» для справочника объектов и чипов. */
+  function formatObjectHtml(obj) {
+    if (!obj) return '';
+    const title = String(obj.title || '').trim();
+    const sub = String(obj.subTitle || '').trim();
+    if (!title) return sub ? escapeHtml(sub) : '';
+    if (!sub || sub === title) return escapeHtml(title);
+    return `${escapeHtml(title)} (${escapeHtml(sub)})`;
+  }
+
   /** Префиксы заголовков нарушений сокращённого акта (как в iOS AKT.isShortFormat). */
   const SHORT_VIOLATION_PREFIXES = ['Сокращенный:', 'Сокращённый:', 'Внешний:'];
 
@@ -1026,6 +1045,8 @@ const AktUtils = (() => {
     formatDateShort,
     escapeHtml,
     formatOrganizationHtml,
+    formatObjectDisplay,
+    formatObjectHtml,
     SHORT_VIOLATION_PREFIXES,
     SHORT_VIOLATION_TYPES,
     isShortViolationTitle,

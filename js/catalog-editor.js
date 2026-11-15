@@ -40,7 +40,7 @@ const CatalogEditor = (() => {
         { key: 'subTitle', label: 'Адрес / примечание', placeholder: 'г. Надым, ул. Промышленная, 5' },
       ],
       listKey: 'objects',
-      label: (r) => `${r.title}${r.subTitle ? ' — ' + r.subTitle : ''}`,
+      label: (r) => AktUtils.formatObjectDisplay(r),
       searchText: (r) => `${r.title} ${r.subTitle || ''}`.toLowerCase(),
     },
     predstavitely: {

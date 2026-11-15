@@ -118,7 +118,7 @@ const ShortAktForm = (() => {
     const objOptions = objects
       .map(
         (o) =>
-          `<option value="${AktUtils.escapeHtml(o.id)}"${o.id === objId ? ' selected' : ''}>${AktUtils.escapeHtml(o.title)}${o.subTitle ? ` — ${AktUtils.escapeHtml(o.subTitle)}` : ''}</option>`
+          `<option value="${AktUtils.escapeHtml(o.id)}"${o.id === objId ? ' selected' : ''}>${AktUtils.formatObjectHtml(o)}</option>`
       )
       .join('');
 

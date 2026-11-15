@@ -268,7 +268,7 @@ const WizardModals = (() => {
     const opts = (objects || [])
       .map(
         (o) =>
-          `<option value="${AktUtils.escapeHtml(o.title)}" ${o.title === selectedTitle ? 'selected' : ''}>${AktUtils.escapeHtml(o.title)}${o.subTitle ? ' — ' + AktUtils.escapeHtml(o.subTitle) : ''}</option>`
+          `<option value="${AktUtils.escapeHtml(o.title)}" ${o.title === selectedTitle ? 'selected' : ''}>${AktUtils.formatObjectHtml(o)}</option>`
       )
       .join('');
     return `<option value="">— выберите объект —</option>${opts}`;
