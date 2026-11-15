@@ -398,10 +398,14 @@ const WizardController = (() => {
       ? `<div class="chip-list">${catalogChips || '<span class="wizard-hint">Все из справочника уже выбраны</span>'}</div>`
       : '<p class="wizard-hint">В бэкапе нет организаций — добавьте через кнопку справа.</p>';
 
+    const orgSelectHint = selected?.title
+      ? ''
+      : '<p class="wizard-hint">Выберите организацию из справочника</p>';
+
     return `
       <h3>Организация проверки</h3>
-      <p class="wizard-hint">Выберите одну организацию (как в iOS-приложении)</p>
-      <div class="chip-list" id="wOrgChips">${selectedChip || '<span class="wizard-hint">Выберите организацию из справочника</span>'}</div>
+      ${orgSelectHint}
+      <div class="chip-list" id="wOrgChips">${selectedChip || ''}</div>
       <div class="commission-divider"></div>
       <div class="commission-catalog-section">
         <div class="commission-catalog-header">
