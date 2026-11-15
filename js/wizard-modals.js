@@ -549,109 +549,20 @@ const WizardModals = (() => {
       });
     }
 
-    function isPhoneShell() {
-      return document.body.classList.contains('gazprom-mobile-shell');
-    }
-
-    function ensureRegistrySheet() {
-      const root = document.getElementById('wizardModalRoot');
-      if (!root) return null;
-      let sheet = document.getElementById('mvRegistrySheet');
-      if (sheet) return sheet;
-      sheet = document.createElement('div');
-      sheet.id = 'mvRegistrySheet';
-      sheet.className = 'mv-registry-sheet';
-      sheet.hidden = true;
-      sheet.innerHTML = `
-        <div class="mv-registry-sheet__backdrop" data-mv-sheet-close></div>
-        <div class="mv-registry-sheet__panel" role="dialog" aria-modal="true" aria-label="Выбор формулировки">
-          <div class="mv-registry-sheet__handle" aria-hidden="true"></div>
-          <div class="mv-registry-sheet__head">
-            <h4>Выберите нарушение</h4>
-            <button type="button" class="btn-ghost" data-mv-sheet-close>Готово</button>
-          </div>
-          <input type="search" class="form-control mv-registry-sheet__search" id="mvRegistrySheetSearch" placeholder="Начните вводить формулировку нарушения…" autocomplete="off" enterkeyhint="search">
-          <div class="viol-registry-results mv-registry-sheet__results" id="mvRegistrySheetResults"></div>
-        </div>`;
-      root.appendChild(sheet);
-      sheet.addEventListener('click', (e) => {
-        if (!e.target.closest('[data-mv-sheet-close]')) return;
-        e.preventDefault();
-        e.stopPropagation();
-        closeRegistrySheet();
-      });
-      document.getElementById('mvRegistrySheetSearch')?.addEventListener('input', (e) => {
-        const main = document.getElementById('mvRegistrySearch');
-        if (main) main.value = e.target.value;
-        scheduleRegistryPaint(e.target.value);
-      });
-      return sheet;
-    }
-
-    function openRegistrySheet(query) {
-      if (!isPhoneShell()) return;
-      const sheet = ensureRegistrySheet();
-      if (!sheet) return;
-      const sheetSearch = document.getElementById('mvRegistrySheetSearch');
-      if (sheetSearch && document.activeElement !== sheetSearch) {
-        sheetSearch.value = query || '';
-      }
-      sheet.hidden = false;
-      requestAnimationFrame(() => sheet.classList.add('mv-registry-sheet--open'));
-      paintRegistryResults(query || '');
-      if (sheetSearch && document.activeElement !== sheetSearch) {
-        sheetSearch.focus();
-        const len = sheetSearch.value.length;
-        sheetSearch.setSelectionRange?.(len, len);
-      }
-    }
-
-    function closeRegistrySheet() {
-      const sheet = document.getElementById('mvRegistrySheet');
-      if (!sheet || sheet.hidden) return;
-      sheet.classList.remove('mv-registry-sheet--open');
-      const done = () => {
-        sheet.hidden = true;
-        sheet.removeEventListener('transitionend', onEnd);
-      };
-      const onEnd = (ev) => {
-        if (ev.target !== sheet.querySelector('.mv-registry-sheet__panel')) return;
-        done();
-      };
-      sheet.addEventListener('transitionend', onEnd);
-      setTimeout(done, 400);
-    }
-
-    function paintRegistryResults(query) {
-      const html = renderRegistryResults(query);
-      if (isPhoneShell()) {
-        const box = document.getElementById('mvRegistrySheetResults');
-        if (box) box.innerHTML = html;
-      } else {
-        const results = document.getElementById('mvRegistryResults');
-        if (results) results.innerHTML = html;
-      }
-      bindRegistryResultClicks();
-      bindAddToRegistry();
-    }
-
+    // Registry search
     let searchTimer = null;
-    function scheduleRegistryPaint(query) {
-      clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => paintRegistryResults(query), 200);
-    }
-
-    document.getElementById('mvRegistrySearch')?.addEventListener('focus', (e) => {
-      if (!isPhoneShell()) return;
-      openRegistrySheet(e.target.value || '');
-    });
     document.getElementById('mvRegistrySearch')?.addEventListener('input', (e) => {
-      if (isPhoneShell()) openRegistrySheet(e.target.value || '');
-      else scheduleRegistryPaint(e.target.value || '');
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        const results = document.getElementById('mvRegistryResults');
+        if (results) results.innerHTML = renderRegistryResults(e.target.value);
+        bindRegistryResultClicks();
+        bindAddToRegistry();
+      }, 200);
     });
 
     function bindRegistryResultClicks() {
-      document.querySelectorAll('#mvRegistryResults .viol-registry-result-item, #mvRegistrySheetResults .viol-registry-result-item').forEach((el) => {
+      document.querySelectorAll('#mvRegistryResults .viol-registry-result-item').forEach((el) => {
         el.addEventListener('click', () => {
           const item = registryItems.find((r) => r.id === el.dataset.regId);
           if (!item) return;
@@ -692,7 +603,7 @@ const WizardModals = (() => {
           // Store snapshot for change detection (resolved vid — как в форме)
           selectedRegistryItem = { ...item, vid: resolvedItemVid };
 
-          document.querySelectorAll('#mvRegistryResults .viol-registry-result-item, #mvRegistrySheetResults .viol-registry-result-item').forEach((x) =>
+          document.querySelectorAll('#mvRegistryResults .viol-registry-result-item').forEach((x) =>
             x.classList.remove('selected')
           );
           el.classList.add('selected');
@@ -701,10 +612,9 @@ const WizardModals = (() => {
 
           const searchEl = document.getElementById('mvRegistrySearch');
           if (searchEl) searchEl.value = '';
-          const sheetSearch = document.getElementById('mvRegistrySheetSearch');
-          if (sheetSearch) sheetSearch.value = '';
-          closeRegistrySheet();
-          if (!isPhoneShell()) paintRegistryResults('');
+          const results = document.getElementById('mvRegistryResults');
+          if (results) results.innerHTML = renderRegistryResults('');
+          bindRegistryResultClicks();
           scheduleViolationTextareaResize();
         });
       });
