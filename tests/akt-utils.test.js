@@ -484,6 +484,13 @@ describe('AktUtils short types from catalog', () => {
     expect(titles).not.toContain('Работы на высоте');
   });
 
+  describe('capitalizeFioWords', () => {
+    it('каждое слово с заглавной', () => {
+      expect(AktUtils.capitalizeFioWords('иванов иван')).toBe('Иванов Иван');
+      expect(AktUtils.capitalizeFioWords('и.и. иванов')).toBe('И.И. Иванов');
+    });
+  });
+
   describe('normalizeRepresentativeFio', () => {
     it('полное ФИО → «И. И. Иванов»', () => {
       expect(AktUtils.normalizeRepresentativeFio('Иванов Иван Иванович')).toBe('И. И. Иванов');

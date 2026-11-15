@@ -289,10 +289,7 @@ const CatalogEditor = (() => {
 
     if (isPred) {
       const fioInput = form.querySelector('[data-field="fio"]');
-      fioInput?.addEventListener('blur', () => {
-        if (!fioInput) return;
-        fioInput.value = AktUtils.normalizeRepresentativeFio(fioInput.value);
-      });
+      AktUtils.bindRepresentativeFioInput(fioInput);
 
       const jobInput = form.querySelector('[data-field="jobTitle"]');
       const jobList = form.querySelector('[data-suggest-for="jobTitle"]');

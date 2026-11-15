@@ -887,11 +887,15 @@ const WizardModals = (() => {
       commission: {
         title: 'Новый член комиссии',
         html: `
-          <div class="form-group"><label>ФИО</label><input class="form-control" id="qaTitle" placeholder="Например: Иванов Иван Иванович"></div>
+          <div class="form-group"><label>ФИО</label><input class="form-control" id="qaTitle" placeholder="Например: Иванов Иван Иванович" autocomplete="off"></div>
           <div class="form-group"><label>Должность</label><input class="form-control" id="qaSub" placeholder="Например: Начальник участка"></div>
         `,
         save: async () => {
-          const fio = document.getElementById('qaTitle')?.value?.trim();
+          const fioInput = document.getElementById('qaTitle');
+          const fio = AktUtils.capitalizeFioWords(fioInput?.value || '')
+            .trim()
+            .replace(/\s+/g, ' ');
+          if (fioInput) fioInput.value = fio;
           if (!fio) { GazpromToast.error('Укажите ФИО'); return; }
           const job = document.getElementById('qaSub')?.value?.trim();
           return CatalogService.addCommissionPerson(fio, job);
@@ -936,12 +940,12 @@ const WizardModals = (() => {
        <button type="button" class="btn-primary" id="qaSave">Добавить</button>`
     );
 
+    if (type === 'commission') {
+      AktUtils.bindFioWordsInput(document.getElementById('qaTitle'));
+    }
+
     if (type === 'pred') {
-      const fioInput = document.getElementById('qaTitle');
-      fioInput?.addEventListener('blur', () => {
-        if (!fioInput) return;
-        fioInput.value = AktUtils.normalizeRepresentativeFio(fioInput.value);
-      });
+      AktUtils.bindRepresentativeFioInput(document.getElementById('qaTitle'));
       const catalog = typeof ctx.getCatalog === 'function' ? ctx.getCatalog() : null;
       const jobInput = document.getElementById('qaSub');
       const jobList = document.getElementById('qaSubSuggestions');

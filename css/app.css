@@ -2307,9 +2307,19 @@
       width: 28px;
       height: 28px;
     }
-    .bottom-nav-item .nav-icon,
-    .bottom-nav-item.active .nav-icon {
+    .bottom-nav-item .nav-icon {
       opacity: 0.72;
+    }
+    .bottom-nav-item.active .nav-icon {
+      opacity: 1;
+    }
+    .bottom-nav-item span:not(.nav-icon) {
+      max-width: 100%;
+      line-height: 1.15;
+      text-align: center;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      -webkit-font-smoothing: antialiased;
     }
     .bottom-nav-item.active::after {
       content: '';
@@ -5636,12 +5646,24 @@
       }
 
       body.gazprom-mobile-shell .header-title {
-        font-size: 1.05rem;
+        font-size: clamp(0.95rem, 4.1vw, 1.1rem);
+        line-height: 1.25;
         min-width: 0;
         max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow: visible;
+        text-overflow: unset;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      html[data-appearance='system'] body.gazprom-mobile-shell .header,
+      html[data-appearance='system'] body.gazprom-mobile-shell .bottom-nav {
+        background: var(--surface);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
       }
 
       body.gazprom-mobile-shell .header-actions {
@@ -7302,8 +7324,12 @@
       body.gazprom-mobile-shell .header-title {
         flex: 1 1 auto;
         max-width: 100%;
-        font-size: 0.95rem;
+        font-size: clamp(0.92rem, 3.8vw, 1.05rem);
+        line-height: 1.25;
         margin: 0;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: unset;
       }
 
       body.gazprom-mobile-shell .main {
@@ -7322,13 +7348,23 @@
       }
 
       body.gazprom-mobile-shell .bottom-nav-item {
-        padding: 4px 2px;
-        gap: 0;
-        font-size: 0;
+        padding: 4px 1px 2px;
+        gap: 2px;
+        font-size: 9px;
+        min-width: 0;
       }
 
       body.gazprom-mobile-shell .bottom-nav-item span:not(.nav-icon) {
-        display: none;
+        display: block;
+        font-size: 9px;
+        line-height: 1.1;
+        font-weight: 600;
+        opacity: 1;
+        max-width: 100%;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        text-align: center;
+        -webkit-font-smoothing: antialiased;
       }
 
       body.gazprom-mobile-shell .bottom-nav-item .nav-icon {

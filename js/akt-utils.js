@@ -639,10 +639,50 @@ const AktUtils = (() => {
     return val;
   }
 
+  /** Заглавная буква у каждого слова (ФИО при вводе). */
+  function capitalizeFioWords(text) {
+    return String(text ?? '')
+      .replace(/(^|[\s-])(\p{Ll})/gu, (_, sep, ch) => sep + ch.toLocaleUpperCase('ru-RU'))
+      .replace(/(\.)(\p{Ll})/gu, (_, dot, ch) => dot + ch.toLocaleUpperCase('ru-RU'));
+  }
+
+  function applyFioWordCapitalize(el) {
+    const val = el.value;
+    const next = capitalizeFioWords(val);
+    if (next === val) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    el.value = next;
+    if (start != null && end != null) {
+      el.setSelectionRange(start, end);
+    }
+  }
+
+  function bindRepresentativeFioInput(input) {
+    if (!input || input.dataset.fioBound === '1') return;
+    input.dataset.fioBound = '1';
+    input.dataset.noCapitalize = '';
+    input.addEventListener('input', () => applyFioWordCapitalize(input));
+    input.addEventListener('blur', () => {
+      input.value = normalizeRepresentativeFio(input.value);
+    });
+  }
+
+  function bindFioWordsInput(input) {
+    if (!input || input.dataset.fioBound === '1') return;
+    input.dataset.fioBound = '1';
+    input.dataset.noCapitalize = '';
+    input.addEventListener('input', () => applyFioWordCapitalize(input));
+    input.addEventListener('blur', () => {
+      input.value = capitalizeFioWords(input.value.trim()).replace(/\s+/g, ' ');
+    });
+  }
+
   function isAutoCapitalizeField(el) {
     if (!el || !(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)) return false;
     if (el.readOnly || el.disabled) return false;
     if (el.dataset.noCapitalize != null) return false;
+    if (el.dataset.fioBound === '1') return false;
     if (el.id === 'backupPasteText') return false;
     const type = (el.type || 'text').toLowerCase();
     return !SKIP_INPUT_TYPES.has(type);
@@ -939,6 +979,9 @@ const AktUtils = (() => {
     isAutoCapitalizeField,
     applyAutoCapitalize,
     bindAutoCapitalize,
+    capitalizeFioWords,
+    bindRepresentativeFioInput,
+    bindFioWordsInput,
     normalizeRepresentativeFio,
     collectJobTitleSuggestions,
     collectOrganizationSuggestions,
