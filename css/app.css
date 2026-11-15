@@ -6983,11 +6983,19 @@
         box-sizing: border-box;
       }
 
+      body.gazprom-mobile-shell #wizardModalRoot .mv-search-block {
+        margin-bottom: 6px;
+      }
+
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
-        /* Шапка, место, поиск, футер и одна полоса «Формулировка» + поле */
-        max-height: max(160px, calc(100dvh - 530px));
+        /* Список на максимум: ниже остаются подпись и поле формулировки целиком */
+        max-height: max(200px, calc(100dvh - 400px));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
+      }
+
+      body.gazprom-mobile-shell #wizardModalRoot #mvTitle {
+        min-height: 52px;
       }
 
       body.gazprom-mobile-shell #wizardModalRoot .modal-footer {
