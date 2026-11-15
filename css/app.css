@@ -6989,7 +6989,7 @@
 
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
         /* Список на максимум: ниже остаются подпись и поле формулировки целиком */
-        max-height: max(200px, calc(100dvh - 400px));
+        max-height: max(220px, calc(100dvh - 320px));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }

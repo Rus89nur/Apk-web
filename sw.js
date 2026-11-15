@@ -4,7 +4,7 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/app.css?v=314',
+  './css/app.css?v=315',
   './css/appearance.css?v=308',
   './js/appearance.js?v=272',
   './js/idb-connection.js?v=22',
