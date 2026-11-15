@@ -3042,24 +3042,40 @@
       bottom: max(20px, env(safe-area-inset-bottom, 0px));
       width: 56px;
       height: 56px;
-      border: none;
+      border: 2px solid var(--primary);
       border-radius: 50%;
-      background: var(--primary);
-      color: #fff;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(14px) saturate(1.15);
+      -webkit-backdrop-filter: blur(14px) saturate(1.15);
+      color: var(--primary);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 150;
-      box-shadow: 0 4px 18px rgba(13, 71, 161, 0.42), 0 2px 8px rgba(15, 23, 42, 0.12);
-      transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+      box-shadow:
+        0 4px 16px rgba(13, 71, 161, 0.16),
+        0 2px 8px rgba(15, 23, 42, 0.08);
+      transition:
+        background 0.15s,
+        border-color 0.15s,
+        color 0.15s,
+        transform 0.12s,
+        box-shadow 0.15s;
     }
     .viol-add-fab:hover {
-      background: var(--primary-hover);
+      background: var(--primary-soft);
+      border-color: var(--primary-hover);
+      color: var(--primary-hover);
       transform: scale(1.05);
-      box-shadow: 0 6px 22px rgba(13, 71, 161, 0.48), 0 3px 10px rgba(15, 23, 42, 0.14);
+      box-shadow:
+        0 6px 20px rgba(13, 71, 161, 0.22),
+        0 3px 10px rgba(15, 23, 42, 0.1);
     }
-    .viol-add-fab:active { transform: scale(0.96); }
+    .viol-add-fab:active {
+      transform: scale(0.96);
+      background: rgba(227, 242, 253, 0.95);
+    }
     .viol-add-fab__icon { width: 28px; height: 28px; pointer-events: none; }
     .wizard-panel--violations {
       padding-bottom: 88px;
