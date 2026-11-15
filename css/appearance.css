@@ -269,16 +269,14 @@ html[data-appearance="system"][data-scheme="dark"] :is(
   color: #fff;
 }
 html[data-appearance="system"][data-scheme="dark"] .viol-add-fab {
-  background: rgba(28, 28, 30, 0.78);
-  border-color: rgba(245, 245, 247, 0.55);
-  color: #f5f5f7;
+  background: #26a69a;
+  color: #fff;
   box-shadow:
-    0 4px 18px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
+    0 4px 18px rgba(38, 166, 154, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.35);
 }
 html[data-appearance="system"][data-scheme="dark"] .viol-add-fab:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: #f5f5f7;
+  background: #00897b;
   color: #fff;
 }
 html[data-appearance="system"][data-scheme="dark"] .progress-bar-fill {

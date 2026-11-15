@@ -4,6 +4,8 @@
       --primary-soft: #e3f2fd;
       --accent: #00838f;
       --accent-soft: #e0f7fa;
+      --viol-fab: #00897b;
+      --viol-fab-hover: #00695c;
       --success: #2e7d32;
       --warning: #ed6c02;
       --danger: #c62828;
@@ -3035,46 +3037,36 @@
     .viol-empty-text { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
     .viol-empty-hint { font-size: 13px; max-width: 340px; margin: 0 auto; line-height: 1.6; }
 
-    /* Плавающая кнопка «+» на шаге «Нарушения» — всегда внизу справа, контент скроллится под ней */
+    /* Плавающая кнопка «+» на шаге «Нарушения» — бирюза, не primary */
     .viol-add-fab {
       position: fixed;
       right: max(20px, env(safe-area-inset-right, 0px));
       bottom: max(20px, env(safe-area-inset-bottom, 0px));
       width: 56px;
       height: 56px;
-      border: 2px solid var(--primary);
+      border: none;
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(14px) saturate(1.15);
-      -webkit-backdrop-filter: blur(14px) saturate(1.15);
-      color: var(--primary);
+      background: var(--viol-fab);
+      color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 150;
       box-shadow:
-        0 4px 16px rgba(13, 71, 161, 0.16),
-        0 2px 8px rgba(15, 23, 42, 0.08);
-      transition:
-        background 0.15s,
-        border-color 0.15s,
-        color 0.15s,
-        transform 0.12s,
-        box-shadow 0.15s;
+        0 4px 18px rgba(0, 137, 123, 0.42),
+        0 2px 8px rgba(15, 23, 42, 0.12);
+      transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
     }
     .viol-add-fab:hover {
-      background: var(--primary-soft);
-      border-color: var(--primary-hover);
-      color: var(--primary-hover);
+      background: var(--viol-fab-hover);
       transform: scale(1.05);
       box-shadow:
-        0 6px 20px rgba(13, 71, 161, 0.22),
-        0 3px 10px rgba(15, 23, 42, 0.1);
+        0 6px 22px rgba(0, 137, 123, 0.48),
+        0 3px 10px rgba(15, 23, 42, 0.14);
     }
     .viol-add-fab:active {
       transform: scale(0.96);
-      background: rgba(227, 242, 253, 0.95);
     }
     .viol-add-fab__icon { width: 28px; height: 28px; pointer-events: none; }
     .wizard-panel--violations {
