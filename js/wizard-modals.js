@@ -25,6 +25,8 @@ const WizardModals = (() => {
   let photoHintGen = 0;
   let photoHintsDismissed = false;
   let afterModalPhotosCleared = null;
+  /** Вызывается после добавления фото в открытой модалке (фотофиксация или кнопка у поиска). */
+  let photoPickHintHandler = null;
   const RECENT_REGISTRY_KEY = 'apkGi.registryRecentIds';
   const RECENT_REGISTRY_MAX = 8;
 
@@ -197,6 +199,7 @@ const WizardModals = (() => {
     photoHintGen += 1;
     photoHintsDismissed = false;
     afterModalPhotosCleared = null;
+    photoPickHintHandler = null;
     window.__gazpromSavingViolation = false;
   }
 
@@ -254,8 +257,27 @@ const WizardModals = (() => {
     });
   }
 
+  function bindPhotoHintDismiss(el) {
+    el?.querySelector('#mvPhotoHintsReset')?.addEventListener('click', () => {
+      photoHintsDismissed = true;
+      photoHintGen += 1;
+      hidePhotoHints();
+    });
+  }
+
+  function ensureMvPhotoInputBound() {
+    const input = document.getElementById('mvPhotoInput');
+    if (!input || input.dataset.mvViolationPhotoBound === '1') return;
+    input.dataset.mvViolationPhotoBound = '1';
+    input.addEventListener('change', async (e) => {
+      const added = await onPhotoPick(e);
+      if (added?.length && photoPickHintHandler) photoPickHintHandler(added);
+    });
+  }
+
   function init(context) {
     ctx = context;
+    ensureMvPhotoInputBound();
   }
 
   /** Одна строка: line-height + padding + border (пустое поле). */
@@ -913,7 +935,7 @@ const WizardModals = (() => {
       el.innerHTML = `
         <div class="mv-photo-hints-head">
           <div class="mv-suggest-label">Похоже на фото</div>
-          <button type="button" class="btn-ghost btn-sm" id="mvPhotoHintsReset">Сбросить</button>
+          <button type="button" class="btn-ghost btn-sm" id="mvPhotoHintsReset">Скрыть</button>
         </div>
         ${hints.map((hint) => `
           <button type="button" class="mv-photo-hint" data-reg-id="${AktUtils.escapeHtml(hint.item.id || '')}" data-reg-number="${AktUtils.escapeHtml(hint.item.number ?? '')}">
@@ -922,17 +944,48 @@ const WizardModals = (() => {
           </button>
         `).join('')}
       `;
-      el.querySelector('#mvPhotoHintsReset')?.addEventListener('click', () => {
-        photoHintsDismissed = true;
-        photoHintGen += 1;
-        hidePhotoHints();
-      });
+      bindPhotoHintDismiss(el);
       el.querySelectorAll('.mv-photo-hint').forEach((btn) => {
         btn.addEventListener('click', () => {
           const picked = findRegistryItemFromEl(btn);
           if (picked) applyRegistryItem(picked, btn);
         });
       });
+    }
+
+    function showPhotoHintMessage(message) {
+      const el = document.getElementById('mvPhotoHints');
+      if (!el) return;
+      el.hidden = false;
+      el.innerHTML = `
+        <div class="mv-photo-hints-head">
+          <div class="mv-suggest-label">Похоже на фото</div>
+          <button type="button" class="btn-ghost btn-sm" id="mvPhotoHintsReset">Скрыть</button>
+        </div>
+        <p class="mv-suggest-count mv-photo-hint-empty">${AktUtils.escapeHtml(message)}</p>
+      `;
+      bindPhotoHintDismiss(el);
+    }
+
+    async function explainEmptyPhotoHints(preds) {
+      try {
+        if (typeof MlImageService?.getStatistics === 'function') {
+          const stats = await MlImageService.getStatistics({ skipAccuracy: true });
+          if ((stats?.totalPhotos || 0) === 0) {
+            return (
+              'Модель по фото ещё не обучена: Настройки → Обучение модели. ' +
+              'Загрузите снимки по видам нарушений или подтяните фото из актов. ' +
+              'Пока выбирайте формулировку текстом в строке поиска выше.'
+            );
+          }
+        }
+      } catch {
+        /* подсказка по тексту ниже */
+      }
+      if (!preds?.length) {
+        return 'Не удалось проанализировать снимок. Попробуйте другое фото или введите формулировку текстом.';
+      }
+      return 'Уверенных совпадений с реестром нет. Выберите вариант в списке ниже или введите свой текст.';
     }
 
     async function runPhotoHint(ref) {
@@ -949,8 +1002,12 @@ const WizardModals = (() => {
       try {
         const src = typeof AktUtils?.photoSrcAsync === 'function' ? await AktUtils.photoSrcAsync(ref) : '';
         if (gen !== photoHintGen || photoHintsDismissed) return;
-        if (!src || typeof MlImageService === 'undefined' || typeof MlImageService.predict !== 'function') {
-          hidePhotoHints();
+        if (!src) {
+          showPhotoHintMessage('Не удалось прочитать снимок. Попробуйте добавить фото ещё раз.');
+          return;
+        }
+        if (typeof MlImageService === 'undefined' || typeof MlImageService.predict !== 'function') {
+          showPhotoHintMessage('Подсказки по фото недоступны. Обновите страницу или выберите нарушение текстом.');
           return;
         }
         const preds = await MlImageService.predict(src);
@@ -958,14 +1015,22 @@ const WizardModals = (() => {
         const hints = ViolationSearch.mapPhotoHints(Array.isArray(preds) ? preds : [], getRegistryItems());
         if (gen !== photoHintGen || photoHintsDismissed) return;
         if (!hints.length) {
-          hidePhotoHints();
+          showPhotoHintMessage(await explainEmptyPhotoHints(preds));
           return;
         }
         renderPhotoHintList(hints);
       } catch {
-        if (gen === photoHintGen) hidePhotoHints();
+        if (gen === photoHintGen) {
+          showPhotoHintMessage('Ошибка при анализе фото. Выберите формулировку вручную.');
+        }
       }
     }
+
+    photoPickHintHandler = (added) => {
+      if (!added?.length) return;
+      photoHintsDismissed = false;
+      void runPhotoHint(added[added.length - 1]);
+    };
 
     document.getElementById('mvRegistrySearch')?.addEventListener('input', () => {
       scheduleRegistryRefresh();
@@ -978,10 +1043,7 @@ const WizardModals = (() => {
     });
     cameraInput?.addEventListener('change', async (e) => {
       const added = await onPhotoPick(e);
-      if (added?.length) {
-        photoHintsDismissed = false;
-        void runPhotoHint(added[added.length - 1]);
-      }
+      photoPickHintHandler?.(added);
     });
 
     bindRegistryResultClicks();
@@ -999,11 +1061,6 @@ const WizardModals = (() => {
     document.getElementById('mvSave')?.addEventListener('click', saveViolation);
     document.getElementById('mvDelete')?.addEventListener('click', deleteViolation);
     if (modalPhotos.length) void runPhotoHint(modalPhotos[0]);
-    const photoInput = document.getElementById('mvPhotoInput');
-    if (photoInput && !photoInput.dataset.bound) {
-      photoInput.dataset.bound = '1';
-      photoInput.addEventListener('change', onPhotoPick);
-    }
     bindModalPhotoClicks();
     hydrateModalPhotoThumbs();
   }

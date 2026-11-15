@@ -3299,6 +3299,11 @@
     .mv-photo-hint .mv-suggest-count {
       flex: 0 0 auto;
     }
+    .mv-photo-hint-empty {
+      margin: 4px 0 0;
+      line-height: 1.45;
+      color: var(--text-muted);
+    }
 
     .mv-mesto-block {
       position: relative;
