@@ -3099,7 +3099,7 @@
     .mv-search-block-icon { font-size: 14px; }
     .mv-search-block-input {
       width: 100%;
-      padding: 12px 14px 12px 38px;
+      padding: 12px 14px;
       border: 1px solid var(--border);
       border-radius: 10px;
       font-size: 15px;
@@ -3109,10 +3109,12 @@
       outline: none;
       margin-bottom: 10px;
       transition: border-color 0.15s, box-shadow 0.15s;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230d47a1' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: 12px center;
       box-sizing: border-box;
+    }
+    .mv-search-block-input::-webkit-search-decoration,
+    .mv-search-block-input::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+      appearance: none;
     }
     .mv-search-block-input:focus {
       border-color: var(--primary);

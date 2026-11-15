@@ -377,7 +377,7 @@ const WizardModals = (() => {
       <div class="mv-search-block form-group">
         <label class="form-label">Нарушение</label>
         <input type="search"
-          class="mv-search-block-input"
+          class="form-control mv-search-block-input"
           id="mvRegistrySearch"
           placeholder="Начните вводить формулировку нарушения…"
           autocomplete="off"
