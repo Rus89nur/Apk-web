@@ -470,14 +470,14 @@ const WizardController = (() => {
     const selectedId = selected?.id;
 
     const selectedChip = selected?.title
-      ? `<span class="chip chip-removable" data-clear-org title="Нажмите, чтобы убрать">${AktUtils.escapeHtml(selected.title)}${selected.shortTitle ? ' — ' + AktUtils.escapeHtml(selected.shortTitle) : ''}</span>`
+      ? `<span class="chip chip-removable" data-clear-org title="Нажмите, чтобы убрать">${AktUtils.formatOrganizationHtml(selected)}</span>`
       : '';
 
     const catalogChips = orgs
       .filter((o) => o.id !== selectedId)
       .map(
         (o) =>
-          `<span class="chip chip-catalog" data-select-org="${o.id}" title="Нажмите, чтобы выбрать">${AktUtils.escapeHtml(o.title)}${o.shortTitle ? ' — ' + AktUtils.escapeHtml(o.shortTitle) : ''}</span>`
+          `<span class="chip chip-catalog" data-select-org="${o.id}" title="Нажмите, чтобы выбрать">${AktUtils.formatOrganizationHtml(o)}</span>`
       )
       .join('');
 

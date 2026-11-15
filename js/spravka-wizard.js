@@ -383,7 +383,7 @@ const SpravkaWizard = (() => {
   }
 
   function formatOrgChipLabel(o) {
-    return `${AktUtils.escapeHtml(o.title)}${o.shortTitle ? ' — ' + AktUtils.escapeHtml(o.shortTitle) : ''}`;
+    return AktUtils.formatOrganizationHtml(o);
   }
 
   function resolveSubcontractorSelection() {

@@ -30,6 +30,16 @@ const AktUtils = (() => {
       .replace(/"/g, '&quot;');
   }
 
+  /** «Полное наименование (краткое)» для организаций в справочнике и чипах. */
+  function formatOrganizationHtml(org) {
+    if (!org) return '';
+    const title = String(org.title || '').trim();
+    const short = String(org.shortTitle || '').trim();
+    if (!title) return short ? escapeHtml(short) : '';
+    if (!short || short === title) return escapeHtml(title);
+    return `${escapeHtml(title)} (${escapeHtml(short)})`;
+  }
+
   /** Префиксы заголовков нарушений сокращённого акта (как в iOS AKT.isShortFormat). */
   const SHORT_VIOLATION_PREFIXES = ['Сокращенный:', 'Сокращённый:', 'Внешний:'];
 
@@ -1015,6 +1025,7 @@ const AktUtils = (() => {
     toDateInputValue,
     formatDateShort,
     escapeHtml,
+    formatOrganizationHtml,
     SHORT_VIOLATION_PREFIXES,
     SHORT_VIOLATION_TYPES,
     isShortViolationTitle,

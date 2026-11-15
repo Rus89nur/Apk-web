@@ -23,7 +23,13 @@ const CatalogEditor = (() => {
         { key: 'shortTitle', label: 'Краткое',       placeholder: 'ООО «Назв.»' },
       ],
       listKey: 'organizations',
-      label: (r) => r.title,
+      label: (r) => {
+        const short = String(r.shortTitle || '').trim();
+        const title = String(r.title || '').trim();
+        if (!title) return short;
+        if (!short || short === title) return title;
+        return `${title} (${short})`;
+      },
       searchText: (r) => `${r.title} ${r.shortTitle || ''}`.toLowerCase(),
     },
     objects: {
