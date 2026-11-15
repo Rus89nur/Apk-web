@@ -14,6 +14,7 @@ const WizardController = (() => {
   let predOrgFilters = new Set();
   let violSearchQuery = '';
   let objectSearchQuery = '';
+  let predSearchQuery = '';
 
   const AUTOSAVE_MS = window.matchMedia('(pointer: coarse)').matches ? 600 : 2000;
 
@@ -69,6 +70,7 @@ const WizardController = (() => {
     AktUtils.ensureConclusionDateTracking(draft);
     violSearchQuery = '';
     objectSearchQuery = '';
+    predSearchQuery = '';
   }
 
   function showEmpty(show) {
@@ -129,6 +131,7 @@ const WizardController = (() => {
     descEditMode = false;
     predOrgFilters = new Set();
     objectSearchQuery = '';
+    predSearchQuery = '';
     await saveDraft();
     render();
     bindAutosaveOnPanel();
@@ -209,6 +212,71 @@ const WizardController = (() => {
     });
   }
 
+  function predMatchesSearch(p, q) {
+    const needle = String(q || '').trim().toLowerCase();
+    if (!needle) return true;
+    const hay = `${p.fio || ''} ${p.jobTitle || ''} ${p.organization || ''}`.toLowerCase();
+    return hay.includes(needle);
+  }
+
+  function buildPredCatalogChipsHtml() {
+    const allPreds = catalog?.predstavitely || [];
+    const selectedPredIds = new Set((draft?.predstavitelyComission || []).map((p) => p.id));
+    const filtered = allPreds.filter((p) => {
+      if (selectedPredIds.has(p.id)) return false;
+      if (predOrgFilters.size > 0 && !predOrgFilters.has(p.organization || '')) return false;
+      return predMatchesSearch(p, predSearchQuery);
+    });
+    if (!allPreds.length) return '';
+    if (!filtered.length) {
+      if (predSearchQuery.trim() || predOrgFilters.size > 0) {
+        return '<span class="wizard-hint">Ничего не найдено</span>';
+      }
+      return '';
+    }
+    return filtered
+      .map(
+        (p) =>
+          `<span class="chip chip-catalog" data-add-pred="${p.id}" title="Нажмите, чтобы добавить">${AktUtils.escapeHtml(p.fio)}${p.jobTitle ? ' — ' + AktUtils.escapeHtml(p.jobTitle) : ''}</span>`
+      )
+      .join('');
+  }
+
+  function bindPredCatalogChips() {
+    const host = document.getElementById('wPredCatalogChips');
+    if (!host) return;
+    host.querySelectorAll('[data-add-pred]').forEach((chip) => {
+      chip.addEventListener('click', () => addPredById(chip.dataset.addPred));
+    });
+  }
+
+  function refreshPredCatalogChips() {
+    const host = document.getElementById('wPredCatalogChips');
+    if (!host) return;
+    host.innerHTML = buildPredCatalogChipsHtml();
+    bindPredCatalogChips();
+  }
+
+  function bindPredFilterLine() {
+    const el = document.getElementById('wPredFilter');
+    if (!el || el.dataset.predFilterBound === '1') return;
+    el.dataset.predFilterBound = '1';
+    syncObjectFilterEmptyState(el);
+    el.addEventListener('input', () => {
+      predSearchQuery = el.textContent || '';
+      syncObjectFilterEmptyState(el);
+      refreshPredCatalogChips();
+    });
+    el.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') ev.preventDefault();
+    });
+    el.addEventListener('paste', (ev) => {
+      ev.preventDefault();
+      const text = ev.clipboardData?.getData('text/plain') || '';
+      document.execCommand('insertText', false, text);
+    });
+  }
+
   async function open(aktId = null, options = {}) {
     const preserveStep = options.preserveStep === true;
     const preserveDraft = options.preserveDraft === true;
@@ -255,6 +323,7 @@ const WizardController = (() => {
     commitStep(step);
     descEditMode = false;
     predOrgFilters = new Set();
+    predSearchQuery = '';
     step = Math.max(0, Math.min(TOTAL_STEPS - 1, newStep));
     if (step === 2) normalizeObjectsCheck();
     syncStepperUI();
@@ -546,7 +615,6 @@ const WizardController = (() => {
 
   function renderStepDescription() {
     const allPreds = catalog.predstavitely || [];
-    const selectedPredIds = new Set((draft.predstavitelyComission || []).map((p) => p.id));
 
     const predChips = (draft.predstavitelyComission || [])
       .map(
@@ -557,18 +625,12 @@ const WizardController = (() => {
 
     const orgNames = [...new Set(allPreds.map((p) => p.organization).filter(Boolean))].sort();
 
-    const filteredPreds = allPreds.filter((p) => {
-      if (selectedPredIds.has(p.id)) return false;
-      if (predOrgFilters.size === 0) return true;
-      return predOrgFilters.has(p.organization || '');
-    });
+    const predFilterEmpty = !String(predSearchQuery || '').trim();
+    const predSearchLine = allPreds.length
+      ? `<p class="wizard-hint wizard-org-hint wizard-object-filter${predFilterEmpty ? ' wizard-object-filter--empty' : ''}" id="wPredFilter" contenteditable="true" role="searchbox" spellcheck="false" data-placeholder="Поиск по ФИО, должности или организации" aria-label="Поиск представителя в справочнике">${AktUtils.escapeHtml(predSearchQuery)}</p>`
+      : '';
 
-    const predCatalogChips = filteredPreds
-      .map(
-        (p) =>
-          `<span class="chip chip-catalog" data-add-pred="${p.id}" title="Нажмите, чтобы добавить">${AktUtils.escapeHtml(p.fio)}${p.jobTitle ? ' — ' + AktUtils.escapeHtml(p.jobTitle) : ''}</span>`
-      )
-      .join('');
+    const predCatalogChips = buildPredCatalogChipsHtml();
 
     const filterBtns = orgNames
       .map((org) => {
@@ -630,7 +692,10 @@ const WizardController = (() => {
       </div>
 
       <h3 style="margin-top:8px;">Представители организации</h3>
-      <div class="chip-list" id="wPredChips">${predChips || '<span class="wizard-hint">Добавьте представителей организации</span>'}</div>
+      <div class="wizard-org-select-block">
+        <div class="chip-list" id="wPredChips">${predChips || '<span class="wizard-hint">Добавьте представителей организации</span>'}</div>
+        ${predSearchLine}
+      </div>
       <div class="commission-divider"></div>
       <div class="commission-catalog-section">
         <div class="commission-catalog-header">
@@ -638,7 +703,7 @@ const WizardController = (() => {
           <button type="button" class="btn-ghost" id="wNewPredBtn">+ Новый представитель</button>
         </div>
         ${filterRow}
-        <div class="chip-list">${predCatalogChips || '<span class="wizard-hint">Все из справочника уже добавлены</span>'}</div>
+        <div class="chip-list" id="wPredCatalogChips">${predCatalogChips || '<span class="wizard-hint">Все из справочника уже добавлены</span>'}</div>
       </div>
     `;
   }
@@ -852,9 +917,8 @@ const WizardController = (() => {
       btn.addEventListener('click', () => removePerson(btn.dataset.removePerson));
     });
 
-    panelsHost()?.querySelectorAll('[data-add-pred]').forEach((chip) => {
-      chip.addEventListener('click', () => addPredById(chip.dataset.addPred));
-    });
+    bindPredCatalogChips();
+    bindPredFilterLine();
     panelsHost()?.querySelectorAll('[data-remove-pred]').forEach((chip) => {
       chip.addEventListener('click', () => removePred(chip.dataset.removePred));
     });
