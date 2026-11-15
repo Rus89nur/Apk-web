@@ -3124,6 +3124,8 @@
     .mv-search-block {
       margin-top: 8px;
       margin-bottom: 20px;
+      min-width: 0;
+      max-width: 100%;
     }
     .mv-search-block-label {
       display: flex;
@@ -3162,6 +3164,140 @@
     }
     .mv-search-block .viol-registry-results {
       margin-bottom: 0;
+    }
+    .mv-search-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .mv-search-row .mv-search-block-input {
+      flex: 1 1 0;
+      width: auto;
+      min-width: 0;
+      margin-bottom: 0;
+    }
+    .mv-search-camera {
+      flex: 0 0 44px;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--primary);
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .mv-search-camera:hover,
+    .mv-search-camera:focus {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+      outline: none;
+    }
+    .mv-search-camera svg {
+      width: 22px;
+      height: 22px;
+      display: block;
+      pointer-events: none;
+    }
+    .mv-suggest-block {
+      padding: 8px 8px 4px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      min-width: 0;
+    }
+    .mv-suggest-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .mv-suggest-count {
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+    .mv-suggest-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--primary-soft);
+      color: var(--primary);
+      font-size: 11px;
+      font-weight: 600;
+      vertical-align: baseline;
+    }
+    .mv-leader-card {
+      margin: 8px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      min-width: 0;
+    }
+    .mv-leader-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .mv-photo-hints {
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .mv-photo-hints-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .mv-photo-hints-head .mv-suggest-label {
+      margin-bottom: 0;
+    }
+    .mv-photo-hint {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+      margin: 0;
+      padding: 8px 0;
+      border: none;
+      border-top: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+    }
+    .mv-photo-hint .vr-result-title {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .mv-photo-hint .mv-suggest-count {
+      flex: 0 0 auto;
     }
 
     .mv-mesto-block {
@@ -7024,6 +7160,10 @@
 
       body.gazprom-mobile-shell #wizardModalRoot .mv-search-block,
       body.gazprom-mobile-shell #wizardModalRoot .mv-search-block-input,
+      body.gazprom-mobile-shell #wizardModalRoot .mv-search-row,
+      body.gazprom-mobile-shell #wizardModalRoot .mv-suggest-block,
+      body.gazprom-mobile-shell #wizardModalRoot .mv-leader-card,
+      body.gazprom-mobile-shell #wizardModalRoot .mv-photo-hints,
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
         width: 100%;
         min-width: 0;
@@ -7033,6 +7173,14 @@
 
       body.gazprom-mobile-shell #wizardModalRoot .mv-search-block {
         margin-bottom: 6px;
+        overflow-x: clip;
+      }
+
+      body.gazprom-mobile-shell #wizardModalRoot .mv-search-row .mv-search-block-input {
+        width: auto;
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: 100%;
       }
 
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {

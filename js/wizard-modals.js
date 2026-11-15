@@ -22,6 +22,48 @@ const WizardModals = (() => {
   let modalPhotos = [];
   let savingViolation = false;
   let violationFormInitial = null;
+  let photoHintGen = 0;
+  let photoHintsDismissed = false;
+  let afterModalPhotosCleared = null;
+  const RECENT_REGISTRY_KEY = 'apkGi.registryRecentIds';
+  const RECENT_REGISTRY_MAX = 8;
+
+  function readRecentRegistryIds() {
+    try {
+      const raw = localStorage.getItem(RECENT_REGISTRY_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      const ids = [];
+      for (const value of parsed) {
+        if (typeof value !== 'string' || !value) return [];
+        ids.push(value);
+      }
+      return ids.slice(0, RECENT_REGISTRY_MAX);
+    } catch {
+      return [];
+    }
+  }
+
+  function rememberRecentRegistryId(id) {
+    if (!id || typeof id !== 'string') return;
+    try {
+      const prev = readRecentRegistryIds().filter((value) => value !== id);
+      localStorage.setItem(
+        RECENT_REGISTRY_KEY,
+        JSON.stringify([id, ...prev].slice(0, RECENT_REGISTRY_MAX))
+      );
+    } catch {
+      /* каталог и форма от этого не зависят */
+    }
+  }
+
+  function hidePhotoHints() {
+    const el = document.getElementById('mvPhotoHints');
+    if (!el) return;
+    el.hidden = true;
+    el.innerHTML = '';
+  }
 
   const isSavingViolation = () => savingViolation;
 
@@ -152,6 +194,9 @@ const WizardModals = (() => {
     modalPhotos = [];
     savingViolation = false;
     violationFormInitial = null;
+    photoHintGen += 1;
+    photoHintsDismissed = false;
+    afterModalPhotosCleared = null;
     window.__gazpromSavingViolation = false;
   }
 
@@ -290,14 +335,18 @@ const WizardModals = (() => {
     const draft = ctx.getDraft();
     const catalog = ctx.getCatalog();
     editingViolationId = violationId;
+    photoHintGen += 1;
+    photoHintsDismissed = false;
+    afterModalPhotosCleared = () => {
+      photoHintGen += 1;
+      hidePhotoHints();
+    };
     const v =
       violationId != null
         ? (draft.violations || []).find((x) => x.id === violationId)
         : null;
 
     modalPhotos = v?.photo ? [...v.photo] : [];
-
-    const registryItems = catalog?.violationRegistry || [];
 
     const originalMesto = String(v?.mesto || '').trim();
     const mestoSuggestions =
@@ -334,14 +383,171 @@ const WizardModals = (() => {
       )
       .join('');
 
-    function renderRegistryResults(query) {
-      const q = query.trim();
-      const items = ViolationSearch.filterRegistry(registryItems, q);
-      if (!items.length && !q) {
-        return `<div class="viol-registry-empty">Реестр нарушений пуст</div>`;
+    function getRegistryItems() {
+      return ctx.getCatalog?.()?.violationRegistry || catalog?.violationRegistry || [];
+    }
+
+    function currentMestoValue() {
+      const el = document.getElementById('mvMesto');
+      if (el) return el.value || '';
+      return v?.mesto || '';
+    }
+
+    function alreadyInAct(title) {
+      const key = ViolationSearch.normalize(title);
+      if (!key) return false;
+      const liveDraft = ctx.getDraft?.();
+      return (liveDraft?.violations || []).some(
+        (viol) => viol && viol.id !== editingViolationId && ViolationSearch.normalize(viol.title) === key
+      );
+    }
+
+    function alreadyBadge(title) {
+      return alreadyInAct(title)
+        ? '<span class="mv-suggest-badge">уже в акте</span>'
+        : '';
+    }
+
+    function displayVidOf(item) {
+      const live = ctx.getCatalog?.() || catalog;
+      if (live && typeof ViolationTypes !== 'undefined') {
+        return ViolationTypes.resolveVid(live, item?.vid) || '';
       }
-      if (!items.length && q) {
-        return `
+      return item?.vid || '';
+    }
+
+    function registryItemForNorm(items, key) {
+      let best = null;
+      for (const item of items || []) {
+        if (ViolationSearch.normalize(item?.title) !== key) continue;
+        if (!best || (item.number || 0) < (best.number || 0)) best = item;
+      }
+      return best;
+    }
+
+    function collectPlaceStats(mesto) {
+      const place = String(mesto || '').trim();
+      const counts = {};
+      const titles = {};
+      if (!place || typeof ViolationSearch?.placesMatch !== 'function') {
+        return { counts, top: [] };
+      }
+      const catalogNow = ctx.getCatalog?.() || {};
+      const liveDraft = typeof ctx.getDraft === 'function' ? ctx.getDraft() : null;
+      const byId = new Map();
+      const loose = [];
+      const addAkt = (akt) => {
+        if (!akt || typeof akt !== 'object') return;
+        if (akt.id) byId.set(akt.id, akt);
+        else loose.push(akt);
+      };
+      for (const akt of catalogNow.akts || []) addAkt(akt);
+      for (const akt of catalogNow.trash || []) addAkt(akt);
+      if (liveDraft) {
+        if (liveDraft.id) byId.set(liveDraft.id, liveDraft);
+        else loose.push(liveDraft);
+      }
+      for (const akt of [...byId.values(), ...loose]) {
+        for (const viol of akt.violations || []) {
+          if (!ViolationSearch.placesMatch(viol?.mesto, place)) continue;
+          const rawTitle = String(viol?.title || '').trim();
+          const key = ViolationSearch.normalize(rawTitle);
+          if (!key) continue;
+          counts[key] = (counts[key] || 0) + 1;
+          if (!titles[key]) titles[key] = rawTitle;
+        }
+      }
+      const registry = getRegistryItems();
+      const top = Object.keys(counts)
+        .map((key) => {
+          const reg = registryItemForNorm(registry, key);
+          return {
+            key,
+            count: counts[key],
+            title: titles[key],
+            reg,
+            display: reg?.title || titles[key],
+          };
+        })
+        .sort((a, b) => b.count - a.count || a.display.localeCompare(b.display, 'ru'))
+        .slice(0, 5);
+      return { counts, top };
+    }
+
+    function recentRegistryItems(items) {
+      const out = [];
+      const seen = new Set();
+      for (const id of readRecentRegistryIds()) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const item = (items || []).find((row) => row.id === id);
+        if (item) out.push(item);
+      }
+      return out;
+    }
+
+    function isBrowseQuery(query) {
+      const parsed = ViolationSearch.parseQuery(query);
+      if (parsed.phrases?.length) return false;
+      const stop = ViolationSearch.STOP_WORDS;
+      return !(parsed.tokens || []).some((token) => !stop?.has?.(token));
+    }
+
+    function resultRowHtml(item, index, extraHtml) {
+      const displayVid = displayVidOf(item);
+      const num = item.number || index + 1;
+      return `
+          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(item.id || '')}" data-reg-number="${AktUtils.escapeHtml(item.number ?? '')}">
+            <span class="vr-result-num">${AktUtils.escapeHtml(String(num))}</span>
+            <div class="vr-result-body">
+              <div class="vr-result-title">${AktUtils.escapeHtml(item.title || '')}${alreadyBadge(item.title)}</div>
+              ${item.subTitle ? `<div class="vr-result-sub">📄 ${AktUtils.escapeHtml(item.subTitle)}</div>` : ''}
+              ${displayVid ? `<span class="vr-result-vid">${AktUtils.escapeHtml(displayVid)}</span>` : ''}
+              ${extraHtml || ''}
+            </div>
+          </div>`;
+    }
+
+    function renderPlainList(items) {
+      return (items || []).map((item, index) => resultRowHtml(item, index)).join('');
+    }
+
+    function renderFreqBlock(rows) {
+      if (!rows.length) return '';
+      const body = rows
+        .map((row) => {
+          if (row.reg) {
+            const item = row.reg;
+            return `
+          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(item.id || '')}" data-reg-number="${AktUtils.escapeHtml(item.number ?? '')}">
+            <span class="vr-result-num">${AktUtils.escapeHtml(String(item.number || ''))}</span>
+            <div class="vr-result-body">
+              <div class="vr-result-title">${AktUtils.escapeHtml(item.title || '')}${alreadyBadge(item.title)}</div>
+              <div class="mv-suggest-count">${row.count} раз</div>
+            </div>
+          </div>`;
+          }
+          return `
+          <div class="viol-registry-result-item" data-freq-only="${AktUtils.escapeHtml(row.title)}">
+            <div class="vr-result-body">
+              <div class="vr-result-title">${AktUtils.escapeHtml(row.title)}${alreadyBadge(row.title)}</div>
+              <div class="mv-suggest-count">${row.count} раз</div>
+            </div>
+          </div>`;
+        })
+        .join('');
+      return `<div class="mv-suggest-block"><div class="mv-suggest-label">Часто в этом месте</div>${body}</div>`;
+    }
+
+    function renderRecentBlock(items) {
+      if (!items.length) return '';
+      const body = items.map((item, index) => resultRowHtml(item, index)).join('');
+      return `<div class="mv-suggest-block"><div class="mv-suggest-label">Недавние</div>${body}</div>`;
+    }
+
+    function renderNotFound(query) {
+      const q = String(query || '').trim();
+      return `
           <div class="viol-registry-empty">
             Ничего не найдено
             <br>
@@ -349,24 +555,49 @@ const WizardModals = (() => {
               + Добавить «${AktUtils.escapeHtml(q.slice(0, 60))}» в реестр
             </button>
           </div>`;
-      }
-      return items
-        .map((r, i) => {
-          const displayVid =
-            catalog && typeof ViolationTypes !== 'undefined'
-              ? ViolationTypes.resolveVid(catalog, r.vid)
-              : (r.vid || '');
-          return `
-          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(r.id)}">
-            <span class="vr-result-num">${r.number || i + 1}</span>
-            <div class="vr-result-body">
-              <div class="vr-result-title">${AktUtils.escapeHtml(r.title)}</div>
-              ${r.subTitle ? `<div class="vr-result-sub">📄 ${AktUtils.escapeHtml(r.subTitle)}</div>` : ''}
-              ${displayVid ? `<span class="vr-result-vid">${AktUtils.escapeHtml(displayVid)}</span>` : ''}
+    }
+
+    function renderBrowse(items) {
+      const mesto = currentMestoValue().trim();
+      const freq = mesto ? collectPlaceStats(mesto).top : [];
+      const recent = recentRegistryItems(items);
+      const list = renderPlainList(ViolationSearch.filterRegistry(items, ''));
+      const emptyList = `<div class="viol-registry-empty">Реестр нарушений пуст</div>`;
+      if (!freq.length && !recent.length) return list || emptyList;
+      return `${renderFreqBlock(freq)}${renderRecentBlock(recent)}${list || emptyList}`;
+    }
+
+    function renderRanked(ranked) {
+      const leader = ViolationSearch.shouldShowLeader(ranked)
+        ? `<div class="mv-leader-card" data-reg-id="${AktUtils.escapeHtml(ranked[0].item.id || '')}" data-reg-number="${AktUtils.escapeHtml(ranked[0].item.number ?? '')}">
+            <div class="mv-suggest-label">Наиболее подходящее</div>
+            <div class="vr-result-title">${AktUtils.escapeHtml(ranked[0].item.title || '')}${alreadyBadge(ranked[0].item.title)}</div>
+            <div class="mv-suggest-count">${AktUtils.escapeHtml(ranked[0].reasons.length ? ranked[0].reasons.join(' · ') : 'точное совпадение')}</div>
+            <div class="mv-leader-actions">
+              <button type="button" class="btn-primary btn-sm" data-leader-apply>Подставить</button>
             </div>
-          </div>`;
+          </div>`
+        : '';
+      const rows = ranked
+        .map((row, index) => {
+          const extra = row.full
+            ? ''
+            : `<div class="mv-suggest-count">совпало ${row.matched} из ${row.required}</div>`;
+          return resultRowHtml(row.item, index, extra);
         })
         .join('');
+      return leader + rows;
+    }
+
+    function renderRegistryResults(query) {
+      const items = getRegistryItems();
+      const q = String(query ?? '');
+      if (isBrowseQuery(q)) return renderBrowse(items);
+      const mesto = currentMestoValue().trim();
+      const placeCounts = mesto ? collectPlaceStats(mesto).counts : {};
+      const result = ViolationSearch.suggestRegistry(items, q, { placeCounts });
+      if (!result.ranked.length) return renderNotFound(q);
+      return renderRanked(result.ranked);
     }
 
     const ph = violationId == null ? MV_PLACEHOLDER_NEW : MV_PLACEHOLDER_EDIT;
@@ -390,12 +621,22 @@ const WizardModals = (() => {
 
       <div class="mv-search-block form-group">
         <label class="form-label">Нарушение</label>
-        <input type="search"
-          class="form-control mv-search-block-input"
-          id="mvRegistrySearch"
-          placeholder="Начните вводить формулировку нарушения…"
-          autocomplete="off"
-          value="">
+        <div class="mv-search-row">
+          <input type="search"
+            class="form-control mv-search-block-input"
+            id="mvRegistrySearch"
+            placeholder="Начните вводить формулировку нарушения…"
+            autocomplete="off"
+            value="">
+          <button type="button" class="mv-search-camera" id="mvRegistryCamera" aria-label="Снять фото для подсказки">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </button>
+          <input type="file" id="mvRegistryCameraInput" class="gazprom-file-input" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+        </div>
+        <div id="mvPhotoHints" class="mv-photo-hints" hidden></div>
         <div class="viol-registry-results" id="mvRegistryResults">
           ${renderRegistryResults('')}
         </div>
@@ -498,6 +739,7 @@ const WizardModals = (() => {
     const mestoInput = document.getElementById('mvMesto');
     const mestoList = document.getElementById('mvMestoSuggestions');
     let mestoTimer = null;
+    let searchTimer = null;
 
     function showMestoSuggestions() {
       if (!mestoInput || !mestoList) return;
@@ -535,6 +777,7 @@ const WizardModals = (() => {
         btn.addEventListener('click', () => {
           if (mestoInput) mestoInput.value = btn.dataset.mesto || '';
           hideMestoSuggestions();
+          scheduleRegistryRefresh();
         });
       });
     }
@@ -543,6 +786,7 @@ const WizardModals = (() => {
       mestoInput.addEventListener('input', () => {
         clearTimeout(mestoTimer);
         mestoTimer = setTimeout(refreshMestoSuggestions, 120);
+        scheduleRegistryRefresh();
       });
       mestoInput.addEventListener('blur', () => {
         setTimeout(hideMestoSuggestions, 150);
@@ -550,72 +794,107 @@ const WizardModals = (() => {
     }
 
     // Registry search
-    let searchTimer = null;
-    document.getElementById('mvRegistrySearch')?.addEventListener('input', (e) => {
+    function findRegistryItemFromEl(el) {
+      if (!el) return null;
+      const items = getRegistryItems();
+      const id = el.dataset.regId || '';
+      if (id) {
+        const byId = items.find((row) => row.id === id);
+        if (byId) return byId;
+      }
+      const num = el.dataset.regNumber;
+      if (num !== undefined && num !== '') {
+        return items.find((row) => row.number === Number(num) || String(row.number) === String(num)) || null;
+      }
+      return null;
+    }
+
+    function refreshRegistryPanel() {
+      const results = document.getElementById('mvRegistryResults');
+      if (!results) return;
+      const query = document.getElementById('mvRegistrySearch')?.value || '';
+      results.innerHTML = renderRegistryResults(query);
+      bindRegistryResultClicks();
+      bindAddToRegistry();
+    }
+
+    function scheduleRegistryRefresh() {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => {
-        const results = document.getElementById('mvRegistryResults');
-        if (results) results.innerHTML = renderRegistryResults(e.target.value);
-        bindRegistryResultClicks();
-        bindAddToRegistry();
-      }, 200);
-    });
+      searchTimer = setTimeout(refreshRegistryPanel, 200);
+    }
+
+    function applyRegistryItem(item, sourceEl) {
+      if (!item) return;
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) active.blur();
+
+      const titleEl = document.getElementById('mvTitle');
+      const urlEl = document.getElementById('mvUrl');
+      const formulaEl = document.getElementById('mvFormula');
+      if (titleEl) titleEl.value = item.title || '';
+      if (urlEl) urlEl.value = item.subTitle || '';
+      const live = ctx.getCatalog?.() || catalog;
+      let resolvedItemVid =
+        live && typeof ViolationTypes !== 'undefined'
+          ? ViolationTypes.resolveVid(live, item.vid)
+          : (item.vid || '');
+      if (
+        typeof ViolationTypes !== 'undefined' &&
+        typeof ViolationTypes.isLegacyBuiltinVidTitle === 'function' &&
+        ViolationTypes.isLegacyBuiltinVidTitle(resolvedItemVid)
+      ) {
+        resolvedItemVid = '';
+      }
+      const vidEl = document.getElementById('mvVid');
+      if (vidEl) {
+        if (resolvedItemVid && !Array.from(vidEl.options).some((o) => o.value === resolvedItemVid)) {
+          const opt = document.createElement('option');
+          opt.value = resolvedItemVid;
+          opt.textContent = resolvedItemVid;
+          vidEl.insertBefore(opt, vidEl.options[1] || null);
+        }
+        vidEl.value = resolvedItemVid;
+      }
+      if (formulaEl) formulaEl.value = item.formulaFromRules || '';
+
+      linkedRegistryItemId = item.id || null;
+      selectedRegistryItem = { ...item, vid: resolvedItemVid };
+
+      document.querySelectorAll('#mvRegistryResults .viol-registry-result-item').forEach((x) =>
+        x.classList.remove('selected')
+      );
+      sourceEl?.classList?.add('selected');
+      document.getElementById('mvSaveToRegistryHint')?.remove();
+
+      rememberRecentRegistryId(item.id || '');
+      const searchEl = document.getElementById('mvRegistrySearch');
+      if (searchEl) searchEl.value = '';
+      refreshRegistryPanel();
+      scheduleViolationTextareaResize();
+    }
 
     function bindRegistryResultClicks() {
-      document.querySelectorAll('#mvRegistryResults .viol-registry-result-item').forEach((el) => {
+      const root = document.getElementById('mvRegistryResults');
+      if (!root) return;
+      root.querySelectorAll('.viol-registry-result-item, .mv-leader-card').forEach((el) => {
         el.addEventListener('click', () => {
-          const item = registryItems.find((r) => r.id === el.dataset.regId);
-          if (!item) return;
-
-          if (document.activeElement instanceof HTMLElement) {
-            document.activeElement.blur();
+          if (el.dataset.freqOnly) {
+            const titleEl = document.getElementById('mvTitle');
+            if (titleEl) titleEl.value = el.dataset.freqOnly;
+            updateSaveToRegistryHint();
+            scheduleViolationTextareaResize();
+            return;
           }
-
-          const titleEl   = document.getElementById('mvTitle');
-          const urlEl     = document.getElementById('mvUrl');
-          const formulaEl = document.getElementById('mvFormula');
-          if (titleEl)   titleEl.value   = item.title            || '';
-          if (urlEl)     urlEl.value     = item.subTitle         || '';
-          let resolvedItemVid =
-            catalog && typeof ViolationTypes !== 'undefined'
-              ? ViolationTypes.resolveVid(catalog, item.vid)
-              : (item.vid || '');
-          if (
-            typeof ViolationTypes !== 'undefined' &&
-            typeof ViolationTypes.isLegacyBuiltinVidTitle === 'function' &&
-            ViolationTypes.isLegacyBuiltinVidTitle(resolvedItemVid)
-          ) {
-            resolvedItemVid = '';
-          }
-          const vidEl = document.getElementById('mvVid');
-          if (vidEl) {
-            if (resolvedItemVid && !Array.from(vidEl.options).some((o) => o.value === resolvedItemVid)) {
-              const opt = document.createElement('option');
-              opt.value = resolvedItemVid;
-              opt.textContent = resolvedItemVid;
-              vidEl.insertBefore(opt, vidEl.options[1] || null);
-            }
-            vidEl.value = resolvedItemVid;
-          }
-          if (formulaEl) formulaEl.value = item.formulaFromRules || '';
-
-          linkedRegistryItemId = item.id || null;
-          // Store snapshot for change detection (resolved vid — как в форме)
-          selectedRegistryItem = { ...item, vid: resolvedItemVid };
-
-          document.querySelectorAll('#mvRegistryResults .viol-registry-result-item').forEach((x) =>
-            x.classList.remove('selected')
-          );
-          el.classList.add('selected');
-
-          document.getElementById('mvSaveToRegistryHint')?.remove();
-
-          const searchEl = document.getElementById('mvRegistrySearch');
-          if (searchEl) searchEl.value = '';
-          const results = document.getElementById('mvRegistryResults');
-          if (results) results.innerHTML = renderRegistryResults('');
-          bindRegistryResultClicks();
-          scheduleViolationTextareaResize();
+          const picked = findRegistryItemFromEl(el);
+          if (picked) applyRegistryItem(picked, el);
+        });
+      });
+      root.querySelectorAll('[data-leader-apply]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const card = btn.closest('.mv-leader-card');
+          const picked = findRegistryItemFromEl(card);
+          if (picked) applyRegistryItem(picked, card);
         });
       });
     }
@@ -626,6 +905,84 @@ const WizardModals = (() => {
         openAddToRegistryForm(q, renderRegistryResults, bindRegistryResultClicks);
       });
     }
+
+    function renderPhotoHintList(hints) {
+      const el = document.getElementById('mvPhotoHints');
+      if (!el) return;
+      el.hidden = false;
+      el.innerHTML = `
+        <div class="mv-photo-hints-head">
+          <div class="mv-suggest-label">Похоже на фото</div>
+          <button type="button" class="btn-ghost btn-sm" id="mvPhotoHintsReset">Сбросить</button>
+        </div>
+        ${hints.map((hint) => `
+          <button type="button" class="mv-photo-hint" data-reg-id="${AktUtils.escapeHtml(hint.item.id || '')}" data-reg-number="${AktUtils.escapeHtml(hint.item.number ?? '')}">
+            <span class="vr-result-title">${AktUtils.escapeHtml(hint.item.title || '')}${alreadyBadge(hint.item.title)}</span>
+            <span class="mv-suggest-count">${hint.percent}%</span>
+          </button>
+        `).join('')}
+      `;
+      el.querySelector('#mvPhotoHintsReset')?.addEventListener('click', () => {
+        photoHintsDismissed = true;
+        photoHintGen += 1;
+        hidePhotoHints();
+      });
+      el.querySelectorAll('.mv-photo-hint').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const picked = findRegistryItemFromEl(btn);
+          if (picked) applyRegistryItem(picked, btn);
+        });
+      });
+    }
+
+    async function runPhotoHint(ref) {
+      if (photoHintsDismissed || !ref) return;
+      const gen = ++photoHintGen;
+      const box = document.getElementById('mvPhotoHints');
+      if (box) {
+        box.hidden = false;
+        box.innerHTML = `
+          <div class="mv-suggest-label">Похоже на фото</div>
+          <p class="mv-suggest-count">Смотрим фото…</p>
+        `;
+      }
+      try {
+        const src = typeof AktUtils?.photoSrcAsync === 'function' ? await AktUtils.photoSrcAsync(ref) : '';
+        if (gen !== photoHintGen || photoHintsDismissed) return;
+        if (!src || typeof MlImageService === 'undefined' || typeof MlImageService.predict !== 'function') {
+          hidePhotoHints();
+          return;
+        }
+        const preds = await MlImageService.predict(src);
+        if (gen !== photoHintGen || photoHintsDismissed) return;
+        const hints = ViolationSearch.mapPhotoHints(Array.isArray(preds) ? preds : [], getRegistryItems());
+        if (gen !== photoHintGen || photoHintsDismissed) return;
+        if (!hints.length) {
+          hidePhotoHints();
+          return;
+        }
+        renderPhotoHintList(hints);
+      } catch {
+        if (gen === photoHintGen) hidePhotoHints();
+      }
+    }
+
+    document.getElementById('mvRegistrySearch')?.addEventListener('input', () => {
+      scheduleRegistryRefresh();
+    });
+
+    const cameraBtn = document.getElementById('mvRegistryCamera');
+    const cameraInput = document.getElementById('mvRegistryCameraInput');
+    cameraBtn?.addEventListener('click', () => {
+      GazpromFileUtils?.triggerFilePicker?.(cameraInput);
+    });
+    cameraInput?.addEventListener('change', async (e) => {
+      const added = await onPhotoPick(e);
+      if (added?.length) {
+        photoHintsDismissed = false;
+        void runPhotoHint(added[added.length - 1]);
+      }
+    });
 
     bindRegistryResultClicks();
     bindAddToRegistry();
@@ -641,6 +998,7 @@ const WizardModals = (() => {
 
     document.getElementById('mvSave')?.addEventListener('click', saveViolation);
     document.getElementById('mvDelete')?.addEventListener('click', deleteViolation);
+    if (modalPhotos.length) void runPhotoHint(modalPhotos[0]);
     const photoInput = document.getElementById('mvPhotoInput');
     if (photoInput && !photoInput.dataset.bound) {
       photoInput.dataset.bound = '1';
@@ -673,6 +1031,7 @@ const WizardModals = (() => {
         document.getElementById('mvPhotoGrid').innerHTML = renderModalPhotos();
         bindModalPhotoClicks();
         hydrateModalPhotoThumbs();
+        if (!modalPhotos.length) afterModalPhotosCleared?.();
       });
     });
     document.querySelectorAll('#mvPhotoGrid .mv-photo-item').forEach((el) => {
@@ -694,6 +1053,7 @@ const WizardModals = (() => {
 
   async function onPhotoPick(e) {
     const files = [...(e.target.files || [])];
+    const added = [];
     const maxInputBytes = 40 * 1024 * 1024;
     for (const file of files) {
       const isImage =
@@ -716,19 +1076,26 @@ const WizardModals = (() => {
         if (!b64) continue;
         if (typeof PhotoStore?.ingestPhotoRef === 'function') {
           const result = await PhotoStore.ingestPhotoRef(b64);
-          if (result?.id) modalPhotos.push(result.id);
-          else GazpromToast.error(`Не удалось сохранить фото ${file.name}`);
+          if (result?.id) {
+            modalPhotos.push(result.id);
+            added.push(result.id);
+          } else GazpromToast.error(`Не удалось сохранить фото ${file.name}`);
         } else {
           modalPhotos.push(b64);
+          added.push(b64);
         }
       } catch {
         GazpromToast.error(`Не удалось обработать ${file.name}`);
       }
     }
-    document.getElementById('mvPhotoGrid').innerHTML = renderModalPhotos();
-    bindModalPhotoClicks();
-    hydrateModalPhotoThumbs();
-    e.target.value = '';
+    const grid = document.getElementById('mvPhotoGrid');
+    if (grid) {
+      grid.innerHTML = renderModalPhotos();
+      bindModalPhotoClicks();
+      hydrateModalPhotoThumbs();
+    }
+    if (e?.target) e.target.value = '';
+    return added;
   }
 
   async function hydrateModalPhotoThumbs() {

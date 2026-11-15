@@ -1,16 +1,62 @@
 /**
  * ViolationSearch — умный поиск по реестру и нарушениям акта.
  *
- * Модель:
+ * filterRegistry / filterActViolations — строгий поиск:
  * - нормализация (регистр, ё→е, пунктуация, тире, пробелы);
  * - кавычки "..." / «...» — точная фраза;
  * - несколько слов — логика И (каждый токен должен встретиться);
  * - короткие токены (1–2 символа) — только точное вхождение, без префиксов;
  * - ранжирование: формулировка > номер > вид > прочие поля.
+ *
+ * suggestRegistry / placesMatch / mapPhotoHints — мягкий подбор модалки нарушения.
  */
 const ViolationSearch = (() => {
   const MIN_PREFIX_LEN = 3;
   const MAX_RESULTS = 200;
+  const LEADER_SCORE_RATIO = 1.35;
+  const PLACE_BONUS = 30;
+  const PHOTO_HINT_MIN_ITEM = 0.25;
+  const PHOTO_HINT_MIN_TOP = 0.35;
+
+  const STOP_WORDS = new Set([
+    'в', 'во', 'на', 'по', 'с', 'со', 'к', 'ко', 'о', 'об', 'у', 'от', 'из',
+    'для', 'при', 'до', 'за', 'а', 'и', 'или', 'это', 'как', 'же', 'бы', 'ли', 'то', 'что',
+  ]);
+
+  const ABSENCE_QUERY = new Set(['нет', 'отсутствует', 'отсутствуют', 'нету']);
+  const ABSENCE_FIELD = new Set(['нет', 'отсутствует', 'отсутствуют', 'нету', 'не', 'без']);
+
+  const STEM_ENDINGS = [
+    'иями', 'ями', 'ами', 'ого', 'его', 'ому', 'ему', 'ыми', 'ими',
+    'ах', 'ях', 'ов', 'ев', 'ом', 'ем', 'ам', 'ям',
+    'ой', 'ый', 'ий', 'ая', 'яя', 'ое', 'ее', 'ые', 'ие', 'ых', 'их', 'ую', 'юю',
+    'а', 'я', 'ы', 'и', 'у', 'ю', 'е', 'о', 'ь',
+  ];
+
+  const SYNONYM_GROUPS = [
+    ['каска', 'шлем'],
+    ['работник', 'рабочий', 'персонал'],
+    ['огнетушитель'],
+    ['щитовая', 'электрощитовая'],
+    ['захламление', 'загромождение'],
+    ['светильник', 'лампа', 'электролампа'],
+    ['эвакуация', 'эвакуационный'],
+    ['ппр', 'противопожарный', 'противопожарного'],
+    ['проход', 'проезд'],
+    ['лестница', 'стремянка'],
+    ['знак', 'табличка'],
+    ['перчатки', 'рукавицы'],
+    ['баллон', 'газобаллон'],
+    ['провод', 'кабель', 'проводка', 'электропроводка'],
+    ['розетка', 'электророзетка'],
+    ['аптечка', 'медикаменты'],
+    ['ограждение', 'перила'],
+    ['котлован', 'траншея'],
+    ['мусор', 'отходы'],
+    ['курение', 'курит'],
+    ['инструктаж', 'инструкция'],
+    ['сиз', 'спецодежда'],
+  ];
 
   function normalize(str) {
     return String(str ?? '')
@@ -211,11 +257,357 @@ const ViolationSearch = (() => {
     return filterAndRank(violations, query, actViolationFields, fieldWeightsAct());
   }
 
+  function placeKey(value) {
+    const normalized = normalize(value);
+    if (!normalized) return '';
+    const dehyphen = normalized.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!dehyphen) return '';
+    return dehyphen
+      .split(' ')
+      .filter(Boolean)
+      .map((token) => {
+        if (!/^\d+$/.test(token)) return token;
+        const stripped = token.replace(/^0+/, '');
+        return stripped || '0';
+      })
+      .join(' ');
+  }
+
+  function placesMatch(a, b) {
+    const left = placeKey(a);
+    const right = placeKey(b);
+    if (!left || !right) return false;
+    return left === right;
+  }
+
+  function isDigits(token) {
+    return /^\d+$/.test(token);
+  }
+
+  function wordsOf(expanded) {
+    return expanded ? expanded.split(' ').filter(Boolean) : [];
+  }
+
+  function stemRu(word) {
+    if (!word || word.length < 5 || isDigits(word)) return word;
+    for (const ending of STEM_ENDINGS) {
+      if (!word.endsWith(ending)) continue;
+      if (word.length - ending.length < 4) continue;
+      if (word.length === ending.length) continue;
+      return word.slice(0, word.length - ending.length);
+    }
+    return word;
+  }
+
+  function stemsMatch(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (a.length >= 5 && b.length >= 5 && (a.endsWith(b) || b.endsWith(a))) return true;
+    return false;
+  }
+
+  function exactOrPrefix(token, field) {
+    if (!token || !field.expanded) return false;
+    if (field.expanded.includes(token)) return true;
+    if (token.length < MIN_PREFIX_LEN) return false;
+    return wordsOf(field.expanded).some(
+      (word) => word.length >= MIN_PREFIX_LEN && (word.startsWith(token) || token.startsWith(word))
+    );
+  }
+
+  function isExactWord(token, field) {
+    return wordsOf(field.expanded).some((word) => word === token);
+  }
+
+  function stemHit(token, field) {
+    if (!token || !field.expanded || isDigits(token)) return false;
+    const tokenStem = stemRu(token);
+    return wordsOf(field.expanded).some((word) => {
+      if (isDigits(word)) return false;
+      return stemsMatch(tokenStem, stemRu(word));
+    });
+  }
+
+  function levenshteinWithin(a, b, maxDist) {
+    if (a === b) return 0;
+    const la = a.length;
+    const lb = b.length;
+    if (Math.abs(la - lb) > maxDist) return maxDist + 1;
+    let prev = new Array(lb + 1);
+    for (let j = 0; j <= lb; j += 1) prev[j] = j;
+    for (let i = 1; i <= la; i += 1) {
+      const cur = new Array(lb + 1);
+      cur[0] = i;
+      let rowMin = cur[0];
+      const ca = a.charCodeAt(i - 1);
+      for (let j = 1; j <= lb; j += 1) {
+        const cost = ca === b.charCodeAt(j - 1) ? 0 : 1;
+        const del = prev[j] + 1;
+        const ins = cur[j - 1] + 1;
+        const sub = prev[j - 1] + cost;
+        const val = del < ins ? (del < sub ? del : sub) : (ins < sub ? ins : sub);
+        cur[j] = val;
+        if (val < rowMin) rowMin = val;
+      }
+      if (rowMin > maxDist) return maxDist + 1;
+      prev = cur;
+    }
+    return prev[lb];
+  }
+
+  function typoHit(token, field) {
+    if (!token || !field.expanded || isDigits(token) || token.length < 5) return false;
+    const maxDist = token.length >= 8 ? 2 : 1;
+    return wordsOf(field.expanded).some((word) => {
+      if (!word || isDigits(word) || word.length < 5) return false;
+      if (Math.abs(word.length - token.length) > maxDist) return false;
+      const dist = levenshteinWithin(token, word, maxDist);
+      return dist > 0 && dist <= maxDist;
+    });
+  }
+
+  function synonymNeedles(token) {
+    if (!token || isDigits(token)) return [];
+    const tokenStem = stemRu(token);
+    const needles = [];
+    const seen = new Set();
+    for (const group of SYNONYM_GROUPS) {
+      const belongs = group.some((lemma) => {
+        if (lemma === token) return true;
+        const lemmaStem = stemRu(lemma);
+        if (stemsMatch(tokenStem, lemmaStem) || stemsMatch(tokenStem, lemma) || stemsMatch(token, lemmaStem)) {
+          return true;
+        }
+        if (token.length >= MIN_PREFIX_LEN && lemma.length >= MIN_PREFIX_LEN) {
+          return lemma.startsWith(token) || token.startsWith(lemma);
+        }
+        return false;
+      });
+      if (!belongs) continue;
+      for (const lemma of group) {
+        if (lemma === token || seen.has(lemma)) continue;
+        seen.add(lemma);
+        needles.push(lemma);
+      }
+    }
+    return needles;
+  }
+
+  function absenceHit(token, field) {
+    if (!ABSENCE_QUERY.has(token) || !field.expanded) return { hit: false, exactWord: false };
+    const words = wordsOf(field.expanded);
+    return {
+      hit: words.some((word) => ABSENCE_FIELD.has(word)),
+      exactWord: words.some((word) => word === token),
+    };
+  }
+
+  function applyMech(mech, token, field) {
+    if (!field?.expanded) return { hit: false, exactWord: false };
+    if (mech === 'exact') {
+      const hit = exactOrPrefix(token, field);
+      return { hit, exactWord: hit && isExactWord(token, field) };
+    }
+    if (mech === 'stem') return { hit: stemHit(token, field), exactWord: false };
+    if (mech === 'synonym') {
+      let hit = false;
+      let exactWord = false;
+      for (const needle of synonymNeedles(token)) {
+        if (!(exactOrPrefix(needle, field) || stemHit(needle, field))) continue;
+        hit = true;
+        if (isExactWord(needle, field)) exactWord = true;
+      }
+      const absence = absenceHit(token, field);
+      if (absence.hit) {
+        hit = true;
+        if (absence.exactWord) exactWord = true;
+      }
+      return { hit, exactWord };
+    }
+    if (mech === 'typo') return { hit: typoHit(token, field), exactWord: false };
+    return { hit: false, exactWord: false };
+  }
+
+  function matchToken(token, maps) {
+    for (const mech of ['exact', 'stem', 'synonym', 'typo']) {
+      let best = 0;
+      let any = false;
+      let title = false;
+      for (const [key, field] of Object.entries(maps)) {
+        const res = applyMech(mech, token, field);
+        if (!res.hit) continue;
+        any = true;
+        const weight = field.weight + (res.exactWord ? 8 : 0);
+        if (weight > best) best = weight;
+        if (key === 'title') title = true;
+      }
+      if (any) return { weight: best, mechanism: mech, title };
+    }
+    return null;
+  }
+
+  function phraseScore(phrase, maps) {
+    let best = 0;
+    let hit = false;
+    for (const field of Object.values(maps)) {
+      if (!phrase || !field.expanded || !field.expanded.includes(phrase)) continue;
+      hit = true;
+      const exact = wordsOf(field.expanded).some((word) => word === phrase);
+      best = Math.max(best, field.weight + (exact ? 8 : 0));
+    }
+    return hit ? best : -1;
+  }
+
+  function suggestTokens(parsed) {
+    const tokens = [];
+    const seen = new Set();
+    for (const token of parsed.tokens) {
+      if (!token || STOP_WORDS.has(token) || seen.has(token)) continue;
+      seen.add(token);
+      tokens.push(token);
+    }
+    return tokens;
+  }
+
+  function suggestRegistry(items, query, { placeCounts } = {}) {
+    const parsed = parseQuery(query);
+    const tokens = suggestTokens(parsed);
+    if (!parsed.phrases.length && !tokens.length) {
+      return { empty: true, ranked: [] };
+    }
+
+    const counts = placeCounts || {};
+    const ranked = [];
+    for (const item of items || []) {
+      const { maps } = buildFieldMaps(registryFields(item), fieldWeightsRegistry());
+      let matched = 0;
+      let weightSum = 0;
+      let phraseMiss = false;
+      for (const phrase of parsed.phrases) {
+        const part = phraseScore(phrase, maps);
+        if (part < 0) {
+          phraseMiss = true;
+          break;
+        }
+        matched += 1;
+        weightSum += part;
+      }
+      if (phraseMiss) continue;
+
+      let typo = false;
+      let synonym = false;
+      let allInTitle = tokens.length > 1;
+      for (const token of tokens) {
+        const hit = matchToken(token, maps);
+        if (!hit) {
+          allInTitle = false;
+          continue;
+        }
+        matched += 1;
+        weightSum += hit.weight;
+        if (!hit.title) allInTitle = false;
+        if (hit.mechanism === 'typo') typo = true;
+        if (hit.mechanism === 'synonym') synonym = true;
+      }
+
+      const required = parsed.phrases.length + tokens.length;
+      if (!matched || matched < 1) continue;
+      const full = matched === required;
+      let score = full
+        ? weightSum + (allInTitle ? 25 : 0)
+        : weightSum * (matched / required) * 0.55;
+
+      const reasons = [];
+      if (typo) reasons.push('исправлена опечатка');
+      if (synonym) reasons.push('синоним');
+      const titleKey = normalize(item?.title);
+      const placeCount = Number(counts[titleKey] || 0);
+      if (titleKey && placeCount >= 1) {
+        score += PLACE_BONUS;
+        reasons.push('часто в этом месте');
+      }
+
+      ranked.push({ item, score, matched, required, full, reasons });
+    }
+
+    ranked.sort(
+      (a, b) =>
+        (a.full === b.full ? 0 : a.full ? -1 : 1) ||
+        b.score - a.score ||
+        (a.item.number || 0) - (b.item.number || 0)
+    );
+    return { empty: false, ranked: ranked.slice(0, MAX_RESULTS) };
+  }
+
+  function shouldShowLeader(ranked) {
+    if (!ranked || !ranked.length) return false;
+    const leader = ranked[0];
+    if (!leader.full || !(leader.score > 0)) return false;
+    if (ranked.length === 1) return true;
+    const second = ranked[1];
+    return leader.score >= second.score * LEADER_SCORE_RATIO;
+  }
+
+  function bindPhotoHint(pred, items) {
+    const title = pred?.violationTitle;
+    if (title) {
+      const exact = items.find((item) => item?.title === title);
+      if (exact) return exact;
+      const key = normalize(title);
+      if (key) {
+        const folded = items.find((item) => normalize(item?.title) === key);
+        if (folded) return folded;
+      }
+    }
+    if (pred?.registryOrderNumber != null && pred.registryOrderNumber !== '') {
+      return items.find((item) => item?.number === pred.registryOrderNumber) || null;
+    }
+    return null;
+  }
+
+  function mapPhotoHints(predictions, registryItems) {
+    const items = registryItems || [];
+    const kept = [];
+    for (const pred of predictions || []) {
+      const confidence = Number(pred?.confidence);
+      if (!(confidence >= PHOTO_HINT_MIN_ITEM)) continue;
+      kept.push({ pred, confidence });
+    }
+    if (!kept.length) return [];
+    let best = kept[0].confidence;
+    for (const row of kept) {
+      if (row.confidence > best) best = row.confidence;
+    }
+    if (best < PHOTO_HINT_MIN_TOP) return [];
+    kept.sort((a, b) => b.confidence - a.confidence);
+    const hints = [];
+    for (const row of kept.slice(0, 4)) {
+      const item = bindPhotoHint(row.pred, items);
+      if (!item) continue;
+      hints.push({
+        item,
+        confidence: row.confidence,
+        percent: Math.round(row.confidence * 100),
+      });
+    }
+    return hints;
+  }
+
   return {
     normalize,
     parseQuery,
     filterRegistry,
     filterActViolations,
+    placesMatch,
+    suggestRegistry,
+    shouldShowLeader,
+    mapPhotoHints,
     MAX_RESULTS,
+    LEADER_SCORE_RATIO,
+    PLACE_BONUS,
+    PHOTO_HINT_MIN_ITEM,
+    PHOTO_HINT_MIN_TOP,
+    STOP_WORDS,
+    SYNONYM_GROUPS,
   };
 })();
