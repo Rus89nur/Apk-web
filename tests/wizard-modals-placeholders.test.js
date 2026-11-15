@@ -10,15 +10,9 @@ const wizardModalsSrc = readFileSync(join(root, 'js/wizard-modals.js'), 'utf8');
 describe('wizard-modals violation editor placeholders', () => {
   it('defines MV_PLACEHOLDER_NEW with database hints', () => {
     expect(wizardModalsSrc).toContain('MV_PLACEHOLDER_NEW');
-    expect(wizardModalsSrc).toContain(
-      'Здесь будет формулировка нарушения из базы нарушений'
-    );
-    expect(wizardModalsSrc).toContain(
-      'Здесь будет пункт или ссылка на правило из базы нарушений'
-    );
-    expect(wizardModalsSrc).toContain(
-      'Здесь будет формулировка из правил из базы нарушений'
-    );
+    expect(wizardModalsSrc).toContain('Здесь — формулировка из базы');
+    expect(wizardModalsSrc).toContain('Здесь — пункт правила из базы');
+    expect(wizardModalsSrc).toContain('Здесь — формулировка из правил');
   });
 
   it('picks placeholders by violationId', () => {
