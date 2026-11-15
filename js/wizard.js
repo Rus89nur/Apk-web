@@ -41,7 +41,6 @@ const WizardController = (() => {
       saveDraft,
       onUpdate: () => {
         render();
-        updateSummary();
       },
       onQuickAdd: (type, item) => {
         if (type === 'org') {
@@ -60,7 +59,6 @@ const WizardController = (() => {
           }
         }
         render();
-        updateSummary();
       },
     });
   }
@@ -133,7 +131,6 @@ const WizardController = (() => {
     objectSearchQuery = '';
     await saveDraft();
     render();
-    updateSummary();
     bindAutosaveOnPanel();
   }
 
@@ -247,7 +244,6 @@ const WizardController = (() => {
     step = aktId ? 0 : (preserveStep ? Math.min(savedStep, TOTAL_STEPS - 1) : 0);
     if (!preserveDraft) dirty = false;
     render();
-    updateSummary();
     bindAutosaveOnPanel();
   }
 
@@ -263,7 +259,6 @@ const WizardController = (() => {
     if (step === 2) normalizeObjectsCheck();
     syncStepperUI();
     render({ skipLayoutSync: true });
-    updateSummary();
     requestAnimationFrame(() => {
       const phoneMq =
         window.GAZPROM_PHONE_LAYOUT_MQ ||
@@ -294,7 +289,6 @@ const WizardController = (() => {
     panelsHost,
     scheduleAutosave,
     render,
-    updateSummary,
     openLightbox: (src, gallery) => PhotoLightbox.open(src, gallery),
     docLabel: 'акта',
     photoSectionTitle: 'Все фото акта',
@@ -760,14 +754,12 @@ const WizardController = (() => {
     draft.organization = { ...org };
     scheduleAutosave();
     render();
-    updateSummary();
   }
 
   function clearOrganization() {
     draft.organization = { id: '', title: '', shortTitle: '' };
     scheduleAutosave();
     render();
-    updateSummary();
   }
 
   function selectObjectById(id) {
@@ -778,7 +770,6 @@ const WizardController = (() => {
     objectSearchQuery = '';
     scheduleAutosave();
     render();
-    updateSummary();
     bindAutosaveOnPanel();
   }
 
@@ -787,7 +778,6 @@ const WizardController = (() => {
     objectSearchQuery = '';
     scheduleAutosave();
     render();
-    updateSummary();
     bindAutosaveOnPanel();
     requestAnimationFrame(() => document.getElementById('wObjectFilter')?.focus());
   }
@@ -995,7 +985,6 @@ const WizardController = (() => {
       }
       await saveDraft();
       render();
-      updateSummary();
     });
   }
 
@@ -1010,13 +999,11 @@ const WizardController = (() => {
     if ((draft.comission || []).some((x) => x.id === id)) return;
     draft.comission = [...(draft.comission || []), { ...p }];
     render();
-    updateSummary();
   }
 
   function removePerson(id) {
     draft.comission = (draft.comission || []).filter((p) => p.id !== id);
     render();
-    updateSummary();
   }
 
   function addPredById(id) {
@@ -1025,13 +1012,11 @@ const WizardController = (() => {
     if ((draft.predstavitelyComission || []).some((x) => x.id === id)) return;
     draft.predstavitelyComission = [...(draft.predstavitelyComission || []), { ...p }];
     render();
-    updateSummary();
   }
 
   function removePred(id) {
     draft.predstavitelyComission = (draft.predstavitelyComission || []).filter((p) => p.id !== id);
     render();
-    updateSummary();
   }
 
   async function showViolationPhotos(violationId) {
@@ -1166,7 +1151,6 @@ const WizardController = (() => {
 
   async function syncCatalog() {
     await loadCatalog();
-    updateSummary();
   }
 
   function isDirty() {
@@ -1180,29 +1164,6 @@ const WizardController = (() => {
     await saveDraft();
     dirty = false;
     updateDirtyIndicator();
-  }
-
-  function updateSummary() {
-    const panel = document.getElementById('wizardSummaryCard');
-    if (!panel || !draft) return;
-    const orgLabel =
-      draft.organization?.shortTitle ||
-      draft.organization?.title ||
-      '—';
-    const vals = {
-      number: `№ ${draft.number || '—'}`,
-      date: AktUtils.formatDateShort(draft.date),
-      commission: `${(draft.comission || []).length} чел.`,
-      organization: orgLabel,
-      representatives: `${(draft.predstavitelyComission || []).length} чел.`,
-      violations: `${(draft.violations || []).length}`,
-      photos: `${AktUtils.countPhotos(draft)}`,
-    };
-    panel.querySelectorAll('.summary-row[data-summary-key]').forEach((row) => {
-      const key = row.dataset.summaryKey;
-      const span = row.querySelector('span:last-child');
-      if (span && vals[key] !== undefined) span.textContent = vals[key];
-    });
   }
 
   async function next() {
@@ -1254,39 +1215,7 @@ const WizardController = (() => {
     return true;
   }
 
-  function setSummaryExpanded(expanded) {
-    const panel = document.getElementById('wizardSummaryPanel');
-    const toggle = document.getElementById('wizardSummaryToggle');
-    if (!panel || !toggle) return;
-    panel.classList.toggle('summary-panel--collapsed', !expanded);
-    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-  }
-
-  function handleSummaryToggle() {
-    const panel = document.getElementById('wizardSummaryPanel');
-    if (!panel) return;
-    setSummaryExpanded(panel.classList.contains('summary-panel--collapsed'));
-  }
-
-  function bindSummaryPanelToggle() {
-    const root = document.getElementById('wizardRoot');
-    if (!root || root.dataset.summaryToggleBound === '1') return;
-    root.dataset.summaryToggleBound = '1';
-    root.addEventListener('click', (e) => {
-      if (!e.target.closest('#wizardSummaryToggle')) return;
-      handleSummaryToggle();
-    });
-    root.addEventListener('keydown', (e) => {
-      const toggle = e.target.closest('#wizardSummaryToggle');
-      if (!toggle) return;
-      if (e.key !== 'Enter' && e.key !== ' ') return;
-      e.preventDefault();
-      handleSummaryToggle();
-    });
-  }
-
   function bindGlobalControls() {
-    bindSummaryPanelToggle();
     document.getElementById('wizardViolFab')?.addEventListener('click', () => {
       WizardModals.openViolationEditor(null);
     });
@@ -1309,5 +1238,5 @@ const WizardController = (() => {
 
   bindGlobalControls();
 
-  return { open, openWithAkt, setStep, updateSummary, scheduleAutosave, syncCatalog, isDirty, flushSave };
+  return { open, openWithAkt, setStep, scheduleAutosave, syncCatalog, isDirty, flushSave };
 })();
