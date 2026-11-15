@@ -124,8 +124,9 @@ var GazpromMobileOverlay = (() => {
 
       if (catalogEl) {
         const catRect = catalogEl.getBoundingClientRect();
-        if (catRect.top > maxBottom - 24) {
-          delta += Math.min(catRect.top - maxBottom + 100, 96);
+        const wantCatTop = Math.min(fieldRect.bottom + 16, maxBottom - 200);
+        if (catRect.top > wantCatTop) {
+          delta += Math.min(catRect.top - wantCatTop, 340);
         }
       }
 
@@ -692,6 +693,10 @@ var GazpromMobileOverlay = (() => {
     window.visualViewport.addEventListener('resize', () => {
       syncVisualViewport();
       syncWizardScreenKeyboard();
+      const focused = document.activeElement;
+      if (isWizardCatalogFilter(focused) && isMainKeyboardOpen()) {
+        scrollMainWizardFieldIntoView(focused, { revealCatalog: true });
+      }
       scheduleNavInsetSync();
       clampScrollX();
     });
