@@ -269,14 +269,14 @@ html[data-appearance="system"][data-scheme="dark"] :is(
   color: #fff;
 }
 html[data-appearance="system"][data-scheme="dark"] .viol-add-fab {
-  background: #26a69a;
+  background: #43a047;
   color: #fff;
   box-shadow:
-    0 4px 18px rgba(38, 166, 154, 0.45),
+    0 4px 18px rgba(67, 160, 71, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.35);
 }
 html[data-appearance="system"][data-scheme="dark"] .viol-add-fab:hover {
-  background: #00897b;
+  background: #2e7d32;
   color: #fff;
 }
 html[data-appearance="system"][data-scheme="dark"] .progress-bar-fill {

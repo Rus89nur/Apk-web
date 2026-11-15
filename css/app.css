@@ -4,8 +4,8 @@
       --primary-soft: #e3f2fd;
       --accent: #00838f;
       --accent-soft: #e0f7fa;
-      --viol-fab: #00897b;
-      --viol-fab-hover: #00695c;
+      --viol-fab: #2e7d32;
+      --viol-fab-hover: #1b5e20;
       --success: #2e7d32;
       --warning: #ed6c02;
       --danger: #c62828;
@@ -3037,7 +3037,7 @@
     .viol-empty-text { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
     .viol-empty-hint { font-size: 13px; max-width: 340px; margin: 0 auto; line-height: 1.6; }
 
-    /* Плавающая кнопка «+» на шаге «Нарушения» — бирюза, не primary */
+    /* Плавающая кнопка «+» на шаге «Нарушения» — зелёный акцент «добавить», не primary */
     .viol-add-fab {
       position: fixed;
       right: max(20px, env(safe-area-inset-right, 0px));
@@ -3054,7 +3054,7 @@
       justify-content: center;
       z-index: 150;
       box-shadow:
-        0 4px 18px rgba(0, 137, 123, 0.42),
+        0 4px 18px rgba(46, 125, 50, 0.42),
         0 2px 8px rgba(15, 23, 42, 0.12);
       transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
     }
@@ -3062,7 +3062,7 @@
       background: var(--viol-fab-hover);
       transform: scale(1.05);
       box-shadow:
-        0 6px 22px rgba(0, 137, 123, 0.48),
+        0 6px 22px rgba(46, 125, 50, 0.48),
         0 3px 10px rgba(15, 23, 42, 0.14);
     }
     .viol-add-fab:active {
