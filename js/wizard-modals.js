@@ -4,6 +4,18 @@
 const WizardModals = (() => {
   const SAVE_TIMEOUT_MS = 60000;
 
+  const MV_PLACEHOLDER_NEW = {
+    title: 'Здесь будет формулировка нарушения из базы нарушений',
+    url: 'Здесь будет пункт или ссылка на правило из базы нарушений',
+    formula: 'Здесь будет формулировка из правил из базы нарушений',
+  };
+
+  const MV_PLACEHOLDER_EDIT = {
+    title: 'Не проведён инструктаж по охране труда…',
+    url: 'п. 4.1 СП 12-135-2003',
+    formula: 'Согласно п. …',
+  };
+
   let ctx = null;
   let editingViolationId = null;
   let linkedRegistryItemId = null;
@@ -357,6 +369,8 @@ const WizardModals = (() => {
         .join('');
     }
 
+    const ph = violationId == null ? MV_PLACEHOLDER_NEW : MV_PLACEHOLDER_EDIT;
+
     const body = `
       <div class="form-group mv-mesto-block">
         <label class="form-label">Место нарушения</label>
@@ -389,7 +403,7 @@ const WizardModals = (() => {
 
       <div class="form-group">
         <label class="form-label">Формулировка нарушения <span style="color:var(--danger)">*</span></label>
-        <textarea class="form-control mv-auto-textarea" id="mvTitle" rows="1" data-no-capitalize placeholder="Не проведён инструктаж по охране труда…">${AktUtils.escapeHtml(v?.title || '')}</textarea>
+        <textarea class="form-control mv-auto-textarea" id="mvTitle" rows="1" data-no-capitalize placeholder="${AktUtils.escapeHtml(ph.title)}">${AktUtils.escapeHtml(v?.title || '')}</textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Вид нарушения <span style="color:var(--danger)">*</span></label>
@@ -398,11 +412,11 @@ const WizardModals = (() => {
       </div>
       <div class="form-group">
         <label class="form-label">Пункт / ссылка на правило</label>
-        <textarea class="form-control mv-auto-textarea" id="mvUrl" rows="1" data-no-capitalize placeholder="п. 4.1 СП 12-135-2003">${AktUtils.escapeHtml(v?.urlToPravilo || '')}</textarea>
+        <textarea class="form-control mv-auto-textarea" id="mvUrl" rows="1" data-no-capitalize placeholder="${AktUtils.escapeHtml(ph.url)}">${AktUtils.escapeHtml(v?.urlToPravilo || '')}</textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Формулировка из правил</label>
-        <textarea class="form-control mv-auto-textarea" id="mvFormula" rows="1" data-no-capitalize placeholder="Согласно п. …">${AktUtils.escapeHtml(v?.formulaFromRules || '')}</textarea>
+        <textarea class="form-control mv-auto-textarea" id="mvFormula" rows="1" data-no-capitalize placeholder="${AktUtils.escapeHtml(ph.formula)}">${AktUtils.escapeHtml(v?.formulaFromRules || '')}</textarea>
       </div>
       <div class="form-group">
         <label class="form-label">Фотофиксация</label>
