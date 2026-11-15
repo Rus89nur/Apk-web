@@ -3405,10 +3405,27 @@
     .viol-registry-search-input:focus { border-color: var(--primary); }
     .viol-registry-results {
       max-height: min(240px, 34dvh, calc(var(--overlay-available-height) - 280px));
+      overflow-x: hidden;
       overflow-y: auto;
+      overscroll-behavior-x: none;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
       border-radius: 8px;
       background: var(--surface);
       border: 1px dashed var(--border);
+    }
+    .viol-registry-results .viol-registry-result-item,
+    .viol-registry-results .mv-leader-card,
+    .viol-registry-results .mv-suggest-block {
+      min-width: 0;
+      max-width: 100%;
+    }
+    .viol-registry-results .vr-result-body,
+    .viol-registry-results .vr-result-title,
+    .viol-registry-results .vr-result-sub {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .viol-registry-result-item {
       padding: 10px 12px;
@@ -7186,7 +7203,10 @@
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
         /* Ниже списка должны остаться подпись и поле «Формулировка» над кнопками */
         max-height: max(175px, calc((100dvh - 560px) * 1.40625));
+        overflow-x: hidden;
         overflow-y: auto;
+        overscroll-behavior-x: none;
+        touch-action: pan-y;
         -webkit-overflow-scrolling: touch;
       }
 

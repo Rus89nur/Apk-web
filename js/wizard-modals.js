@@ -628,13 +628,13 @@ const WizardModals = (() => {
             placeholder="Начните вводить формулировку нарушения…"
             autocomplete="off"
             value="">
-          <button type="button" class="mv-search-camera" id="mvRegistryCamera" aria-label="Снять фото для подсказки">
+          <button type="button" class="mv-search-camera" id="mvRegistryCamera" aria-label="Добавить фото с камеры или из галереи" title="Камера или галерея">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
               <circle cx="12" cy="13" r="4"></circle>
             </svg>
           </button>
-          <input type="file" id="mvRegistryCameraInput" class="gazprom-file-input" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+          <input type="file" id="mvRegistryCameraInput" class="gazprom-file-input" accept="image/*,.heic,.heif" tabindex="-1" aria-hidden="true">
         </div>
         <div id="mvPhotoHints" class="mv-photo-hints" hidden></div>
         <div class="viol-registry-results" id="mvRegistryResults">
