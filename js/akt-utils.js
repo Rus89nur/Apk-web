@@ -682,7 +682,6 @@ const AktUtils = (() => {
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       if (el.readOnly || el.disabled) return false;
       if (el.dataset.noSpellcheck != null) return false;
-      if (el.dataset.fioBound === '1') return false;
       if (el.id === 'backupPasteText') return false;
       const type = (el.type || 'text').toLowerCase();
       return !SPELLCHECK_SKIP_TYPES.has(type);
@@ -698,7 +697,7 @@ const AktUtils = (() => {
     if (!isSpellcheckField(el)) {
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.isContentEditable) {
         el.spellcheck = false;
-        if (el.dataset.fioBound === '1' || el.dataset.noSpellcheck != null) {
+        if (el.dataset.noSpellcheck != null) {
           el.setAttribute('autocorrect', 'off');
           el.setAttribute('autocapitalize', 'off');
         }
@@ -708,7 +707,9 @@ const AktUtils = (() => {
     el.spellcheck = true;
     el.setAttribute('lang', 'ru');
     el.setAttribute('autocorrect', 'on');
-    if (!el.getAttribute('autocapitalize')) {
+    if (el.dataset.fioBound === '1') {
+      el.setAttribute('autocapitalize', 'words');
+    } else if (!el.getAttribute('autocapitalize')) {
       el.setAttribute('autocapitalize', 'sentences');
     }
   }
@@ -742,7 +743,6 @@ const AktUtils = (() => {
     if (!input || input.dataset.fioBound === '1') return;
     input.dataset.fioBound = '1';
     input.dataset.noCapitalize = '';
-    input.dataset.noSpellcheck = '';
     input.addEventListener('input', () => applyFioWordCapitalize(input));
     input.addEventListener('blur', () => {
       input.value = normalizeRepresentativeFio(input.value);
@@ -754,7 +754,6 @@ const AktUtils = (() => {
     if (!input || input.dataset.fioBound === '1') return;
     input.dataset.fioBound = '1';
     input.dataset.noCapitalize = '';
-    input.dataset.noSpellcheck = '';
     input.addEventListener('input', () => applyFioWordCapitalize(input));
     input.addEventListener('blur', () => {
       input.value = capitalizeFioWords(input.value.trim()).replace(/\s+/g, ' ');
@@ -1064,6 +1063,7 @@ const AktUtils = (() => {
     applyAutoCapitalize,
     bindAutoCapitalize,
     bindNativeSpellcheck,
+    scanNativeSpellcheck,
     applyNativeSpellcheck,
     capitalizeFioWords,
     bindRepresentativeFioInput,

@@ -70,6 +70,7 @@ const WizardModals = (() => {
     document.getElementById('modalBody').innerHTML = bodyHtml;
     document.getElementById('modalFooter').innerHTML = footerHtml || '';
     GazpromMobileOverlay.syncWizardModalViewport?.();
+    AktUtils.scanNativeSpellcheck(root);
   }
 
   function readFieldRaw(id) {
