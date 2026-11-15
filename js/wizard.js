@@ -13,6 +13,7 @@ const WizardController = (() => {
   let descEditMode = false;
   let predOrgFilters = new Set();
   let violSearchQuery = '';
+  let objectSearchQuery = '';
 
   const AUTOSAVE_MS = window.matchMedia('(pointer: coarse)').matches ? 600 : 2000;
 
@@ -69,6 +70,7 @@ const WizardController = (() => {
     draft = editable ? AktUtils.clone(editable) : AktUtils.createEmptyDraft(catalog);
     AktUtils.ensureConclusionDateTracking(draft);
     violSearchQuery = '';
+    objectSearchQuery = '';
   }
 
   function showEmpty(show) {
@@ -128,10 +130,60 @@ const WizardController = (() => {
     step = 0;
     descEditMode = false;
     predOrgFilters = new Set();
+    objectSearchQuery = '';
     await saveDraft();
     render();
     updateSummary();
     bindAutosaveOnPanel();
+  }
+
+  function objectMatchesSearch(o, q) {
+    const needle = String(q || '').trim().toLowerCase();
+    if (!needle) return true;
+    const hay = `${o.title || ''} ${o.subTitle || ''}`.toLowerCase();
+    return hay.includes(needle);
+  }
+
+  function buildObjectCatalogChipsHtml() {
+    const objects = catalog?.objects || [];
+    const selected = (draft?.objectsCheck || [])[0];
+    const selectedId = selected?.id;
+    const objectViolCount = (o) =>
+      (draft.violations || []).filter((v) => v.mesto === o.title || v.mesto === o.subTitle).length;
+    const filtered = objects
+      .filter((o) => o.id !== selectedId)
+      .filter((o) => objectMatchesSearch(o, objectSearchQuery));
+    if (!objects.length) {
+      return '';
+    }
+    if (!filtered.length) {
+      if (objectSearchQuery.trim()) {
+        return '<span class="wizard-hint">Ничего не найдено</span>';
+      }
+      return '';
+    }
+    return filtered
+      .map((o) => {
+        const violCount = objectViolCount(o);
+        const violHint = violCount > 0 ? ` · ${violCount} наруш.` : '';
+        return `<span class="chip chip-catalog" data-select-object="${o.id}" title="Нажмите, чтобы выбрать">${AktUtils.escapeHtml(o.title)}${o.subTitle ? ' — ' + AktUtils.escapeHtml(o.subTitle) : ''}${violHint}</span>`;
+      })
+      .join('');
+  }
+
+  function bindObjectCatalogChips() {
+    const host = document.getElementById('wObjectCatalogChips');
+    if (!host) return;
+    host.querySelectorAll('[data-select-object]').forEach((chip) => {
+      chip.addEventListener('click', () => selectObjectById(chip.dataset.selectObject));
+    });
+  }
+
+  function refreshObjectCatalogChips() {
+    const host = document.getElementById('wObjectCatalogChips');
+    if (!host) return;
+    host.innerHTML = buildObjectCatalogChipsHtml();
+    bindObjectCatalogChips();
   }
 
   async function open(aktId = null, options = {}) {
@@ -315,7 +367,7 @@ const WizardController = (() => {
 
   function bindAutosaveOnPanel() {
     panelsHost()?.querySelectorAll('input, select, textarea').forEach((el) => {
-      if (el.id === 'wViolSearch') return;
+      if (el.id === 'wViolSearch' || el.id === 'wObjectSearch') return;
       el.removeEventListener('input', scheduleAutosave);
       el.removeEventListener('change', scheduleAutosave);
       el.addEventListener('input', scheduleAutosave);
@@ -437,34 +489,35 @@ const WizardController = (() => {
     normalizeObjectsCheck();
     const objects = catalog.objects || [];
     const selected = (draft.objectsCheck || [])[0];
-    const selectedId = selected?.id;
-
-    const objectViolCount = (o) =>
-      (draft.violations || []).filter((v) => v.mesto === o.title || v.mesto === o.subTitle).length;
-
-    const selectedViolHint =
-      selected && objectViolCount(selected) > 0 ? ` · ${objectViolCount(selected)} наруш.` : '';
-    const selectedChip = selected?.title
-      ? `<span class="chip chip-removable" data-clear-object title="Нажмите, чтобы убрать">${AktUtils.escapeHtml(selected.title)}${selected.subTitle ? ' — ' + AktUtils.escapeHtml(selected.subTitle) : ''}${selectedViolHint}</span>`
+    const selectedLabel = selected?.title
+      ? `${selected.title}${selected.subTitle ? ` — ${selected.subTitle}` : ''}`
       : '';
-
-    const catalogChips = objects
-      .filter((o) => o.id !== selectedId)
-      .map((o) => {
-        const violCount = objectViolCount(o);
-        const violHint = violCount > 0 ? ` · ${violCount} наруш.` : '';
-        return `<span class="chip chip-catalog" data-select-object="${o.id}" title="Нажмите, чтобы выбрать">${AktUtils.escapeHtml(o.title)}${o.subTitle ? ' — ' + AktUtils.escapeHtml(o.subTitle) : ''}${violHint}</span>`;
-      })
-      .join('');
+    const searchValue = selected ? selectedLabel : objectSearchQuery;
+    const searchLocked = Boolean(selected?.title);
+    const searchField = `
+      <div class="wizard-object-search-row">
+        <input
+          type="search"
+          class="form-control wizard-object-search${searchLocked ? ' wizard-object-search--locked' : ''}"
+          id="wObjectSearch"
+          placeholder="Выберите объект из справочника"
+          value="${AktUtils.escapeHtml(searchValue)}"
+          ${searchLocked ? 'readonly aria-readonly="true"' : ''}
+          autocomplete="off"
+          enterkeyhint="search"
+        >
+        ${searchLocked ? '<button type="button" class="btn-ghost wizard-object-clear" id="wObjectClear" aria-label="Убрать объект">✕</button>' : ''}
+      </div>`;
 
     const catalogBlock = objects.length
-      ? `<div class="chip-list">${catalogChips || '<span class="wizard-hint">Все из справочника уже выбраны</span>'}</div>`
+      ? `<div class="chip-list" id="wObjectCatalogChips">${buildObjectCatalogChipsHtml() || '<span class="wizard-hint">Все из справочника уже выбраны</span>'}</div>`
       : '<p class="wizard-hint">Справочник объектов пуст — добавьте через кнопку справа.</p>';
 
     return `
       <h3>Объект проверки</h3>
-      <p class="wizard-hint">Выберите объект проверки (как в iOS-приложении)</p>
-      <div class="chip-list" id="wObjectChips">${selectedChip || '<span class="wizard-hint">Выберите объект из справочника</span>'}</div>
+      <div class="wizard-object-select-block">
+        ${searchField}
+      </div>
       <div class="commission-divider"></div>
       <div class="commission-catalog-section">
         <div class="commission-catalog-header">
@@ -701,16 +754,21 @@ const WizardController = (() => {
     if (!obj) return;
     normalizeObjectsCheck();
     draft.objectsCheck = [{ ...obj }];
+    objectSearchQuery = '';
     scheduleAutosave();
     render();
     updateSummary();
+    bindAutosaveOnPanel();
   }
 
   function clearObject() {
     draft.objectsCheck = [];
+    objectSearchQuery = '';
     scheduleAutosave();
     render();
     updateSummary();
+    bindAutosaveOnPanel();
+    requestAnimationFrame(() => document.getElementById('wObjectSearch')?.focus());
   }
 
   function ensureConclusionDatesManual() {
@@ -772,12 +830,14 @@ const WizardController = (() => {
     panelsHost()?.querySelectorAll('[data-clear-org]').forEach((chip) => {
       chip.addEventListener('click', () => clearOrganization());
     });
-    panelsHost()?.querySelectorAll('[data-select-object]').forEach((chip) => {
-      chip.addEventListener('click', () => selectObjectById(chip.dataset.selectObject));
+    bindObjectCatalogChips();
+    document.getElementById('wObjectSearch')?.addEventListener('input', (ev) => {
+      const el = ev.currentTarget;
+      if (!el || el.readOnly) return;
+      objectSearchQuery = el.value;
+      refreshObjectCatalogChips();
     });
-    panelsHost()?.querySelectorAll('[data-clear-object]').forEach((chip) => {
-      chip.addEventListener('click', () => clearObject());
-    });
+    document.getElementById('wObjectClear')?.addEventListener('click', () => clearObject());
     document.getElementById('wNewPredBtn')?.addEventListener('click', () => WizardModals.openQuickAdd('pred'));
 
     panelsHost()?.querySelectorAll('[data-remove-person]').forEach((btn) => {

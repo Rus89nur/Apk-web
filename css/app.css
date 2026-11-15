@@ -1810,6 +1810,27 @@
     .wizard-org-select-block .chip-list:only-child {
       min-height: 2.75rem;
     }
+    .wizard-object-select-block {
+      margin-bottom: 4px;
+    }
+    .wizard-object-search-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .wizard-object-search-row .wizard-object-search {
+      flex: 1;
+      min-width: 0;
+    }
+    .wizard-object-search--locked {
+      opacity: 0.92;
+      cursor: default;
+    }
+    .wizard-object-clear {
+      flex-shrink: 0;
+      min-width: 44px;
+      padding-inline: 10px;
+    }
     .wizard-hint {
       font-size: 13px;
       color: var(--text-muted);
