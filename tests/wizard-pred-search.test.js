@@ -17,6 +17,11 @@ describe('wizard step conclusions — pred word search', () => {
     );
   });
 
+  it('uses single organization filter', () => {
+    expect(wizardSrc).toContain('predOrgFilter = predOrgFilter === org');
+    expect(wizardSrc).not.toContain('predOrgFilters');
+  });
+
   it('refreshes catalog chips on filter input without replacing hint row', () => {
     expect(wizardSrc).toContain('refreshPredCatalogChips');
     expect(wizardSrc).toContain('bindPredFilterLine');

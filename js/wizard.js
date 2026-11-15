@@ -11,7 +11,7 @@ const WizardController = (() => {
   let dirty = false;
   const DIRTY_BADGE_DELAY_MS = 1500;
   let descEditMode = false;
-  let predOrgFilters = new Set();
+  let predOrgFilter = '';
   let violSearchQuery = '';
   let objectSearchQuery = '';
   let predSearchQuery = '';
@@ -129,7 +129,7 @@ const WizardController = (() => {
     draft = AktUtils.createEmptyDraft(catalog);
     step = 0;
     descEditMode = false;
-    predOrgFilters = new Set();
+    predOrgFilter = '';
     objectSearchQuery = '';
     predSearchQuery = '';
     await saveDraft();
@@ -224,12 +224,12 @@ const WizardController = (() => {
     const selectedPredIds = new Set((draft?.predstavitelyComission || []).map((p) => p.id));
     const filtered = allPreds.filter((p) => {
       if (selectedPredIds.has(p.id)) return false;
-      if (predOrgFilters.size > 0 && !predOrgFilters.has(p.organization || '')) return false;
+      if (predOrgFilter && (p.organization || '') !== predOrgFilter) return false;
       return predMatchesSearch(p, predSearchQuery);
     });
     if (!allPreds.length) return '';
     if (!filtered.length) {
-      if (predSearchQuery.trim() || predOrgFilters.size > 0) {
+      if (predSearchQuery.trim() || predOrgFilter) {
         return '<span class="wizard-hint">Ничего не найдено</span>';
       }
       return '';
@@ -326,7 +326,7 @@ const WizardController = (() => {
   function setStep(newStep) {
     commitStep(step);
     descEditMode = false;
-    predOrgFilters = new Set();
+    predOrgFilter = '';
     predSearchQuery = '';
     step = Math.max(0, Math.min(TOTAL_STEPS - 1, newStep));
     if (step === 2) normalizeObjectsCheck();
@@ -638,12 +638,12 @@ const WizardController = (() => {
 
     const filterBtns = orgNames
       .map((org) => {
-        const active = predOrgFilters.has(org);
+        const active = predOrgFilter === org;
         return `<button type="button" class="btn-org-filter${active ? ' btn-org-filter-active' : ''}" data-org-filter="${AktUtils.escapeHtml(org)}">${AktUtils.escapeHtml(org)}</button>`;
       })
       .join('');
 
-    const resetBtn = predOrgFilters.size > 0
+    const resetBtn = predOrgFilter
       ? `<button type="button" class="btn-org-filter-reset" id="wPredFilterReset">✕ Сбросить</button>`
       : '';
 
@@ -930,17 +930,13 @@ const WizardController = (() => {
     panelsHost()?.querySelectorAll('[data-org-filter]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const org = btn.dataset.orgFilter;
-        if (predOrgFilters.has(org)) {
-          predOrgFilters.delete(org);
-        } else {
-          predOrgFilters.add(org);
-        }
+        predOrgFilter = predOrgFilter === org ? '' : org;
         render();
       });
     });
 
     document.getElementById('wPredFilterReset')?.addEventListener('click', () => {
-      predOrgFilters = new Set();
+      predOrgFilter = '';
       render();
     });
 
