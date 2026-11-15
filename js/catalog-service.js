@@ -56,7 +56,7 @@ const CatalogService = (() => {
     const catalog = await load();
     const person = {
       id: AktUtils.uuid(),
-      fio: fio.trim(),
+      fio: AktUtils.normalizeRepresentativeFio(fio),
       jobTitle: (jobTitle || '').trim(),
     };
     catalog.comissionPeople = [...(catalog.comissionPeople || []), person];

@@ -8,7 +8,7 @@ const CatalogEditor = (() => {
       title: 'Комиссия',
       icon: '👥',
       fields: [
-        { key: 'fio',      label: 'ФИО',       required: true, placeholder: 'Иванов Иван Иванович' },
+        { key: 'fio',      label: 'ФИО',       required: true, placeholder: 'И. И. Иванов' },
         { key: 'jobTitle', label: 'Должность',  placeholder: 'Инженер по охране труда' },
       ],
       listKey: 'comissionPeople',
@@ -235,12 +235,13 @@ const CatalogEditor = (() => {
 
   function openForm(cfg, catalog, item, prevQuery = '') {
     const isPred = cfg.listKey === 'predstavitely';
+    const isCommission = cfg.listKey === 'comissionPeople';
     const suggestKeys = isPred ? new Set(['jobTitle', 'organization']) : new Set();
 
     const fieldsHtml = cfg.fields
       .map((f) => {
         let value = item?.[f.key] || '';
-        if (isPred && f.key === 'fio' && value) {
+        if ((isPred || isCommission) && f.key === 'fio' && value) {
           value = AktUtils.normalizeRepresentativeFio(value);
         }
         const suggestWrap = suggestKeys.has(f.key);
@@ -287,10 +288,12 @@ const CatalogEditor = (() => {
     const firstInput = form.querySelector('input');
     setTimeout(() => firstInput?.focus(), 50);
 
-    if (isPred) {
+    if (isPred || isCommission) {
       const fioInput = form.querySelector('[data-field="fio"]');
       AktUtils.bindRepresentativeFioInput(fioInput);
+    }
 
+    if (isPred) {
       const jobInput = form.querySelector('[data-field="jobTitle"]');
       const jobList = form.querySelector('[data-suggest-for="jobTitle"]');
       if (jobInput && jobList) {
@@ -328,7 +331,7 @@ const CatalogEditor = (() => {
       for (const f of cfg.fields) {
         const input = form.querySelector(`[data-field="${f.key}"]`);
         let val = input?.value?.trim() || '';
-        if (isPred && f.key === 'fio') {
+        if ((isPred || isCommission) && f.key === 'fio') {
           val = AktUtils.normalizeRepresentativeFio(val);
           if (input) input.value = val;
         }

@@ -887,14 +887,12 @@ const WizardModals = (() => {
       commission: {
         title: 'Новый член комиссии',
         html: `
-          <div class="form-group"><label>ФИО</label><input class="form-control" id="qaTitle" placeholder="Например: Иванов Иван Иванович" autocomplete="off"></div>
+          <div class="form-group"><label>ФИО</label><input class="form-control" id="qaTitle" placeholder="Например: И. И. Иванов" autocomplete="off"></div>
           <div class="form-group"><label>Должность</label><input class="form-control" id="qaSub" placeholder="Например: Начальник участка"></div>
         `,
         save: async () => {
           const fioInput = document.getElementById('qaTitle');
-          const fio = AktUtils.capitalizeFioWords(fioInput?.value || '')
-            .trim()
-            .replace(/\s+/g, ' ');
+          const fio = AktUtils.normalizeRepresentativeFio(fioInput?.value || '');
           if (fioInput) fioInput.value = fio;
           if (!fio) { GazpromToast.error('Укажите ФИО'); return; }
           const job = document.getElementById('qaSub')?.value?.trim();
@@ -941,7 +939,7 @@ const WizardModals = (() => {
     );
 
     if (type === 'commission') {
-      AktUtils.bindFioWordsInput(document.getElementById('qaTitle'));
+      AktUtils.bindRepresentativeFioInput(document.getElementById('qaTitle'));
     }
 
     if (type === 'pred') {
