@@ -6984,7 +6984,8 @@
       }
 
       body.gazprom-mobile-shell #wizardModalRoot .viol-registry-results {
-        max-height: min(240px, 34dvh);
+        /* Шапка, место, поиск, футер и одна полоса «Формулировка» + поле */
+        max-height: max(160px, calc(100dvh - 470px));
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
