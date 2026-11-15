@@ -6557,7 +6557,11 @@
 
       body.gazprom-mobile-shell .bottom-nav-item {
         padding-top: 6px;
-        padding-bottom: 4px;
+        padding-bottom: 6px;
+      }
+
+      body.gazprom-mobile-shell .bottom-nav-item.active::after {
+        bottom: -2px;
       }
 
       body.gazprom-mobile-shell .summary-panel {
@@ -7411,7 +7415,7 @@
       }
 
       body.gazprom-mobile-shell .bottom-nav-item.active::after {
-        bottom: 0;
+        bottom: -3px;
         width: 26px;
         height: 3px;
         border-radius: 999px;
