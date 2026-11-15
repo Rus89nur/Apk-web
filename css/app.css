@@ -1810,26 +1810,28 @@
     .wizard-org-select-block .chip-list:only-child {
       min-height: 2.75rem;
     }
-    .wizard-object-select-block {
-      margin-bottom: 4px;
+    .wizard-inline-filter {
+      display: block;
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      padding: 0;
+      margin: 0 0 8px;
+      font: inherit;
+      line-height: inherit;
+      letter-spacing: inherit;
+      -webkit-appearance: none;
+      appearance: none;
+      border-radius: 0;
+      box-shadow: none;
     }
-    .wizard-object-search-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .wizard-inline-filter:focus {
+      outline: none;
+      box-shadow: none;
     }
-    .wizard-object-search-row .wizard-object-search {
-      flex: 1;
-      min-width: 0;
-    }
-    .wizard-object-search--locked {
-      opacity: 0.92;
-      cursor: default;
-    }
-    .wizard-object-clear {
-      flex-shrink: 0;
-      min-width: 44px;
-      padding-inline: 10px;
+    .wizard-inline-filter:not(:placeholder-shown) {
+      color: var(--text);
     }
     .wizard-hint {
       font-size: 13px;

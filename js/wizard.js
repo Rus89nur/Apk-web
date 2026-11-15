@@ -367,7 +367,7 @@ const WizardController = (() => {
 
   function bindAutosaveOnPanel() {
     panelsHost()?.querySelectorAll('input, select, textarea').forEach((el) => {
-      if (el.id === 'wViolSearch' || el.id === 'wObjectSearch') return;
+      if (el.id === 'wViolSearch' || el.id === 'wObjectFilter') return;
       el.removeEventListener('input', scheduleAutosave);
       el.removeEventListener('change', scheduleAutosave);
       el.addEventListener('input', scheduleAutosave);
@@ -489,25 +489,18 @@ const WizardController = (() => {
     normalizeObjectsCheck();
     const objects = catalog.objects || [];
     const selected = (draft.objectsCheck || [])[0];
-    const selectedLabel = selected?.title
-      ? `${selected.title}${selected.subTitle ? ` — ${selected.subTitle}` : ''}`
+
+    const objectViolCount = (o) =>
+      (draft.violations || []).filter((v) => v.mesto === o.title || v.mesto === o.subTitle).length;
+    const selectedViolHint =
+      selected && objectViolCount(selected) > 0 ? ` · ${objectViolCount(selected)} наруш.` : '';
+    const selectedChip = selected?.title
+      ? `<span class="chip chip-removable" data-clear-object title="Нажмите, чтобы убрать">${AktUtils.escapeHtml(selected.title)}${selected.subTitle ? ' — ' + AktUtils.escapeHtml(selected.subTitle) : ''}${selectedViolHint}</span>`
       : '';
-    const searchValue = selected ? selectedLabel : objectSearchQuery;
-    const searchLocked = Boolean(selected?.title);
-    const searchField = `
-      <div class="wizard-object-search-row">
-        <input
-          type="search"
-          class="form-control wizard-object-search${searchLocked ? ' wizard-object-search--locked' : ''}"
-          id="wObjectSearch"
-          placeholder="Выберите объект из справочника"
-          value="${AktUtils.escapeHtml(searchValue)}"
-          ${searchLocked ? 'readonly aria-readonly="true"' : ''}
-          autocomplete="off"
-          enterkeyhint="search"
-        >
-        ${searchLocked ? '<button type="button" class="btn-ghost wizard-object-clear" id="wObjectClear" aria-label="Убрать объект">✕</button>' : ''}
-      </div>`;
+
+    const objectFilter = selected?.title
+      ? ''
+      : `<input type="text" class="wizard-hint wizard-org-hint wizard-inline-filter" id="wObjectFilter" placeholder="Выберите объект из справочника" value="${AktUtils.escapeHtml(objectSearchQuery)}" autocomplete="off" enterkeyhint="search" aria-label="Поиск объекта в справочнике">`;
 
     const catalogBlock = objects.length
       ? `<div class="chip-list" id="wObjectCatalogChips">${buildObjectCatalogChipsHtml() || '<span class="wizard-hint">Все из справочника уже выбраны</span>'}</div>`
@@ -515,8 +508,9 @@ const WizardController = (() => {
 
     return `
       <h3>Объект проверки</h3>
-      <div class="wizard-object-select-block">
-        ${searchField}
+      <div class="wizard-org-select-block">
+        ${objectFilter}
+        <div class="chip-list" id="wObjectChips">${selectedChip || ''}</div>
       </div>
       <div class="commission-divider"></div>
       <div class="commission-catalog-section">
@@ -768,7 +762,7 @@ const WizardController = (() => {
     render();
     updateSummary();
     bindAutosaveOnPanel();
-    requestAnimationFrame(() => document.getElementById('wObjectSearch')?.focus());
+    requestAnimationFrame(() => document.getElementById('wObjectFilter')?.focus());
   }
 
   function ensureConclusionDatesManual() {
@@ -831,13 +825,13 @@ const WizardController = (() => {
       chip.addEventListener('click', () => clearOrganization());
     });
     bindObjectCatalogChips();
-    document.getElementById('wObjectSearch')?.addEventListener('input', (ev) => {
-      const el = ev.currentTarget;
-      if (!el || el.readOnly) return;
-      objectSearchQuery = el.value;
+    document.getElementById('wObjectFilter')?.addEventListener('input', (ev) => {
+      objectSearchQuery = ev.currentTarget?.value || '';
       refreshObjectCatalogChips();
     });
-    document.getElementById('wObjectClear')?.addEventListener('click', () => clearObject());
+    panelsHost()?.querySelectorAll('[data-clear-object]').forEach((chip) => {
+      chip.addEventListener('click', () => clearObject());
+    });
     document.getElementById('wNewPredBtn')?.addEventListener('click', () => WizardModals.openQuickAdd('pred'));
 
     panelsHost()?.querySelectorAll('[data-remove-person]').forEach((btn) => {
