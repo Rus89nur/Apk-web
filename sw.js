@@ -1,11 +1,11 @@
-const CACHE_NAME = 'gazprom-web-v298';
+const CACHE_NAME = 'gazprom-web-v299';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/app.css?v=298',
-  './css/appearance.css?v=298',
+  './css/app.css?v=299',
+  './css/appearance.css?v=299',
   './js/appearance.js?v=272',
   './js/idb-connection.js?v=22',
   './js/file-utils.js?v=1',
@@ -23,7 +23,7 @@ const STATIC_ASSETS = [
   './js/ml-image-service.js?v=6',
   './js/ml-training-wizard.js?v=10',
   './js/offline-status.js?v=1',
-  './js/ui-bindings.js?v=40',
+  './js/ui-bindings.js?v=41',
   './js/doc-generator.js?v=44',
   './js/template-builder-wizard.js?v=3',
   './js/defaults-bootstrap.js?v=15',

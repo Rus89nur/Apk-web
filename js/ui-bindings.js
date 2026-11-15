@@ -189,9 +189,16 @@ const GazpromUI = (() => {
 
     const btn = document.querySelector('#screen-home .btn-primary[data-go="wizard"]');
     if (btn) {
-      btn.textContent = editable
-        ? `Продолжить полный акт № ${editable.number}`
-        : 'Создать полный акт';
+      if (editable) {
+        const num = AktUtils.escapeHtml(String(editable.number ?? '—'));
+        btn.innerHTML =
+          '<span class="home-akt-continue-text">' +
+          '<span class="home-akt-continue-line">Продолжить полный акт</span>' +
+          `<span class="home-akt-continue-num">№ ${num}</span>` +
+          '</span>';
+      } else {
+        btn.textContent = 'Создать полный акт';
+      }
     }
     const subAction = document.getElementById('homeSubAction');
     if (subAction) {

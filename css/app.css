@@ -939,6 +939,20 @@
     }
     .home-akt-actions__primary {
       width: 100%;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.25;
+    }
+    .home-akt-actions__primary .home-akt-continue-text {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .home-akt-actions__primary .home-akt-continue-line,
+    .home-akt-actions__primary .home-akt-continue-num {
+      display: block;
+      font-weight: 700;
     }
     .home-akt-actions__secondary {
       display: flex;
