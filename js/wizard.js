@@ -266,6 +266,10 @@ const WizardController = (() => {
       predSearchQuery = el.textContent || '';
       syncObjectFilterEmptyState(el);
       refreshPredCatalogChips();
+      GazpromMobileOverlay?.scrollMainWizardFieldIntoView?.(el);
+    });
+    el.addEventListener('focus', () => {
+      GazpromMobileOverlay?.scrollMainWizardFieldIntoView?.(el);
     });
     el.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter') ev.preventDefault();

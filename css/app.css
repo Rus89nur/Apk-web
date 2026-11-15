@@ -6672,7 +6672,8 @@
       }
 
       /* web-123: при модалке нижний бар не виден и не «прыгает» */
-      html.gazprom-scroll-lock body.gazprom-mobile-shell .bottom-nav {
+      html.gazprom-scroll-lock body.gazprom-mobile-shell .bottom-nav,
+      html.gazprom-wizard-keyboard body.gazprom-mobile-shell .bottom-nav {
         visibility: hidden;
         pointer-events: none;
         transform: translateY(120%);

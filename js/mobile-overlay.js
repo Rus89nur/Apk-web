@@ -28,6 +28,12 @@ var GazpromMobileOverlay = (() => {
       document.body.style.removeProperty('--gazprom-safari-bottom-inset');
       return 0;
     }
+    /* Клавиатура в мастере: бар не поднимаем вслед за vv (web-307). */
+    if (document.documentElement.classList.contains('gazprom-wizard-keyboard')) {
+      nav.style.removeProperty('bottom');
+      document.body.style.setProperty('--gazprom-safari-bottom-inset', '0px');
+      return 0;
+    }
     /* При открытом оверлее бар не поднимаем — иначе «прыгает» за модалкой (web-123). */
     if (hasOpenOverlay()) {
       nav.style.removeProperty('bottom');
@@ -45,6 +51,89 @@ var GazpromMobileOverlay = (() => {
     const vv = window.visualViewport;
     if (!vv) return false;
     return Math.max(0, window.innerHeight - vv.height - vv.offsetTop) > 80;
+  };
+
+  const isMainKeyboardOpen = () => isWizardModalKeyboardOpen();
+
+  const isWizardScreenField = (target) => {
+    const active = document.querySelector('.screen.active');
+    if (!active || (active.id !== 'screen-wizard' && active.id !== 'screen-spravka')) return false;
+    if (!target?.matches?.(TEXT_FIELD_SELECTOR)) return false;
+    return active.contains(target);
+  };
+
+  const syncWizardScreenKeyboard = () => {
+    if (!mq.matches) {
+      document.documentElement.classList.remove('gazprom-wizard-keyboard');
+      return;
+    }
+    const active = document.querySelector('.screen.active');
+    const field = document.activeElement;
+    const fieldFocused =
+      !!active &&
+      (active.id === 'screen-wizard' || active.id === 'screen-spravka') &&
+      field &&
+      active.contains(field) &&
+      field.matches(TEXT_FIELD_SELECTOR);
+    const keyboardOpen = isMainKeyboardOpen();
+    const isCatalogFilter =
+      field?.id === 'wPredFilter' || field?.id === 'wObjectFilter';
+    document.documentElement.classList.toggle(
+      'gazprom-wizard-keyboard',
+      fieldFocused && (keyboardOpen || isCatalogFilter)
+    );
+    if (fieldFocused) positionBottomNav();
+  };
+
+  const WIZARD_CATALOG_BY_FILTER = {
+    wPredFilter: 'wPredCatalogChips',
+    wObjectFilter: 'wObjectCatalogChips',
+  };
+
+  const scrollMainWizardFieldIntoView = (target) => {
+    if (!mq.matches || !isWizardScreenField(target)) return;
+    const main = mainEl();
+    if (!main) return;
+    const catalogEl = WIZARD_CATALOG_BY_FILTER[target.id]
+      ? document.getElementById(WIZARD_CATALOG_BY_FILTER[target.id])
+      : null;
+
+    const adjust = () => {
+      const vv = window.visualViewport;
+      const visibleTop = vv ? vv.offsetTop : 0;
+      const visibleBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const header = document.querySelector('.header');
+      const headerBottom = header ? header.getBoundingClientRect().bottom : visibleTop;
+      const minTop = Math.max(visibleTop, headerBottom) + 8;
+      const maxBottom = visibleBottom - 12;
+
+      const fieldRect = target.getBoundingClientRect();
+      if (fieldRect.top < minTop) {
+        main.scrollTop -= minTop - fieldRect.top;
+      } else if (fieldRect.bottom > maxBottom) {
+        main.scrollTop += fieldRect.bottom - maxBottom;
+      }
+
+      if (catalogEl) {
+        const catRect = catalogEl.getBoundingClientRect();
+        const catalogAnchor = minTop + 56;
+        if (catRect.top > catalogAnchor) {
+          main.scrollTop += catRect.top - catalogAnchor;
+        }
+        const afterRect = catalogEl.getBoundingClientRect();
+        const showBottom = Math.min(maxBottom, afterRect.top + Math.min(120, afterRect.height));
+        if (afterRect.bottom > showBottom) {
+          main.scrollTop += afterRect.bottom - showBottom;
+        }
+      }
+      clampMainScrollTop(main);
+    };
+
+    requestAnimationFrame(() => {
+      adjust();
+      window.setTimeout(adjust, 100);
+      window.setTimeout(adjust, 320);
+    });
   };
 
   /** Полосы с overflow-x: auto — свайп не блокируем (см. MOBILE_PHONE_MODE §3.8, web-82). */
@@ -600,6 +689,11 @@ var GazpromMobileOverlay = (() => {
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
       syncVisualViewport();
+      syncWizardScreenKeyboard();
+      const focused = document.activeElement;
+      if (focused?.id === 'wPredFilter' || focused?.id === 'wObjectFilter') {
+        scrollMainWizardFieldIntoView(focused);
+      }
       scheduleNavInsetSync();
       clampScrollX();
     });
@@ -628,6 +722,8 @@ var GazpromMobileOverlay = (() => {
     'focusin',
     (e) => {
       scrollWizardModalFieldIntoView(e.target);
+      scrollMainWizardFieldIntoView(e.target);
+      syncWizardScreenKeyboard();
       if (document.getElementById('wizardModalRoot')?.contains(e.target)) {
         syncWizardModalViewport();
       }
@@ -638,7 +734,10 @@ var GazpromMobileOverlay = (() => {
   document.addEventListener(
     'focusout',
     () => {
-      window.setTimeout(syncWizardModalViewport, 120);
+      window.setTimeout(() => {
+        syncWizardModalViewport();
+        syncWizardScreenKeyboard();
+      }, 120);
     },
     true
   );
@@ -665,6 +764,7 @@ var GazpromMobileOverlay = (() => {
     ensureScrollClearance,
     recoverViewportLayout,
     scheduleRecoverViewportLayout,
+    scrollMainWizardFieldIntoView,
   };
 })();
 window.GazpromMobileOverlay = GazpromMobileOverlay;
