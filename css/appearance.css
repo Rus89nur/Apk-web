@@ -178,8 +178,8 @@ html[data-appearance="system"][data-scheme="light"] .bottom-nav {
 }
 
 html[data-appearance="system"][data-scheme="dark"] .sidebar,
-html[data-appearance="system"][data-scheme="dark"] .header,
-html[data-appearance="system"][data-scheme="dark"] .bottom-nav,
+html[data-appearance="system"][data-scheme="dark"] .header:not(:where(body.gazprom-mobile-shell *)),
+html[data-appearance="system"][data-scheme="dark"] .bottom-nav:not(:where(body.gazprom-mobile-shell *)),
 html[data-appearance="system"][data-scheme="dark"] .card,
 html[data-appearance="system"][data-scheme="dark"] .wizard-stepper,
 html[data-appearance="system"][data-scheme="dark"] .modal-dialog {
