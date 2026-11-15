@@ -26,7 +26,8 @@ describe('wizard step conclusions — pred word search', () => {
     expect(wizardSrc).toContain('predCatalogRevealDone');
     const block = wizardSrc.match(/function bindPredFilterLine[\s\S]*?function bind/)?.[0] || '';
     expect(block).toContain("addEventListener('focus'");
-    expect(block).not.toContain('scrollMainWizardFieldIntoView');
+    const inputBlock = block.match(/addEventListener\('input'[\s\S]*?\n    \}\);/)?.[0] || '';
+    expect(inputBlock).not.toContain('scrollMainWizardFieldIntoView');
   });
 
   it('refreshes catalog chips on filter input without replacing hint row', () => {

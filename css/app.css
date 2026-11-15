@@ -6609,6 +6609,14 @@
         touch-action: pan-x pinch-zoom;
       }
 
+      body.gazprom-mobile-shell .wizard-panel--conclusions #wPredFilter.wizard-object-filter {
+        min-height: 2.75rem;
+      }
+
+      body.gazprom-mobile-shell .wizard-panel--conclusions #wPredCatalogChips {
+        min-height: 2.5rem;
+      }
+
       body.gazprom-mobile-shell .wizard-footer {
         position: static;
         flex-direction: row;

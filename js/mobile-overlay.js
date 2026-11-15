@@ -666,6 +666,13 @@ var GazpromMobileOverlay = (() => {
   const scheduleNavInsetSync = () => {
     if (!mq.matches) return;
     positionBottomNav();
+    const focused = document.activeElement;
+    if (
+      document.documentElement.classList.contains('gazprom-wizard-keyboard') &&
+      (focused?.id === 'wPredFilter' || focused?.id === 'wObjectFilter')
+    ) {
+      return;
+    }
     if (navInsetSyncTimer) clearTimeout(navInsetSyncTimer);
     navInsetSyncTimer = window.setTimeout(() => {
       navInsetSyncTimer = 0;

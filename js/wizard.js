@@ -262,11 +262,25 @@ const WizardController = (() => {
     if (!el || el.dataset.predFilterBound === '1') return;
     el.dataset.predFilterBound = '1';
     syncObjectFilterEmptyState(el);
+    let predCatalogRevealDone = false;
+    const revealPredCatalogOnce = () => {
+      if (predCatalogRevealDone) return;
+      if (document.activeElement !== el) return;
+      GazpromMobileOverlay?.scrollMainWizardFieldIntoView?.(el, { revealCatalog: true });
+      predCatalogRevealDone = true;
+    };
+    el.addEventListener('focus', () => {
+      predCatalogRevealDone = false;
+      requestAnimationFrame(revealPredCatalogOnce);
+      window.setTimeout(revealPredCatalogOnce, 450);
+    });
+    el.addEventListener('blur', () => {
+      predCatalogRevealDone = false;
+    });
     el.addEventListener('input', () => {
       predSearchQuery = el.textContent || '';
       syncObjectFilterEmptyState(el);
       refreshPredCatalogChips();
-      GazpromMobileOverlay?.scrollMainWizardFieldIntoView?.(el, { revealCatalog: true });
     });
     el.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter') ev.preventDefault();
