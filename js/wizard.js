@@ -1212,21 +1212,6 @@ const WizardController = (() => {
         });
       });
     });
-    document.getElementById('wizardNewBtn')?.addEventListener('click', async () => {
-      if (draft) {
-        const ok = await GazpromToast.confirm(
-          'Начать новый полный акт? Текущий черновик будет сохранён в списке актов.'
-        );
-        if (!ok) return;
-      }
-      try {
-        await startNewDraft();
-        GazpromToast.success('Новый полный акт создан');
-      } catch (e) {
-        console.error(e);
-        GazpromToast.error(e.message || 'Ошибка создания нового акта');
-      }
-    });
   }
 
   bindGlobalControls();
