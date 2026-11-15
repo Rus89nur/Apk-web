@@ -186,6 +186,32 @@ const WizardController = (() => {
     bindObjectCatalogChips();
   }
 
+  function syncObjectFilterEmptyState(el) {
+    if (!el) return;
+    const text = (el.textContent || '').replace(/\u00a0/g, ' ').trim();
+    el.classList.toggle('wizard-object-filter--empty', !text);
+  }
+
+  function bindObjectFilterLine() {
+    const el = document.getElementById('wObjectFilter');
+    if (!el || el.dataset.objectFilterBound === '1') return;
+    el.dataset.objectFilterBound = '1';
+    syncObjectFilterEmptyState(el);
+    el.addEventListener('input', () => {
+      objectSearchQuery = el.textContent || '';
+      syncObjectFilterEmptyState(el);
+      refreshObjectCatalogChips();
+    });
+    el.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter') ev.preventDefault();
+    });
+    el.addEventListener('paste', (ev) => {
+      ev.preventDefault();
+      const text = ev.clipboardData?.getData('text/plain') || '';
+      document.execCommand('insertText', false, text);
+    });
+  }
+
   async function open(aktId = null, options = {}) {
     const preserveStep = options.preserveStep === true;
     const preserveDraft = options.preserveDraft === true;
@@ -367,7 +393,7 @@ const WizardController = (() => {
 
   function bindAutosaveOnPanel() {
     panelsHost()?.querySelectorAll('input, select, textarea').forEach((el) => {
-      if (el.id === 'wViolSearch' || el.id === 'wObjectFilter') return;
+      if (el.id === 'wViolSearch') return;
       el.removeEventListener('input', scheduleAutosave);
       el.removeEventListener('change', scheduleAutosave);
       el.addEventListener('input', scheduleAutosave);
@@ -498,9 +524,10 @@ const WizardController = (() => {
       ? `<span class="chip chip-removable" data-clear-object title="Нажмите, чтобы убрать">${AktUtils.escapeHtml(selected.title)}${selected.subTitle ? ' — ' + AktUtils.escapeHtml(selected.subTitle) : ''}${selectedViolHint}</span>`
       : '';
 
+    const objectFilterEmpty = !String(objectSearchQuery || '').trim();
     const objectFilter = selected?.title
       ? ''
-      : `<input type="text" class="wizard-hint wizard-org-hint wizard-inline-filter" id="wObjectFilter" placeholder="Выберите объект из справочника" value="${AktUtils.escapeHtml(objectSearchQuery)}" autocomplete="off" enterkeyhint="search" aria-label="Поиск объекта в справочнике">`;
+      : `<p class="wizard-hint wizard-org-hint wizard-object-filter${objectFilterEmpty ? ' wizard-object-filter--empty' : ''}" id="wObjectFilter" contenteditable="true" role="searchbox" spellcheck="false" data-placeholder="Выберите объект из справочника" aria-label="Поиск объекта в справочнике">${AktUtils.escapeHtml(objectSearchQuery)}</p>`;
 
     const catalogBlock = objects.length
       ? `<div class="chip-list" id="wObjectCatalogChips">${buildObjectCatalogChipsHtml() || '<span class="wizard-hint">Все из справочника уже выбраны</span>'}</div>`
@@ -825,10 +852,7 @@ const WizardController = (() => {
       chip.addEventListener('click', () => clearOrganization());
     });
     bindObjectCatalogChips();
-    document.getElementById('wObjectFilter')?.addEventListener('input', (ev) => {
-      objectSearchQuery = ev.currentTarget?.value || '';
-      refreshObjectCatalogChips();
-    });
+    bindObjectFilterLine();
     panelsHost()?.querySelectorAll('[data-clear-object]').forEach((chip) => {
       chip.addEventListener('click', () => clearObject());
     });

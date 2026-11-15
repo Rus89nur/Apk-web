@@ -1810,35 +1810,18 @@
     .wizard-org-select-block .chip-list:only-child {
       min-height: 2.75rem;
     }
-    .wizard-org-select-block .wizard-inline-filter {
-      display: block;
-      width: 100%;
-      border: none;
+    .wizard-org-select-block .wizard-object-filter {
       outline: none;
-      background: transparent;
-      background-color: transparent;
-      padding: 0;
-      margin: 0 0 8px;
-      font-size: 13px;
-      font-weight: 400;
-      line-height: 1.4;
-      color: var(--text-muted);
-      caret-color: var(--text);
-      -webkit-appearance: none;
-      appearance: none;
-      border-radius: 0;
-      box-shadow: none;
-      min-height: 0;
+      cursor: text;
+      min-height: 1.4em;
     }
-    .wizard-org-select-block .wizard-inline-filter::placeholder {
+    .wizard-org-select-block .wizard-object-filter--empty:before {
+      content: attr(data-placeholder);
       color: var(--text-muted);
-      opacity: 1;
+      pointer-events: none;
     }
-    .wizard-org-select-block .wizard-inline-filter:focus {
+    .wizard-org-select-block .wizard-object-filter:focus {
       outline: none;
-      box-shadow: none;
-      border: none;
-      background: transparent;
     }
     .wizard-hint {
       font-size: 13px;
@@ -6476,23 +6459,12 @@
         word-break: break-word;
       }
 
-      /* Как .wizard-org-hint (13px), не как поле form-control и не 16px инпутов */
-      body.gazprom-mobile-shell .wizard-org-select-block input.wizard-inline-filter {
+      /* contenteditable в shell иначе 16px — как <p class="wizard-org-hint"> */
+      body.gazprom-mobile-shell .wizard-org-select-block p.wizard-object-filter[contenteditable='true'] {
         font-size: 13px;
         font-weight: 400;
-        line-height: 1.4;
+        line-height: inherit;
         color: var(--text-muted);
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        padding: 0;
-        margin: 0 0 8px;
-        min-height: 0;
-      }
-      body.gazprom-mobile-shell .wizard-org-select-block input.wizard-inline-filter:focus {
-        background: transparent;
-        box-shadow: none;
-        outline: none;
       }
 
       /* Мастер: шаг 5 «Выводы комиссии» */
