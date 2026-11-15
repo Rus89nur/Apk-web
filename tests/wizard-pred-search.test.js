@@ -13,7 +13,7 @@ describe('wizard step conclusions — pred word search', () => {
     expect(wizardSrc).toContain('id="wPredFilter"');
     expect(wizardSrc).toContain('id="wPredCatalogChips"');
     expect(wizardSrc).toMatch(
-      /id="wPredChips"[\s\S]*\$\{predSearchLine\}/
+      /\$\{predSearchLine\}[\s\S]*id="wPredChips"/
     );
   });
 

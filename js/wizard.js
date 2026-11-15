@@ -697,8 +697,8 @@ const WizardController = (() => {
 
       <h3 style="margin-top:8px;">Представители организации</h3>
       <div class="wizard-org-select-block">
-        <div class="chip-list" id="wPredChips">${predChips || '<span class="wizard-hint">Добавьте представителей организации</span>'}</div>
         ${predSearchLine}
+        <div class="chip-list" id="wPredChips">${predChips || '<span class="wizard-hint">Добавьте представителей организации</span>'}</div>
       </div>
       <div class="commission-divider"></div>
       <div class="commission-catalog-section">
