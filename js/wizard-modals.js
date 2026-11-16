@@ -752,19 +752,33 @@ const WizardModals = (() => {
       );
     }
 
+    function titleMissingFromRegistry(title) {
+      const t = String(title || '').trim();
+      if (!t) return false;
+      return !getRegistryItems().some((item) => (item.title || '').trim() === t);
+    }
+
+    function shouldShowSaveToRegistryHint() {
+      const s = getFormSnapshot();
+      if (!s.title.trim()) return false;
+      if (isModifiedFromRegistry()) return true;
+      if (!selectedRegistryItem && titleMissingFromRegistry(s.title)) return true;
+      return false;
+    }
+
     function updateSaveToRegistryHint() {
       let hint = document.getElementById('mvSaveToRegistryHint');
-      if (isModifiedFromRegistry()) {
+      if (shouldShowSaveToRegistryHint()) {
         if (!hint) {
           hint = document.createElement('div');
           hint.id = 'mvSaveToRegistryHint';
           hint.className = 'mv-save-registry-hint';
           hint.innerHTML = `
-            <p class="mv-save-registry-hint-text">Данные отличаются от реестра</p>
-            <button type="button" class="btn-ghost btn-sm" id="mvSaveNewToRegistry">+ Сохранить как новое нарушение в реестр</button>
+            <p class="mv-save-registry-hint-text">Этой формулировки нет в реестре</p>
+            <button type="button" class="btn-primary btn-sm" id="mvSaveNewToRegistry">Сохранить в реестр</button>
           `;
-          const modalBody = document.getElementById('modalBody');
-          modalBody?.appendChild(hint);
+          const footer = document.getElementById('modalFooter');
+          footer?.parentElement?.insertBefore(hint, footer);
           document.getElementById('mvSaveNewToRegistry')?.addEventListener('click', saveCurrentToRegistry);
         }
       } else {
