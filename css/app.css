@@ -961,8 +961,9 @@
       overscroll-behavior-x: contain;
       touch-action: pan-x pinch-zoom;
       scrollbar-width: none;
-      padding-bottom: 2px;
-      padding-right: 8px;
+      padding-top: 8px;
+      padding-bottom: 8px;
+      padding-right: 16px;
     }
     #screen-history .toolbar-filters--pills .filter-pill {
       touch-action: pan-x pinch-zoom;
@@ -1179,7 +1180,7 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      padding: 0 0 16px;
+      padding: 12px 0 16px;
     }
 
     .history-list .history-list-item.card {
@@ -3938,7 +3939,7 @@
       }
       body.gazprom-mobile-shell .history-list {
         gap: 12px;
-        padding: 0 0 12px;
+        padding: 12px 0 12px;
       }
       body.gazprom-mobile-shell .history-list-item__title {
         font-size: 15px;
@@ -6475,8 +6476,10 @@
         width: 100%;
         max-width: 100%;
         min-width: 0;
-        padding-right: max(12px, env(safe-area-inset-right));
-        padding-bottom: 4px;
+        padding-top: 8px;
+        padding-bottom: 8px;
+        padding-left: max(12px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right));
         scrollbar-width: none;
       }
 
