@@ -287,6 +287,15 @@ const GazpromUI = (() => {
 
   const HISTORY_RING_C = (2 * Math.PI * 28).toFixed(3);
 
+  function historyRingClassName(detected) {
+    const n = Number(detected) || 0;
+    const base = 'history-list-item__ring';
+    if (n <= 0) return `${base} ${base}--empty`;
+    if (n <= 2) return `${base} ${base}--few`;
+    if (n <= 5) return `${base} ${base}--mid`;
+    return `${base} ${base}--high`;
+  }
+
   function sameYearList(a, b) {
     const left = a || [];
     const right = b || [];
@@ -384,14 +393,9 @@ const GazpromUI = (() => {
           ? '<span class="history-list-item__draft">Черновик</span>'
           : '<span class="history-list-item__ready">Готов</span>';
         const detected = countViolations(akt);
-        const ringClass =
-          detected > 0
-            ? 'history-list-item__ring history-list-item__ring--open'
-            : 'history-list-item__ring history-list-item__ring--empty';
+        const ringClass = historyRingClassName(detected);
         const ringDash = detected > 0 ? `${HISTORY_RING_C} 0` : `0 ${HISTORY_RING_C}`;
-        const trashBtn = draft
-          ? `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину">Удалить</button>`
-          : '';
+        const trashBtn = `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину">Удалить</button>`;
         const openLabel = short
           ? 'Редактировать сокращённый акт'
           : draft

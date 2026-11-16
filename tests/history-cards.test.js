@@ -98,8 +98,9 @@ describe('карточки истории: выявлено', () => {
 
   it('три нарушения показывают цифру 3 в кольце и выявлено 3 в aria-label', () => {
     const html = render(three);
-    expect(html).toContain('history-list-item__ring--open');
+    expect(html).toContain('history-list-item__ring--mid');
     expect(html).toContain('<span class="history-ring__label">3</span>');
+    expect(html).toContain('data-history-trash="v3"');
     expect(html).toContain('выявлено 3');
     expect(html).not.toContain('Выявлено:');
   });
@@ -119,8 +120,9 @@ describe('карточки истории: выявлено', () => {
   it('две записи сокращённого акта дают цифру 2 в кольце', () => {
     const html = render(shortTwo);
     expect(html).toContain('history-row--short');
-    expect(html).toContain('history-list-item__ring--open');
+    expect(html).toContain('history-list-item__ring--few');
     expect(html).toContain('<span class="history-ring__label">2</span>');
+    expect(html).toContain('data-history-trash="short2"');
     expect(html).toContain('выявлено 2');
     expect(html).not.toContain('Выявлено:');
   });
@@ -129,6 +131,11 @@ describe('карточки истории: выявлено', () => {
     const html = [three, empty, shortTwo, draft].map(render).join('\n');
     expect(html).not.toContain('elimination-act-card');
     expect(html).not.toContain('elim-ring');
+  });
+
+  it('у любого акта есть кнопка «Удалить» в подвале', () => {
+    expect(render(three)).toContain('data-history-trash="v3"');
+    expect(render(empty)).toContain('data-history-trash="v0"');
   });
 
   it('у черновика «Удалить» внизу карточки, стрелка сверху', () => {

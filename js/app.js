@@ -641,10 +641,6 @@ function bindHistory() {
       if (!catalog) return;
       const akt = (catalog.akts || []).find((a) => a.id === id);
       if (!akt) return;
-      if (AktUtils.isReady(akt)) {
-        GazpromToast.info('Готовый акт нельзя удалить. Откройте акт и верните в черновик.');
-        return;
-      }
       const ok = await GazpromToast.confirm(
         `Переместить акт № ${akt.number} в корзину? Его можно будет восстановить в настройках.`
       );

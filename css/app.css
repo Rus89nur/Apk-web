@@ -1247,12 +1247,25 @@
 
     .history-ring__fill {
       fill: none;
-      stroke: var(--primary);
+      stroke: #cbd5e1;
       stroke-width: 5;
+      stroke-linecap: round;
     }
 
     .history-list-item__ring--empty .history-ring__fill {
       stroke: #cbd5e1;
+    }
+
+    .history-list-item__ring--few .history-ring__fill {
+      stroke: var(--primary);
+    }
+
+    .history-list-item__ring--mid .history-ring__fill {
+      stroke: var(--warning);
+    }
+
+    .history-list-item__ring--high .history-ring__fill {
+      stroke: var(--danger);
     }
 
     .history-ring__label {
@@ -1271,6 +1284,18 @@
 
     .history-list-item__ring--empty .history-ring__label {
       color: var(--text-muted);
+    }
+
+    .history-list-item__ring--few .history-ring__label {
+      color: var(--primary);
+    }
+
+    .history-list-item__ring--mid .history-ring__label {
+      color: var(--warning);
+    }
+
+    .history-list-item__ring--high .history-ring__label {
+      color: var(--danger);
     }
 
     .history-list-item__content {
