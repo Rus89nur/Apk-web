@@ -581,6 +581,28 @@
       cursor: default;
       opacity: 0.92;
     }
+    .wizard--locked .chip-catalog,
+    .wizard--locked .chip-removable,
+    .wizard--locked .wizard-object-filter,
+    .wizard--locked .wizard-pred-filter {
+      pointer-events: none;
+      opacity: 0.72;
+      cursor: default;
+    }
+    .short-akt--locked .short-akt-stepper__ctrl button,
+    .short-akt--locked .form-control {
+      pointer-events: none;
+      opacity: 0.85;
+    }
+    .short-akt-ready-banner {
+      margin: 0 0 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--success) 40%, var(--border));
+      background: color-mix(in srgb, var(--success) 12%, var(--surface));
+      font-size: 13px;
+      line-height: 1.4;
+    }
     .wizard-step.done .wizard-step-num { background: var(--success); color: #fff; }
     .wizard-step.current .wizard-step-num { background: var(--primary); color: #fff; }
     .wizard-step-label {
@@ -1305,6 +1327,12 @@
       font-size: 12px;
       font-weight: 600;
       color: var(--text-muted);
+    }
+
+    .history-list-item__ready {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--success);
     }
 
     .history-list-item__aside {

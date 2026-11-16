@@ -331,6 +331,9 @@ const GazpromUI = (() => {
         const actType = getHistoryActType(short, full);
         const draftHint = draft
           ? '<span class="history-list-item__draft">Черновик</span>'
+          : '<span class="history-list-item__ready">Готов</span>';
+        const trashBtn = draft
+          ? `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину"><span aria-hidden="true">×</span></button>`
           : '';
         const openLabel = short
           ? 'Редактировать сокращённый акт'
@@ -354,7 +357,7 @@ const GazpromUI = (() => {
                 </div>
               </div>
               <div class="history-list-item__aside">
-                <button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину"><span aria-hidden="true">×</span></button>
+                ${trashBtn}
                 <span class="history-list-item__chevron" aria-hidden="true">›</span>
               </div>
             </div>

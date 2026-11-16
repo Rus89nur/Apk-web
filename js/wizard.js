@@ -82,7 +82,13 @@ const WizardController = (() => {
   }
 
   function isWizardLocked() {
-    return !!(draft && typeof AktUtils.isDraft === 'function' && !AktUtils.isDraft(draft));
+    return !!(draft && typeof AktUtils.isReady === 'function' && AktUtils.isReady(draft));
+  }
+
+  function blockWizardEdit() {
+    if (!isWizardLocked()) return false;
+    GazpromToast.info('Акт готов. Нажмите «Вернуть в черновик», чтобы редактировать.');
+    return true;
   }
 
   async function unlockWizardToDraft() {
@@ -126,6 +132,10 @@ const WizardController = (() => {
   }
 
   async function startNewDraft() {
+    if (isWizardLocked()) {
+      GazpromToast.info('Сначала верните готовый акт в черновик или закройте его.');
+      return;
+    }
     resetAutosaveTimer();
     if (draft) {
       commitStep(step);
@@ -427,8 +437,12 @@ const WizardController = (() => {
     if (!locked) return;
     const panel = panelsHost()?.querySelector('.wizard-panel-active');
     if (!panel) return;
-    panel.querySelectorAll('input, textarea, select').forEach((el) => {
+    panel.querySelectorAll('input, textarea, select, [contenteditable="true"]').forEach((el) => {
       if (el.type === 'hidden') return;
+      if (el.getAttribute('contenteditable') === 'true') {
+        el.setAttribute('contenteditable', 'false');
+        return;
+      }
       if (el.tagName === 'SELECT') el.disabled = true;
       else if (el.type === 'checkbox' || el.type === 'radio' || el.type === 'file') el.disabled = true;
       else el.readOnly = true;
@@ -538,6 +552,7 @@ const WizardController = (() => {
   }
 
   function bindAutosaveOnPanel() {
+    if (isWizardLocked()) return;
     panelsHost()?.querySelectorAll('input, select, textarea').forEach((el) => {
       if (el.id === 'wViolSearch') return;
       el.removeEventListener('input', scheduleAutosave);
@@ -852,6 +867,7 @@ const WizardController = (() => {
 
 
   function bindCommissionDragDrop() {
+    if (isWizardLocked()) return;
     const container = document.getElementById('wCommissionChips');
     if (!container) return;
 
@@ -897,6 +913,7 @@ const WizardController = (() => {
   }
 
   function selectOrganizationById(id) {
+    if (blockWizardEdit()) return;
     const org = (catalog.organizations || []).find((o) => o.id === id);
     if (!org) return;
     draft.organization = { ...org };
@@ -905,12 +922,14 @@ const WizardController = (() => {
   }
 
   function clearOrganization() {
+    if (blockWizardEdit()) return;
     draft.organization = { id: '', title: '', shortTitle: '' };
     scheduleAutosave();
     render();
   }
 
   function selectObjectById(id) {
+    if (blockWizardEdit()) return;
     const obj = (catalog.objects || []).find((o) => o.id === id);
     if (!obj) return;
     normalizeObjectsCheck();
@@ -922,6 +941,7 @@ const WizardController = (() => {
   }
 
   function clearObject() {
+    if (blockWizardEdit()) return;
     draft.objectsCheck = [];
     objectSearchQuery = '';
     scheduleAutosave();
@@ -951,6 +971,12 @@ const WizardController = (() => {
 
   function bindPanelEvents() {
     if (step === 2) normalizeObjectsCheck();
+
+    violUi.bindViolationListEvents();
+    if (isWizardLocked()) {
+      violUi.bindViolSearchEvents();
+      return;
+    }
 
     panelsHost()?.querySelectorAll('[data-add-person]').forEach((chip) => {
       chip.addEventListener('click', () => addPersonById(chip.dataset.addPerson));
@@ -1082,7 +1108,6 @@ const WizardController = (() => {
     });
 
     bindCommissionDragDrop();
-    violUi.bindViolationListEvents();
     violUi.bindViolSearchEvents();
 
     document.getElementById('wSaveDraft')?.addEventListener('click', () => finish());
@@ -1147,6 +1172,7 @@ const WizardController = (() => {
   }
 
   function addPersonById(id) {
+    if (blockWizardEdit()) return;
     const p = (catalog.comissionPeople || []).find((x) => x.id === id);
     if (!p) return;
     if ((draft.comission || []).some((x) => x.id === id)) return;
@@ -1155,11 +1181,13 @@ const WizardController = (() => {
   }
 
   function removePerson(id) {
+    if (blockWizardEdit()) return;
     draft.comission = (draft.comission || []).filter((p) => p.id !== id);
     render();
   }
 
   function addPredById(id) {
+    if (blockWizardEdit()) return;
     const p = (catalog.predstavitely || []).find((x) => x.id === id);
     if (!p) return;
     if ((draft.predstavitelyComission || []).some((x) => x.id === id)) return;
@@ -1168,6 +1196,7 @@ const WizardController = (() => {
   }
 
   function removePred(id) {
+    if (blockWizardEdit()) return;
     draft.predstavitelyComission = (draft.predstavitelyComission || []).filter((p) => p.id !== id);
     render();
   }
@@ -1320,6 +1349,10 @@ const WizardController = (() => {
   }
 
   async function next() {
+    if (isWizardLocked()) {
+      if (step < TOTAL_STEPS - 1) setStep(step + 1);
+      return;
+    }
     commitStep(step);
     if (!validateStep(step)) return;
     if (step < TOTAL_STEPS - 1) {
@@ -1340,6 +1373,10 @@ const WizardController = (() => {
   }
 
   async function prev() {
+    if (isWizardLocked()) {
+      if (step > 0) setStep(step - 1);
+      return;
+    }
     commitStep(step);
     if (step > 0) {
       setStep(step - 1);
@@ -1351,6 +1388,7 @@ const WizardController = (() => {
   }
 
   async function finish() {
+    if (isWizardLocked()) return;
     commitStep(step);
     if (!validateStep(step)) return;
     await saveDraft();
@@ -1360,6 +1398,7 @@ const WizardController = (() => {
   }
 
   function canGoToStep(target) {
+    if (isWizardLocked()) return true;
     if (target <= step) return true;
     commitStep(step);
     for (let s = step; s < target; s++) {
@@ -1382,6 +1421,10 @@ const WizardController = (() => {
       btn.addEventListener('click', () => {
         const target = parseInt(btn.dataset.step, 10);
         if (Number.isNaN(target) || target === step) return;
+        if (isWizardLocked()) {
+          setStep(target);
+          return;
+        }
         if (target > step && !canGoToStep(target)) return;
         if (target < step) commitStep(step);
         setStep(target);

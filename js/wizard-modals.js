@@ -1481,6 +1481,11 @@ const WizardModals = (() => {
   }
 
   function openQuickAdd(type) {
+    const draft = ctx.getDraft();
+    if (draft && typeof AktUtils.isReady === 'function' && AktUtils.isReady(draft)) {
+      GazpromToast.info('Акт готов. Верните в черновик, чтобы менять состав акта.');
+      return;
+    }
     const forms = {
       org: {
         title: 'Новая организация',

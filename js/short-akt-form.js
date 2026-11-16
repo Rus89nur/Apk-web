@@ -4,6 +4,10 @@
 const ShortAktForm = (() => {
   let editingAkt = null;
 
+  function isShortLocked() {
+    return !!(editingAkt && typeof AktUtils.isReady === 'function' && AktUtils.isReady(editingAkt));
+  }
+
   function ensureModalRoot() {
     let root = document.getElementById('shortAktModalRoot');
     if (root) return root;
@@ -141,9 +145,11 @@ const ShortAktForm = (() => {
 
     const total = types.reduce((s, t) => s + (counts[t] || 0), 0);
 
+    const ready = akt && AktUtils.isReady(akt);
     return `
+      ${ready ? '<p class="short-akt-ready-banner">Сокращённый акт <strong>готов</strong> — редактирование заблокировано. Нажмите «Вернуть в черновик».</p>' : ''}
       <p class="short-akt-hint">Минимальный набор полей, как в iOS. Нарушения сохраняются с префиксом «Сокращенный:».</p>
-      <p class="short-akt-status">${akt && !AktUtils.isDraft(akt) ? 'Статус: готовый акт' : 'Статус: черновик'}</p>
+      <p class="short-akt-status">${ready ? 'Статус: готовый акт' : 'Статус: черновик'}</p>
       <div class="form-grid">
         <label class="form-label">Номер акта</label>
         <select class="form-control" id="shortAktNumber">${numberOptions}</select>
@@ -168,9 +174,26 @@ const ShortAktForm = (() => {
     `;
   }
 
+  function applyShortReadOnly() {
+    const dialog = document.querySelector('#shortAktModalRoot .modal-dialog');
+    const locked = isShortLocked();
+    dialog?.classList.toggle('short-akt--locked', locked);
+    const saveBtn = document.getElementById('shortAktSaveBtn');
+    if (saveBtn) saveBtn.disabled = locked;
+    const body = document.getElementById('shortAktModalBody');
+    if (!body || !locked) return;
+    body.querySelectorAll('input, select, textarea').forEach((el) => {
+      el.disabled = true;
+    });
+  }
+
   function bindFormHandlers(catalog) {
     const body = document.getElementById('shortAktModalBody');
     if (!body) return;
+    if (isShortLocked()) {
+      applyShortReadOnly();
+      return;
+    }
 
     const types = AktUtils.getShortAktTypeTitles(catalog, editingAkt);
     const counts = {};
@@ -293,6 +316,10 @@ const ShortAktForm = (() => {
   }
 
   async function handleSave() {
+    if (isShortLocked()) {
+      GazpromToast.info('Акт готов. Сначала верните в черновик.');
+      return;
+    }
     try {
       const wasEdit = Boolean(editingAkt);
       const catalog = await GazpromStore.get();
@@ -309,16 +336,21 @@ const ShortAktForm = (() => {
   async function handleToggleReady() {
     try {
       const catalog = await GazpromStore.get();
+      if (isShortLocked()) {
+        const akt = (catalog.akts || []).find((a) => a.id === editingAkt.id);
+        if (!akt) throw new Error('Акт не найден');
+        akt.urlToFllACT = null;
+        await persistAkt(catalog, akt);
+        close();
+        GazpromToast.success(`Акт № ${akt.number} возвращён в черновик`);
+        await GazpromUI.refreshAll();
+        return;
+      }
       const akt = readForm(catalog);
-      const becomingReady = AktUtils.isDraft(akt);
-      akt.urlToFllACT = becomingReady ? `web:completed/${akt.id}` : null;
+      akt.urlToFllACT = `web:completed/${akt.id}`;
       await persistAkt(catalog, akt);
       close();
-      GazpromToast.success(
-        becomingReady
-          ? `Акт № ${akt.number} отмечен готовым`
-          : `Акт № ${akt.number} возвращён в черновик`
-      );
+      GazpromToast.success(`Акт № ${akt.number} отмечен готовым — редактирование заблокировано`);
       await GazpromUI.refreshAll();
     } catch (e) {
       GazpromToast.error(e.message || 'Не удалось сменить статус');
@@ -340,8 +372,11 @@ const ShortAktForm = (() => {
       return;
     }
 
+    const lockedOpen = editingAkt && AktUtils.isReady(editingAkt);
     const title = editingAkt
-      ? `Редактирование сокращённого акта № ${editingAkt.number}`
+      ? lockedOpen
+        ? `Сокращённый акт № ${editingAkt.number} (просмотр)`
+        : `Редактирование сокращённого акта № ${editingAkt.number}`
       : 'Сокращённый акт';
 
     if (!editingAkt && !catalog.organizations?.length) {
@@ -350,20 +385,21 @@ const ShortAktForm = (() => {
       return;
     }
 
-    const readyLabel =
-      editingAkt && !AktUtils.isDraft(editingAkt)
-        ? '↩ Вернуть в черновик'
-        : '✓ Отметить готовым';
+    const readyLabel = lockedOpen ? '↩ Вернуть в черновик' : '✓ Отметить готовым';
+    const saveBtnHtml = lockedOpen
+      ? ''
+      : '<button type="button" class="btn-primary" id="shortAktSaveBtn">Сохранить</button>';
     openModal(
       title,
       buildFormHtml(catalog, editingAkt),
       `
-        <button type="button" class="btn-secondary" data-short-close>Отмена</button>
-        <button type="button" class="btn-secondary" id="shortAktReadyBtn">${readyLabel}</button>
-        <button type="button" class="btn-primary" id="shortAktSaveBtn">Сохранить</button>
+        <button type="button" class="btn-secondary" data-short-close>${lockedOpen ? 'Закрыть' : 'Отмена'}</button>
+        ${editingAkt ? `<button type="button" class="btn-secondary" id="shortAktReadyBtn">${readyLabel}</button>` : ''}
+        ${saveBtnHtml}
       `
     );
     bindFormHandlers(catalog);
+    applyShortReadOnly();
     document.getElementById('shortAktReadyBtn')?.addEventListener('click', () => {
       void handleToggleReady();
     });

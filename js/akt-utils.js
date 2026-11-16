@@ -505,6 +505,11 @@ const AktUtils = (() => {
     return false;
   }
 
+  /** Готовый акт (отмечен «готовым») — редактирование запрещено до возврата в черновик. */
+  function isReady(akt) {
+    return !isDraft(akt);
+  }
+
   function countPhotos(akt) {
     return (akt?.violations || []).reduce((n, v) => n + (v.photo?.length || 0), 0);
   }
@@ -1078,6 +1083,7 @@ const AktUtils = (() => {
     getFullEditableAkt,
     applyCurrentEditable,
     isDraft,
+    isReady,
     countPhotos,
     photoSrc,
     photoSrcAsync,

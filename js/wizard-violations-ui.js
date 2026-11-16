@@ -343,6 +343,10 @@ const WizardViolationsUI = (() => {
       panelsHost()?.querySelectorAll(`.${delClass}`).forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          if (wizardLocked()) {
+            GazpromToast.info('Акт готов. Верните в черновик, чтобы редактировать нарушения.');
+            return;
+          }
           const draft = getDraft();
           const v = (draft.violations || []).find((x) => x.id === btn.dataset.vid);
           GazpromToast.confirm(`Удалить нарушение?\n«${(v?.title || '').slice(0, 80)}»`, { confirmLabel: 'Удалить', danger: true }).then((ok) => {
