@@ -449,6 +449,21 @@ const WizardModals = (() => {
       return best;
     }
 
+    /** Текст из акта часто короче формулировки реестра — подбираем через умный поиск. */
+    function registryItemForUserTitle(rawTitle) {
+      const title = String(rawTitle || '').trim();
+      if (!title) return null;
+      const items = getRegistryItems();
+      const exact = resolveRegistryItem(items, { title, titleKey: registryTitleKey(title) });
+      if (exact) return exact;
+      const { ranked } = ViolationSearch.suggestRegistry(items, title);
+      const top = ranked[0];
+      if (!top?.item) return null;
+      if (top.full) return top.item;
+      if (top.matched >= 2) return top.item;
+      return null;
+    }
+
     let placeStatsCacheKey = null;
     let placeStatsCache = { counts: {}, top: [] };
 
