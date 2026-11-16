@@ -1100,6 +1100,11 @@
 
     #screen-history .history-card.card--flush {
       overflow: visible;
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      border-radius: 0;
+      margin-bottom: 0;
     }
 
     .history-list-toolbar {
@@ -3942,6 +3947,11 @@
       body.gazprom-mobile-shell #screen-history .history-card.card--flush {
         padding: 0;
         overflow: visible;
+        border: none;
+        box-shadow: none;
+        background: transparent;
+        border-radius: 0;
+        margin-bottom: 0;
       }
       body.gazprom-mobile-shell .history-list {
         gap: 12px;
@@ -6586,7 +6596,7 @@
       body.gazprom-mobile-shell #screen-history .toolbar--history {
         flex-direction: column;
         align-items: stretch;
-        margin-bottom: 10px;
+        margin-bottom: 0;
         gap: 8px;
         min-width: 0;
         max-width: 100%;
