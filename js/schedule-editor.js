@@ -259,6 +259,39 @@ const ScheduleEditor = (() => {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0).toISOString();
   }
 
+  function updateMonthCardDoneState(card, item, done) {
+    if (!card || !item) return;
+    card.classList.toggle('schedule-item-card--done', done);
+    const badge = card.querySelector('.schedule-item-card__badge');
+    if (badge) {
+      badge.textContent = done ? 'Выполнено' : 'План';
+      badge.classList.toggle('is-done', done);
+    }
+    const btn = card.querySelector('[data-toggle-done]');
+    if (btn) {
+      btn.classList.toggle('is-on', done);
+      btn.setAttribute('aria-pressed', done ? 'true' : 'false');
+    }
+    const meta = card.querySelector('.schedule-item-card__meta');
+    if (meta) {
+      const plan = getPlanDate(item);
+      const planStr = plan ? AktUtils.formatDateShort(plan) : '—';
+      const factStr = done && item.actualDate ? AktUtils.formatDateShort(item.actualDate) : 'нет';
+      meta.textContent = `План ${planStr} · Факт ${factStr}`;
+    }
+  }
+
+  function updateMonthKpi(root) {
+    const kpi = root?.querySelector('.schedule-month-body .schedule-year-kpi');
+    if (!kpi) return;
+    const cards = root.querySelectorAll('.schedule-item-card');
+    const total = cards.length;
+    const doneCount = root.querySelectorAll('.schedule-item-card--done').length;
+    kpi.textContent = total
+      ? `${total} проверки · ${doneCount} выполнено`
+      : 'Нет запланированных проверок';
+  }
+
   async function toggleItemDone(itemId, year, month) {
     const fresh = await GazpromStore.get();
     const item = (fresh.scheduleItems || []).find((x) => x?.id === itemId);
@@ -271,8 +304,18 @@ const ScheduleEditor = (() => {
     await GazpromStore.set(fresh);
     GazpromStore.invalidateCache();
     await GazpromUI.refreshAll();
+
+    const root = document.getElementById('scheduleEditorRoot');
+    const card = root
+      ? [...root.querySelectorAll('.schedule-item-card')].find((el) => el.dataset.id === String(itemId))
+      : null;
+    if (card) {
+      updateMonthCardDoneState(card, item, !wasDone);
+      updateMonthKpi(root);
+    } else {
+      showMonthDetail(await GazpromStore.get(), year, month);
+    }
     GazpromToast.success(wasDone ? 'Отметка снята' : 'Отмечено выполненным');
-    showMonthDetail(await GazpromStore.get(), year, month);
   }
 
   function showMonthDetail(catalog, year, month) {
