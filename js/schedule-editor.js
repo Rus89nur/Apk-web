@@ -641,7 +641,6 @@ const ScheduleEditor = (() => {
     const y = year || getItemYear(item) || currentYear;
     const m = month || getItemMonth(item) || 1;
     const planVal = AktUtils.toDateInputValue(getPlanDate(item));
-    const factVal = AktUtils.toDateInputValue(item?.actualDate);
     const defaultPlan = planVal || `${y}-${String(m).padStart(2, '0')}-15`;
     const title = getSelectionTitle(catalog, { objectId, orgId, item });
     const isEdit = !!item;
@@ -653,15 +652,9 @@ const ScheduleEditor = (() => {
           <label>Объект</label>
           <div class="schedule-selected-object">${AktUtils.escapeHtml(title)}</div>
         </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>План (дата)</label>
-            <input type="date" class="form-control" data-plan value="${defaultPlan}">
-          </div>
-          <div class="form-group">
-            <label>Факт (дата)</label>
-            <input type="date" class="form-control" data-fact value="${factVal}">
-          </div>
+        <div class="form-group">
+          <label>План (дата)</label>
+          <input type="date" class="form-control" data-plan value="${defaultPlan}">
         </div>
         <div class="catalog-form-actions">
           <button type="button" class="btn-ghost" data-cancel>Отмена</button>
@@ -697,8 +690,12 @@ const ScheduleEditor = (() => {
           orgId,
           plan,
         });
-        const fact = form.querySelector('[data-fact]')?.value || '';
-        record.actualDate = fact ? new Date(fact + 'T12:00:00').toISOString() : null;
+        /* Факт ставится кнопкой «Выполнено» в карточке, не при добавлении. */
+        if (isEdit) {
+          record.actualDate = item?.actualDate || null;
+        } else {
+          record.actualDate = null;
+        }
 
         await persistScheduleItem(fresh, record, record.year, record.month);
         remove();
