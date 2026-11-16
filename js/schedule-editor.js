@@ -119,6 +119,11 @@ const ScheduleEditor = (() => {
     });
   }
 
+  function capitalizeMonth(name) {
+    if (!name) return '';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+  }
+
   function showYearGrid(catalog) {
     const root = ensureRoot();
     const alreadyOpen = !root.hidden;
@@ -129,27 +134,72 @@ const ScheduleEditor = (() => {
 
     const year = currentYear;
     const yearItems = itemsForYear(catalog, year);
+    const now = new Date();
+    const yearDone = yearItems.filter((i) => i?.actualDate).length;
+    const yearTotal = yearItems.length;
+    const yearPct = yearTotal > 0 ? Math.round((yearDone / yearTotal) * 100) : 0;
+    const kpiText = yearTotal > 0
+      ? `${yearTotal} проверок · ${yearDone} выполнено · ${yearPct}%`
+      : 'План на год не задан';
 
     const cells = MONTH_NAMES.map((name, idx) => {
       const month = idx + 1;
       const monthItems = yearItems.filter((i) => getItemMonth(i) === month);
-      const lines = monthItems.map((item) => {
-        const title = AktUtils.escapeHtml(getItemTitle(item, catalog));
-        const dateStr = formatPlanDateShort(item);
-        const done = item.actualDate ? ' schedule-month-line--done' : '';
-        return `<div class="schedule-month-line${done}">${title}${dateStr ? ` (${dateStr})` : ''}</div>`;
-      });
-      const content = lines.length ? lines.join('') : '<span class="schedule-month-empty">—</span>';
       const count = monthItems.length;
-      const hasItems = count > 0 ? ' schedule-month-wrap--filled' : '';
+      const doneCount = monthItems.filter((i) => i?.actualDate).length;
+      const label = capitalizeMonth(name);
+      const isNow = year === now.getFullYear() && month === now.getMonth() + 1;
+      const isEmpty = count === 0;
+      const isComplete = count > 0 && doneCount === count;
+      const pct = count > 0 ? Math.round((doneCount / count) * 100) : 0;
+
+      let countClass = 'schedule-month-count';
+      let countText = '0';
+      if (isEmpty) {
+        countClass += ' schedule-month-count--empty';
+      } else if (isComplete) {
+        countClass += ' schedule-month-count--ok';
+        countText = `${doneCount}/${count}`;
+      } else if (doneCount === 0) {
+        countClass += ' schedule-month-count--wait';
+        countText = `${doneCount}/${count}`;
+      } else {
+        countText = `${doneCount}/${count}`;
+      }
+
+      const lines = isEmpty
+        ? '<p class="schedule-month-empty">Нет проверок. Нажмите, чтобы добавить.</p>'
+        : `<ul class="schedule-month-list">${monthItems.map((item) => {
+            const title = AktUtils.escapeHtml(getItemTitle(item, catalog));
+            const dateStr = formatPlanDateShort(item);
+            const done = item.actualDate ? ' schedule-month-line--done' : '';
+            return `<li class="schedule-month-line${done}">${title}${dateStr ? ` · ${dateStr}` : ''}</li>`;
+          }).join('')}</ul>`;
+
+      const bar = isEmpty
+        ? ''
+        : `<div class="schedule-month-bar" aria-hidden="true"><span style="width:${pct}%"></span></div>`;
+
+      const cardMods = [
+        isEmpty ? ' schedule-month-card--empty' : '',
+        isNow ? ' schedule-month-card--now' : '',
+        isComplete ? ' schedule-month-card--done' : '',
+      ].join('');
+
+      const aria = isEmpty
+        ? `${label}, нет проверок`
+        : `${label}, ${doneCount} из ${count} выполнено`;
+
       return `
-        <div class="schedule-month-wrap${hasItems}">
-          <div class="schedule-month-label">${name}</div>
-          <div class="schedule-month-cell" role="button" tabindex="0"
-               data-month="${month}" aria-label="${name}, ${count} объектов">
-            <div class="schedule-month-content">${content}</div>
+        <article class="schedule-month-card schedule-month-cell${cardMods}"
+                 role="button" tabindex="0" data-month="${month}" aria-label="${aria}">
+          <div class="schedule-month-card__top">
+            <strong class="schedule-month-card__name">${label}</strong>
+            <span class="${countClass}">${countText}</span>
           </div>
-        </div>`;
+          ${lines}
+          ${bar}
+        </article>`;
     }).join('');
 
     root.innerHTML = `
@@ -165,7 +215,8 @@ const ScheduleEditor = (() => {
           <button type="button" class="modal-close schedule-header-close" data-close aria-label="Закрыть">×</button>
         </div>
         <div class="catalog-editor-body schedule-editor-body">
-          <p class="schedule-editor-hint">Нажмите на месяц, чтобы открыть перечень объектов и даты проверок.</p>
+          <p class="schedule-editor-hint">Год целиком. В карточке — сколько запланировано и выполнено. Нажмите месяц, чтобы править объекты.</p>
+          <div class="schedule-year-kpi" aria-label="Итог года">${AktUtils.escapeHtml(kpiText)}</div>
           <div class="schedule-year-grid">${cells}</div>
         </div>
         <div class="catalog-editor-footer">
