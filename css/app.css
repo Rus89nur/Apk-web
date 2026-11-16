@@ -3489,6 +3489,21 @@
       font-size: 13px;
       color: var(--text-muted);
     }
+    .viol-registry-empty .viol-registry-add-btn,
+    .viol-registry-add-strip {
+      margin-top: 10px;
+    }
+    .viol-registry-add-strip {
+      padding: 10px 12px 12px;
+      text-align: center;
+      border-top: 1px dashed var(--border);
+      background: var(--surface);
+    }
+    .viol-registry-add-btn {
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.35;
+    }
     .viol-form-divider {
       display: flex;
       align-items: center;
@@ -3641,6 +3656,9 @@
     }
 
     /* Форма добавления/редактирования нарушения */
+    .vr-form-overlay--wizard {
+      z-index: 10120;
+    }
     .vr-form-overlay {
       position: fixed;
       inset: 0;
@@ -7078,6 +7096,10 @@
 
       .ml-photo-lightbox.show {
         z-index: 10100;
+      }
+
+      .vr-form-overlay--wizard {
+        z-index: 10120;
       }
 
       .catalog-form-overlay--elevated:not([hidden]) {

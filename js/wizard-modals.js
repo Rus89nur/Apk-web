@@ -569,15 +569,31 @@ const WizardModals = (() => {
       return `<div class="mv-suggest-block"><div class="mv-suggest-label">Недавние</div>${body}</div>`;
     }
 
-    function renderNotFound(query) {
+    function registryAddButtonHtml(query) {
       const q = String(query || '').trim();
+      if (!q) return '';
+      return `
+          <button type="button" class="btn-ghost btn-sm viol-registry-add-btn" id="mvAddToRegistry">
+            + Добавить «${AktUtils.escapeHtml(q.slice(0, 60))}» в реестр
+          </button>`;
+    }
+
+    function renderAddRegistryStrip(query) {
+      const btn = registryAddButtonHtml(query);
+      if (!btn) return '';
+      return `<div class="viol-registry-add-strip">${btn}</div>`;
+    }
+
+    function hasStrongRegistryMatch(ranked) {
+      return (ranked || []).some((row) => row.full && row.score > 0);
+    }
+
+    function renderNotFound(query) {
       return `
           <div class="viol-registry-empty">
-            Ничего не найдено
+            Ничего не подошло в реестре
             <br>
-            <button type="button" class="btn-ghost btn-sm" id="mvAddToRegistry" style="margin-top:10px">
-              + Добавить «${AktUtils.escapeHtml(q.slice(0, 60))}» в реестр
-            </button>
+            ${registryAddButtonHtml(query)}
           </div>`;
     }
 
@@ -620,8 +636,17 @@ const WizardModals = (() => {
       const mesto = currentMestoValue().trim();
       const placeCounts = mesto ? collectPlaceStats(mesto).counts : {};
       const result = ViolationSearch.suggestRegistry(items, q, { placeCounts });
+      const addStrip = renderAddRegistryStrip(q);
       if (!result.ranked.length) return renderNotFound(q);
-      return renderRanked(result.ranked);
+      if (!hasStrongRegistryMatch(result.ranked) && q.trim().length >= 2) {
+        return `${renderNotFound(q)}${renderRanked(result.ranked)}`;
+      }
+      return renderRanked(result.ranked) + addStrip;
+    }
+
+    function openRegistryAddForm() {
+      const q = document.getElementById('mvRegistrySearch')?.value?.trim() || '';
+      openAddToRegistryForm(q, renderRegistryResults, bindRegistryResultClicks);
     }
 
     const ph = violationId == null ? MV_PLACEHOLDER_NEW : MV_PLACEHOLDER_EDIT;
@@ -843,7 +868,6 @@ const WizardModals = (() => {
       const query = document.getElementById('mvRegistrySearch')?.value || '';
       results.innerHTML = renderRegistryResults(query);
       bindRegistryResultClicks();
-      bindAddToRegistry();
     }
 
     function scheduleRegistryRefresh() {
@@ -927,10 +951,15 @@ const WizardModals = (() => {
       });
     }
 
-    function bindAddToRegistry() {
-      document.getElementById('mvAddToRegistry')?.addEventListener('click', () => {
-        const q = document.getElementById('mvRegistrySearch')?.value?.trim() || '';
-        openAddToRegistryForm(q, renderRegistryResults, bindRegistryResultClicks);
+    function bindRegistryAddDelegation() {
+      const root = document.getElementById('mvRegistryResults');
+      if (!root || root.dataset.mvAddRegistryBound === '1') return;
+      root.dataset.mvAddRegistryBound = '1';
+      root.addEventListener('click', (e) => {
+        if (!e.target.closest('#mvAddToRegistry, .viol-registry-add-btn')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openRegistryAddForm();
       });
     }
 
@@ -1057,7 +1086,7 @@ const WizardModals = (() => {
     }
 
     bindRegistryResultClicks();
-    bindAddToRegistry();
+    bindRegistryAddDelegation();
     bindFieldChangeWatchers();
 
     // Bind input listeners
@@ -1454,7 +1483,7 @@ const WizardModals = (() => {
       .join('');
 
     const overlay = document.createElement('div');
-    overlay.className = 'vr-form-overlay';
+    overlay.className = 'vr-form-overlay vr-form-overlay--wizard';
     overlay.innerHTML = `
       <div class="vr-form-dialog card">
         <h3>Добавить нарушение в реестр</h3>
@@ -1598,7 +1627,8 @@ const WizardModals = (() => {
       if (searchEl) searchEl.value = '';
       const results = document.getElementById('mvRegistryResults');
       if (results && renderRegistryResults && bindRegistryResultClicks) {
-        results.innerHTML = renderRegistryResults('');
+        const searchVal = searchEl?.value?.trim() || title;
+        results.innerHTML = renderRegistryResults(searchVal);
         bindRegistryResultClicks();
       }
     };
