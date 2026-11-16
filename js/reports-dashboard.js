@@ -433,6 +433,53 @@ const ReportsDashboard = (() => {
     if (!onlyThis) filters.contractors.add(org);
   }
 
+  /**
+   * Делит прямоугольник на вложенные блоки: площадь каждого ∝ числу нарушений.
+   * Координаты 0…100 (проценты), чередуются горизонтальные/вертикальные разрезы.
+   */
+  function layoutContractorTreemap(items) {
+    const nodes = items
+      .map(([org, counts]) => ({ org, counts, value: counts.total }))
+      .filter((n) => n.value > 0)
+      .sort((a, b) => b.value - a.value);
+    if (!nodes.length) return [];
+
+    function layout(chunk, x, y, w, h, horizontal) {
+      if (chunk.length === 0) return [];
+      if (chunk.length === 1) {
+        return [{ org: chunk[0].org, counts: chunk[0].counts, x, y, w, h }];
+      }
+      const total = chunk.reduce((s, n) => s + n.value, 0);
+      let acc = 0;
+      let splitIdx = 1;
+      const target = total / 2;
+      for (let i = 0; i < chunk.length; i++) {
+        acc += chunk[i].value;
+        splitIdx = i + 1;
+        if (acc >= target) break;
+      }
+      splitIdx = Math.min(Math.max(1, splitIdx), chunk.length - 1);
+      const left = chunk.slice(0, splitIdx);
+      const right = chunk.slice(splitIdx);
+      const leftSum = left.reduce((s, n) => s + n.value, 0);
+      const ratio = leftSum / total;
+      if (horizontal) {
+        const w1 = w * ratio;
+        return [
+          ...layout(left, x, y, w1, h, false),
+          ...layout(right, x + w1, y, w - w1, h, false),
+        ];
+      }
+      const h1 = h * ratio;
+      return [
+        ...layout(left, x, y, w, h1, true),
+        ...layout(right, x, y + h1, w, h - h1, true),
+      ];
+    }
+
+    return layout(nodes, 0, 0, 100, 100, true);
+  }
+
   function renderOrgTreemap(rows) {
     const wrap =
       document.getElementById('reportsOrgTreemap') ||
@@ -457,19 +504,28 @@ const ReportsDashboard = (() => {
         bucket[r.status] += 1;
       }
 
-      const entries = [...byOrg.entries()].sort((a, b) => b[1].total - a[1].total);
-      const max = entries[0][1].total || 1;
-      const totalViolations = entries.reduce((sum, [, c]) => sum + c.total, 0);
+      const entries = [...byOrg.entries()];
+      const rects = layoutContractorTreemap(entries);
+      const gap = 3;
 
-      wrap.innerHTML = `<div class="reports-treemap">${entries
-        .map(([org, counts]) => {
+      wrap.innerHTML = `<div class="reports-treemap" role="group" aria-label="Нарушения по подрядчикам, площадь блока пропорциональна количеству">${rects
+        .map(({ org, counts, x, y, w, h }) => {
           const filterOrg = org === 'Организация не указана' ? '—' : org;
           const isActive = isContractorFilterActive(org, filterOrg);
           const color = orgBlockColor(counts);
-          const widthPct = Math.max(18, Math.round((counts.total / totalViolations) * 100));
-          const grow = Math.max(1, Math.round((counts.total / max) * 100));
-          return `<button type="button" class="reports-treemap__cell${isActive ? ' reports-treemap__cell--active' : ''}" style="flex-grow:${grow};flex-basis:calc(${widthPct}% - 8px);background:${color}" data-reports-org="${AktUtils.escapeHtml(filterOrg)}" title="${AktUtils.escapeHtml(org)} — ${counts.total}" aria-pressed="${isActive}" aria-label="Фильтр: ${AktUtils.escapeHtml(org)}, ${counts.total} нарушений">
-            <span class="reports-treemap__name">${AktUtils.escapeHtml(org)}</span>
+          const compact = w < 14 || h < 16;
+          const style = [
+            `left:calc(${x}% + ${gap / 2}px)`,
+            `top:calc(${y}% + ${gap / 2}px)`,
+            `width:calc(${w}% - ${gap}px)`,
+            `height:calc(${h}% - ${gap}px)`,
+            `background:${color}`,
+          ].join(';');
+          const nameHtml = compact
+            ? ''
+            : `<span class="reports-treemap__name">${AktUtils.escapeHtml(org)}</span>`;
+          return `<button type="button" class="reports-treemap__cell${isActive ? ' reports-treemap__cell--active' : ''}${compact ? ' reports-treemap__cell--compact' : ''}" style="${style}" data-reports-org="${AktUtils.escapeHtml(filterOrg)}" title="${AktUtils.escapeHtml(org)} — ${counts.total}" aria-pressed="${isActive}" aria-label="Фильтр: ${AktUtils.escapeHtml(org)}, ${counts.total} нарушений">
+            ${nameHtml}
             <span class="reports-treemap__val">${counts.total}</span>
           </button>`;
         })
