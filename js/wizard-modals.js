@@ -456,11 +456,24 @@ const WizardModals = (() => {
       const items = getRegistryItems();
       const exact = resolveRegistryItem(items, { title, titleKey: registryTitleKey(title) });
       if (exact) return exact;
+      const actKey = registryTitleKey(title);
+      if (actKey.length >= 28) {
+        const prefix = actKey.slice(0, Math.min(55, actKey.length));
+        const byPrefix = items.find((item) => registryTitleKey(item?.title).startsWith(prefix));
+        if (byPrefix) return byPrefix;
+      }
       const { ranked } = ViolationSearch.suggestRegistry(items, title);
       const top = ranked[0];
       if (!top?.item) return null;
       if (top.full) return top.item;
+      const regKey = registryTitleKey(top.item.title);
+      if (actKey.length >= 25 && regKey.length >= 25) {
+        const n = Math.min(52, actKey.length, regKey.length);
+        if (actKey.slice(0, n) === regKey.slice(0, n)) return top.item;
+      }
       if (top.matched >= 2) return top.item;
+      const second = ranked[1];
+      if (top.score >= 80 && (!second || top.score >= second.score * 1.2)) return top.item;
       return null;
     }
 
@@ -515,7 +528,7 @@ const WizardModals = (() => {
       const registry = getRegistryItems();
       const top = Object.keys(counts)
         .map((key) => {
-          const reg = registryItemForNorm(registry, key);
+          const reg = registryItemForNorm(registry, key) || registryItemForUserTitle(titles[key]);
           return {
             key,
             count: counts[key],
@@ -606,14 +619,15 @@ const WizardModals = (() => {
       if (!rows.length) return '';
       const body = rows
         .map((row) => {
-          if (row.reg) {
-            const item = row.reg;
+          const item = row.reg || registryItemForUserTitle(row.title);
+          if (item) {
             const ds = registryRowDataset(item);
+            const displayTitle = row.title || item.title;
             return `
           <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(ds.id)}" data-reg-number="${AktUtils.escapeHtml(ds.number)}" data-reg-title="${AktUtils.escapeHtml(ds.titleKey)}">
             <span class="vr-result-num${ds.number ? '' : ' vr-result-num--muted'}">${AktUtils.escapeHtml(ds.number || '·')}</span>
             <div class="vr-result-body">
-              <div class="vr-result-title">${AktUtils.escapeHtml(item.title || '')}${alreadyBadge(item.title)}</div>
+              <div class="vr-result-title">${AktUtils.escapeHtml(displayTitle)}${alreadyBadge(displayTitle)}</div>
               <div class="mv-suggest-count">${row.count} раз</div>
             </div>
           </div>`;
@@ -1060,7 +1074,7 @@ const WizardModals = (() => {
           if (el.dataset.freqOnly) {
             const picked =
               findRegistryItemFromEl(el) ||
-              resolveRegistryItem(getRegistryItems(), { title: el.dataset.freqOnly });
+              registryItemForUserTitle(el.dataset.freqOnly);
             if (picked) {
               applyRegistryItem(picked, el);
               return;
