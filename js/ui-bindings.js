@@ -291,9 +291,7 @@ const GazpromUI = (() => {
     const n = Number(detected) || 0;
     const base = 'history-list-item__ring';
     if (n <= 0) return `${base} ${base}--empty`;
-    if (n <= 2) return `${base} ${base}--few`;
-    if (n <= 5) return `${base} ${base}--mid`;
-    return `${base} ${base}--high`;
+    return `${base} ${base}--count`;
   }
 
   function sameYearList(a, b) {

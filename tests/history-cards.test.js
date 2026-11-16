@@ -98,7 +98,7 @@ describe('карточки истории: выявлено', () => {
 
   it('три нарушения показывают цифру 3 в кольце и выявлено 3 в aria-label', () => {
     const html = render(three);
-    expect(html).toContain('history-list-item__ring--mid');
+    expect(html).toContain('history-list-item__ring--count');
     expect(html).toContain('<span class="history-ring__label">3</span>');
     expect(html).toContain('data-history-trash="v3"');
     expect(html).toContain('выявлено 3');
@@ -120,7 +120,7 @@ describe('карточки истории: выявлено', () => {
   it('две записи сокращённого акта дают цифру 2 в кольце', () => {
     const html = render(shortTwo);
     expect(html).toContain('history-row--short');
-    expect(html).toContain('history-list-item__ring--few');
+    expect(html).toContain('history-list-item__ring--count');
     expect(html).toContain('<span class="history-ring__label">2</span>');
     expect(html).toContain('data-history-trash="short2"');
     expect(html).toContain('выявлено 2');

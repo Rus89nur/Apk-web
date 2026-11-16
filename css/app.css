@@ -1257,16 +1257,8 @@
       stroke: #cbd5e1;
     }
 
-    .history-list-item__ring--few .history-ring__fill {
-      stroke: var(--primary);
-    }
-
-    .history-list-item__ring--mid .history-ring__fill {
-      stroke: var(--warning);
-    }
-
-    .history-list-item__ring--high .history-ring__fill {
-      stroke: var(--danger);
+    .history-list-item__ring--count .history-ring__fill {
+      stroke: #8fb4e8;
     }
 
     .history-ring__label {
@@ -1287,16 +1279,8 @@
       color: var(--text-muted);
     }
 
-    .history-list-item__ring--few .history-ring__label {
-      color: var(--primary);
-    }
-
-    .history-list-item__ring--mid .history-ring__label {
-      color: var(--warning);
-    }
-
-    .history-list-item__ring--high .history-ring__label {
-      color: var(--danger);
+    .history-list-item__ring--count .history-ring__label {
+      color: #5a84b8;
     }
 
     .history-list-item__content {
