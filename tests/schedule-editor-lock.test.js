@@ -323,6 +323,7 @@ describe('schedule-editor overlay lock', () => {
     expect(root().querySelector('[data-back]')).toBeTruthy();
 
     root().querySelector('[data-back]').click();
+    await flush();
     expect(overlayState.lockCount).toBe(1);
     expect(root().querySelector('[data-year-next]')).toBeTruthy();
 

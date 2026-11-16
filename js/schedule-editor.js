@@ -318,7 +318,7 @@ const ScheduleEditor = (() => {
         <div class="catalog-editor-header catalog-editor-header--schedule">
           <button type="button" class="btn-ghost btn-sm schedule-back-btn" data-back aria-label="Назад">← Год</button>
           <h3 class="schedule-header-title">${monthName} ${year}</h3>
-          <button type="button" class="modal-close schedule-header-close" data-close aria-label="Закрыть">×</button>
+          <button type="button" class="modal-close schedule-header-close" data-back aria-label="Назад к графику">×</button>
         </div>
         <div class="catalog-editor-body schedule-month-body">
           <div class="schedule-year-kpi" aria-label="Итог месяца">${AktUtils.escapeHtml(kpiText)}</div>
@@ -328,15 +328,20 @@ const ScheduleEditor = (() => {
         </div>
         <div class="catalog-editor-footer">
           <button type="button" class="btn-primary" data-add>+ Добавить объект</button>
-          <button type="button" class="btn-ghost" data-close>Закрыть</button>
+          <button type="button" class="btn-ghost" data-back>Закрыть</button>
         </div>
       </div>
     `;
 
-    const goBack = () => showYearGrid(catalog);
+    const goBack = async () => {
+      const fresh = await GazpromStore.get();
+      showYearGrid(fresh);
+    };
 
     bindClose(root, close);
-    root.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', goBack));
+    root.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => {
+      goBack().catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
+    }));
 
     root.querySelector('[data-add]')?.addEventListener('click', async () => {
       const fresh = await GazpromStore.get();
