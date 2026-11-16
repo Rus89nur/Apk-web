@@ -1096,7 +1096,7 @@
     .history-list-toolbar {
       display: flex;
       align-items: center;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       gap: 8px;
       padding: 12px 20px;
       border-bottom: 1px solid var(--border);
@@ -1107,29 +1107,22 @@
       left: 0;
       right: 0;
       width: 100%;
-      overflow-x: hidden;
+      overflow-x: auto;
       overflow-y: hidden;
-      touch-action: manipulation;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x pinch-zoom;
       scrollbar-width: none;
     }
     #screen-history .history-sort-btn {
-      touch-action: manipulation;
+      touch-action: pan-x pinch-zoom;
     }
 
     .history-list-toolbar::-webkit-scrollbar {
       display: none;
     }
 
-    .history-list-toolbar__label,
     .history-sort-btn {
       flex-shrink: 0;
-    }
-
-    .history-list-toolbar__label {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-right: 4px;
     }
 
     .history-sort-btn {
@@ -3924,11 +3917,12 @@
         right: 0;
         width: 100%;
         flex-shrink: 0;
-        flex-wrap: wrap;
-        overflow-x: hidden;
+        flex-wrap: nowrap;
+        overflow-x: auto;
         overflow-y: hidden;
+        -webkit-overflow-scrolling: touch;
         background: var(--bg);
-        touch-action: manipulation;
+        touch-action: pan-x pinch-zoom;
         padding-right: 12px;
       }
       body.gazprom-mobile-shell #screen-history .history-card.card--flush {
@@ -6496,10 +6490,11 @@
         right: 0;
         width: 100%;
         background: var(--bg);
-        flex-wrap: wrap;
-        overflow-x: hidden;
+        flex-wrap: nowrap;
+        overflow-x: auto;
         overflow-y: hidden;
-        touch-action: manipulation;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pinch-zoom;
         min-width: 0;
         max-width: 100%;
         padding-right: max(12px, env(safe-area-inset-right));
@@ -6510,10 +6505,9 @@
         display: none;
       }
 
-      body.gazprom-mobile-shell #screen-history .history-list-toolbar__label,
       body.gazprom-mobile-shell #screen-history .history-sort-btn {
         flex-shrink: 0;
-        touch-action: manipulation;
+        touch-action: pan-x pinch-zoom;
       }
 
       body.gazprom-mobile-shell #screen-history .history-sort-btn {

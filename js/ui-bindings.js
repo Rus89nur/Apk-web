@@ -6,9 +6,6 @@ const GazpromUI = (() => {
   let historyFilter = {
     years: [],
     violationsOnly: false,
-    draftsOnly: false,
-    shortOnly: false,
-    fullOnly: false,
   };
   let historySort = { key: 'date', direction: 'desc' };
   let lastSyncAt = null;
@@ -304,13 +301,7 @@ const GazpromUI = (() => {
   }
 
   function historyFiltersClear(filter = historyFilter) {
-    return (
-      !(filter.years || []).length &&
-      !filter.violationsOnly &&
-      !filter.draftsOnly &&
-      !filter.shortOnly &&
-      !filter.fullOnly
-    );
+    return !(filter.years || []).length && !filter.violationsOnly;
   }
 
   function syncHistoryFilterPills(akts) {
@@ -347,19 +338,10 @@ const GazpromUI = (() => {
     if (anchor) container.insertBefore(frag, anchor);
     else container.appendChild(frag);
 
-    const flags = {
-      violations: !!historyFilter.violationsOnly,
-      short: !!historyFilter.shortOnly,
-      full: !!historyFilter.fullOnly,
-      drafts: !!historyFilter.draftsOnly,
-    };
-    Object.entries(flags).forEach(([kind, on]) => {
-      const btn = container.querySelector(`.filter-pill[data-filter="${kind}"]`);
-      if (btn) btn.classList.toggle('active', on);
-    });
-
-    const allBtn = container.querySelector('.filter-pill[data-filter="all"]');
-    if (allBtn) allBtn.classList.toggle('active', historyFiltersClear());
+    const violationsBtn = container.querySelector('.filter-pill[data-filter="violations"]');
+    if (violationsBtn) {
+      violationsBtn.classList.toggle('active', !!historyFilter.violationsOnly);
+    }
     container.scrollLeft = pillsScrollLeft;
   }
 
@@ -376,9 +358,9 @@ const GazpromUI = (() => {
       query,
       years: filter.years,
       violationsOnly: filter.violationsOnly,
-      draftsOnly: filter.draftsOnly,
-      shortOnly: filter.shortOnly,
-      fullOnly: filter.fullOnly,
+      draftsOnly: false,
+      shortOnly: false,
+      fullOnly: false,
     });
     const akts = AktSearch.sortAkts(filtered, historySort.key, historySort.direction);
     updateHistorySortHeaders();
@@ -565,9 +547,6 @@ const GazpromUI = (() => {
     const next = {
       years: [],
       violationsOnly: false,
-      draftsOnly: false,
-      shortOnly: false,
-      fullOnly: false,
       ...filter,
     };
     next.years = (next.years || [])
@@ -580,9 +559,6 @@ const GazpromUI = (() => {
     return {
       years: [...(historyFilter.years || [])],
       violationsOnly: !!historyFilter.violationsOnly,
-      draftsOnly: !!historyFilter.draftsOnly,
-      shortOnly: !!historyFilter.shortOnly,
-      fullOnly: !!historyFilter.fullOnly,
     };
   }
 

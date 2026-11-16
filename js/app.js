@@ -593,18 +593,6 @@ function bindHistory() {
     const kind = btn.dataset.filter;
     const current = GazpromUI.getHistoryFilter();
 
-    if (kind === 'all') {
-      GazpromUI.setHistoryFilter({
-        years: [],
-        violationsOnly: false,
-        draftsOnly: false,
-        shortOnly: false,
-        fullOnly: false,
-      });
-      await rerenderHistory();
-      return;
-    }
-
     if (kind === 'year') {
       const y = parseInt(btn.dataset.filterValue, 10);
       if (Number.isNaN(y)) return;
@@ -619,9 +607,6 @@ function bindHistory() {
 
     const flagByKind = {
       violations: 'violationsOnly',
-      drafts: 'draftsOnly',
-      short: 'shortOnly',
-      full: 'fullOnly',
     };
     const flag = flagByKind[kind];
     if (!flag) return;
