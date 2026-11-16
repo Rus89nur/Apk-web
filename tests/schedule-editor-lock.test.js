@@ -262,6 +262,7 @@ function loadEditor() {
       toDateInputValue: () => `${new Date().getFullYear()}-01-15`,
       uuid: () => 'new-id',
       formatObjectDisplay: (o) => o?.title || '',
+      formatObjectHtml: (o) => String(o?.title || ''),
     },
   };
   vm.createContext(ctx);

@@ -3069,6 +3069,22 @@
       margin-bottom: 12px;
       flex-shrink: 0;
     }
+    .schedule-object-picker .schedule-picker-filter-block {
+      margin-bottom: 4px;
+    }
+    .schedule-object-picker .schedule-picker-catalog {
+      overflow-y: auto;
+      flex: 1 1 auto;
+      min-height: 80px;
+      max-height: min(50dvh, calc(var(--overlay-available-height) - 220px));
+      padding-right: 2px;
+    }
+    .schedule-object-picker .chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
     .schedule-picker-list {
       overflow-y: auto;
       flex: 1 1 auto;
