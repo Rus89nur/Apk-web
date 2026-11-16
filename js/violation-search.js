@@ -292,6 +292,8 @@ const ViolationSearch = (() => {
     return expanded ? expanded.split(' ').filter(Boolean) : [];
   }
 
+  const stemCache = new Map();
+
   function stemRu(word) {
     if (!word || word.length < 5 || isDigits(word)) return word;
     for (const ending of STEM_ENDINGS) {
@@ -302,6 +304,19 @@ const ViolationSearch = (() => {
     }
     return word;
   }
+
+  function stemRuCached(word) {
+    if (!word) return word;
+    let cached = stemCache.get(word);
+    if (cached === undefined) {
+      cached = stemRu(word);
+      stemCache.set(word, cached);
+    }
+    return cached;
+  }
+
+  const SUGGEST_TYPO_FIELD_KEYS = new Set(['title', 'description']);
+  const SUGGEST_SHARED_ROOT_FIELD_KEYS = new Set(['title', 'description']);
 
   function stemsMatch(a, b) {
     if (!a || !b) return false;
@@ -325,7 +340,7 @@ const ViolationSearch = (() => {
 
   function sharedRootHit(token, field) {
     if (!token || !field.expanded || isDigits(token) || token.length < 9) return false;
-    const tokenStem = stemRu(token);
+    const tokenStem = stemRuCached(token);
     const minRoot = tokenStem.length >= 10 ? 7 : 6;
     const maxRoot = Math.min(tokenStem.length, 11);
     for (let len = maxRoot; len >= minRoot; len -= 1) {
@@ -334,7 +349,7 @@ const ViolationSearch = (() => {
       if (
         wordsOf(field.expanded).some((word) => {
           if (isDigits(word) || word.length < minRoot) return false;
-          const wordStem = stemRu(word);
+          const wordStem = stemRuCached(word);
           return wordStem.startsWith(root) || word.startsWith(root);
         })
       ) {
@@ -344,15 +359,16 @@ const ViolationSearch = (() => {
     return false;
   }
 
-  function stemHit(token, field) {
+  function stemHit(token, field, fieldKey) {
     if (!token || !field.expanded || isDigits(token)) return false;
-    const tokenStem = stemRu(token);
-    return (
-      wordsOf(field.expanded).some((word) => {
-        if (isDigits(word)) return false;
-        return stemsMatch(tokenStem, stemRu(word));
-      }) || sharedRootHit(token, field)
-    );
+    const tokenStem = stemRuCached(token);
+    const wordStemHit = wordsOf(field.expanded).some((word) => {
+      if (isDigits(word)) return false;
+      return stemsMatch(tokenStem, stemRuCached(word));
+    });
+    if (wordStemHit) return true;
+    if (fieldKey && !SUGGEST_SHARED_ROOT_FIELD_KEYS.has(fieldKey)) return false;
+    return sharedRootHit(token, field);
   }
 
   function levenshteinWithin(a, b, maxDist) {
@@ -429,18 +445,18 @@ const ViolationSearch = (() => {
     };
   }
 
-  function applyMech(mech, token, field) {
+  function applyMech(mech, token, field, fieldKey) {
     if (!field?.expanded) return { hit: false, exactWord: false };
     if (mech === 'exact') {
       const hit = exactOrPrefix(token, field);
       return { hit, exactWord: hit && isExactWord(token, field) };
     }
-    if (mech === 'stem') return { hit: stemHit(token, field), exactWord: false };
+    if (mech === 'stem') return { hit: stemHit(token, field, fieldKey), exactWord: false };
     if (mech === 'synonym') {
       let hit = false;
       let exactWord = false;
       for (const needle of synonymNeedles(token)) {
-        if (!(exactOrPrefix(needle, field) || stemHit(needle, field))) continue;
+        if (!(exactOrPrefix(needle, field) || stemHit(needle, field, fieldKey))) continue;
         hit = true;
         if (isExactWord(needle, field)) exactWord = true;
       }
@@ -455,13 +471,15 @@ const ViolationSearch = (() => {
     return { hit: false, exactWord: false };
   }
 
-  function matchToken(token, maps) {
-    for (const mech of ['exact', 'stem', 'synonym', 'typo']) {
+  function matchToken(token, maps, options = {}) {
+    const suggest = options.suggest === true;
+    const mechs = suggest ? ['exact', 'stem', 'synonym'] : ['exact', 'stem', 'synonym', 'typo'];
+    for (const mech of mechs) {
       let best = 0;
       let any = false;
       let title = false;
       for (const [key, field] of Object.entries(maps)) {
-        const res = applyMech(mech, token, field);
+        const res = applyMech(mech, token, field, key);
         if (!res.hit) continue;
         any = true;
         const weight = field.weight + (res.exactWord ? 8 : 0);
@@ -470,7 +488,61 @@ const ViolationSearch = (() => {
       }
       if (any) return { weight: best, mechanism: mech, title };
     }
+    if (suggest && token.length >= 5) {
+      let best = 0;
+      let any = false;
+      let title = false;
+      for (const key of SUGGEST_TYPO_FIELD_KEYS) {
+        const field = maps[key];
+        if (!field) continue;
+        const res = applyMech('typo', token, field, key);
+        if (!res.hit) continue;
+        any = true;
+        const weight = field.weight + (res.exactWord ? 8 : 0);
+        if (weight > best) best = weight;
+        if (key === 'title') title = true;
+      }
+      if (any) return { weight: best, mechanism: 'typo', title };
+    }
     return null;
+  }
+
+  function quickSuggestItemHit(item, token, phrases) {
+    const fields = registryFields(item);
+    const title = normalize(fields.title);
+    const description = normalize(fields.description || '');
+    if ((phrases || []).some((phrase) => title.includes(phrase) || description.includes(phrase))) {
+      return true;
+    }
+    if (!token) return false;
+    if (title.includes(token) || description.includes(token)) return true;
+    if (token.length >= MIN_PREFIX_LEN) {
+      const titleWords = title ? title.split(' ') : [];
+      if (titleWords.some((w) => w.startsWith(token) || token.startsWith(w))) return true;
+    }
+    for (const needle of synonymNeedles(token)) {
+      if (title.includes(needle) || description.includes(needle)) return true;
+    }
+    if (token.length >= 9) {
+      const root = stemRuCached(token).slice(0, 7);
+      if (root.length >= 6) {
+        const titleWords = title ? title.split(' ') : [];
+        if (
+          titleWords.some((w) => w.startsWith(root) || stemRuCached(w).startsWith(root)) ||
+          (description && description.includes(root))
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function descriptionTokenHit(token, field) {
+    if (!field?.expanded) return false;
+    if (applyMech('exact', token, field, 'description').hit) return true;
+    if (applyMech('stem', token, field, 'description').hit) return true;
+    return applyMech('synonym', token, field, 'description').hit;
   }
 
   function phraseScore(phrase, maps) {
@@ -507,7 +579,15 @@ const ViolationSearch = (() => {
 
     const counts = placeCounts || {};
     const ranked = [];
-    for (const item of items || []) {
+    let pool = items || [];
+    if (tokens.length || parsed.phrases.length) {
+      const filtered = pool.filter((item) => {
+        if (parsed.phrases.some((phrase) => quickSuggestItemHit(item, '', [phrase]))) return true;
+        return tokens.some((token) => quickSuggestItemHit(item, token, parsed.phrases));
+      });
+      if (filtered.length) pool = filtered;
+    }
+    for (const item of pool) {
       const { maps } = buildFieldMaps(registryFields(item), fieldWeightsRegistry());
       let matched = 0;
       let weightSum = 0;
@@ -527,7 +607,7 @@ const ViolationSearch = (() => {
       let synonym = false;
       let allInTitle = tokens.length > 1;
       for (const token of tokens) {
-        const hit = matchToken(token, maps);
+        const hit = matchToken(token, maps, { suggest: true });
         if (!hit) {
           allInTitle = false;
           continue;
@@ -539,7 +619,7 @@ const ViolationSearch = (() => {
         if (hit.mechanism === 'synonym') synonym = true;
       }
       for (const token of weak) {
-        const hit = matchToken(token, maps);
+        const hit = matchToken(token, maps, { suggest: true });
         if (hit) weightSum += hit.weight * 0.35;
       }
 
@@ -562,7 +642,7 @@ const ViolationSearch = (() => {
       if (tokens.length >= 2 && maps.description) {
         let descHits = 0;
         for (const token of tokens) {
-          if (matchToken(token, { description: maps.description })) descHits += 1;
+          if (descriptionTokenHit(token, maps.description)) descHits += 1;
         }
         if (descHits === tokens.length) {
           score += DESCRIPTION_ALL_TOKENS_BONUS;

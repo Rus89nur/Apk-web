@@ -449,6 +449,22 @@ const WizardModals = (() => {
       return best;
     }
 
+    let placeStatsCacheKey = null;
+    let placeStatsCache = { counts: {}, top: [] };
+
+    function invalidatePlaceStatsCache() {
+      placeStatsCacheKey = null;
+    }
+
+    function placeStatsForCurrentMesto() {
+      const mesto = currentMestoValue().trim();
+      if (!mesto) return { counts: {}, top: [] };
+      if (placeStatsCacheKey === mesto) return placeStatsCache;
+      placeStatsCacheKey = mesto;
+      placeStatsCache = collectPlaceStats(mesto);
+      return placeStatsCache;
+    }
+
     function collectPlaceStats(mesto) {
       const place = String(mesto || '').trim();
       const counts = {};
@@ -599,7 +615,7 @@ const WizardModals = (() => {
 
     function renderBrowse(items) {
       const mesto = currentMestoValue().trim();
-      const freq = mesto ? collectPlaceStats(mesto).top : [];
+      const freq = mesto ? placeStatsForCurrentMesto().top : [];
       const recent = recentRegistryItems(items);
       const list = renderPlainList(ViolationSearch.filterRegistry(items, ''));
       const emptyList = `<div class="viol-registry-empty">Реестр нарушений пуст</div>`;
@@ -634,7 +650,7 @@ const WizardModals = (() => {
       const q = String(query ?? '');
       if (isBrowseQuery(q)) return renderBrowse(items);
       const mesto = currentMestoValue().trim();
-      const placeCounts = mesto ? collectPlaceStats(mesto).counts : {};
+      const placeCounts = mesto ? placeStatsForCurrentMesto().counts : {};
       const result = ViolationSearch.suggestRegistry(items, q, { placeCounts });
       const addStrip = renderAddRegistryStrip(q);
       if (!result.ranked.length) return renderNotFound(q);
@@ -851,6 +867,7 @@ const WizardModals = (() => {
 
     if (mestoInput && mestoList) {
       mestoInput.addEventListener('input', () => {
+        invalidatePlaceStatsCache();
         clearTimeout(mestoTimer);
         mestoTimer = setTimeout(refreshMestoSuggestions, 120);
         scheduleRegistryRefresh();
@@ -886,7 +903,7 @@ const WizardModals = (() => {
 
     function scheduleRegistryRefresh() {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(refreshRegistryPanel, 200);
+      searchTimer = setTimeout(refreshRegistryPanel, 160);
     }
 
     function applyRegistryItem(item, sourceEl) {
