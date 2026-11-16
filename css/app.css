@@ -4890,10 +4890,19 @@
       align-items: center;
       justify-content: center;
       font-family: 'Montserrat', sans-serif;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
+      letter-spacing: -0.02em;
       color: var(--text);
       pointer-events: none;
+    }
+
+    .elimination-act-card__count {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0 0 4px;
+      line-height: 1.35;
     }
 
     .elimination-act-card__body {

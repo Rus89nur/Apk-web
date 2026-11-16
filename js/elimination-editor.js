@@ -83,6 +83,11 @@ const EliminationEditor = (() => {
     };
   }
 
+  function buildCountLineHtml(eliminated, total, noViolations) {
+    if (noViolations) return '';
+    return `<p class="elimination-act-card__count">${eliminated} из ${total} устранено</p>`;
+  }
+
   function buildStatusLineHtml(overdue, noViolations) {
     if (noViolations) {
       return '<p class="elimination-act-card__status-line elimination-act-card__status-line--muted">Нарушения отсутствуют</p>';
@@ -468,8 +473,16 @@ const EliminationEditor = (() => {
           .join(' ');
 
         const ring = ringMetrics(item.eliminatedViolations, item.totalViolations);
+        const ringCount = noViolations
+          ? '0'
+          : `${item.eliminatedViolations}/${item.totalViolations}`;
         const headerHtml = buildActHeaderHtml(item.aktNumber, item.akt, item, noViolations);
         const objectHtml = buildObjectHtml(item.akt);
+        const countLineHtml = buildCountLineHtml(
+          item.eliminatedViolations,
+          item.totalViolations,
+          noViolations
+        );
         const statusLineHtml = buildStatusLineHtml(overdue, noViolations);
         const toggleHtml = buildToggleBtnHtml(item, allDone, overdue, noViolations);
         const ringStateClass = allDone
@@ -480,13 +493,13 @@ const EliminationEditor = (() => {
               ? 'elimination-act-card__ring--empty'
               : 'elimination-act-card__ring--open';
 
-        return `<article class="${cardClass} card" data-elim-akt="${AktUtils.escapeHtml(item.aktId)}" role="listitem" tabindex="0" aria-label="Акт № ${AktUtils.escapeHtml(item.aktNumber)}">
+        return `<article class="${cardClass} card" data-elim-akt="${AktUtils.escapeHtml(item.aktId)}" role="listitem" tabindex="0" aria-label="Акт № ${AktUtils.escapeHtml(item.aktNumber)}, устранено ${item.eliminatedViolations} из ${item.totalViolations}">
           <div class="elimination-act-card__ring ${ringStateClass}" aria-hidden="true">
             <svg class="elim-ring" viewBox="0 0 68 68">
               <circle class="elim-ring__track" cx="${RING_CX}" cy="${RING_CX}" r="${RING_R}"></circle>
               <circle class="elim-ring__fill" cx="${RING_CX}" cy="${RING_CX}" r="${RING_R}" stroke-dasharray="${ring.dash}"></circle>
             </svg>
-            <span class="elim-ring__label">${AktUtils.escapeHtml(ring.label)}</span>
+            <span class="elim-ring__label">${AktUtils.escapeHtml(ringCount)}</span>
           </div>
           <div class="elimination-act-card__content">
             <div class="elimination-act-card__header">
@@ -500,6 +513,7 @@ const EliminationEditor = (() => {
             </div>
             <div class="elimination-act-card__foot">
               ${objectHtml}
+              ${countLineHtml}
               ${statusLineHtml}
             </div>
           </div>
