@@ -797,29 +797,40 @@ const WizardModals = (() => {
       };
     }
 
-    function isModifiedFromRegistry() {
-      if (!selectedRegistryItem) return false;
+    function registryTextBaseline() {
+      if (selectedRegistryItem) {
+        return {
+          title: selectedRegistryItem.title || '',
+          subTitle: selectedRegistryItem.subTitle || '',
+          formulaFromRules: selectedRegistryItem.formulaFromRules || '',
+        };
+      }
+      return {
+        title: violationFormInitial?.title || '',
+        subTitle: violationFormInitial?.subTitle || '',
+        formulaFromRules: violationFormInitial?.formulaFromRules || '',
+      };
+    }
+
+    function isRegistryTextChanged() {
       const s = getFormSnapshot();
+      const base = registryTextBaseline();
       return (
-        s.title            !== (selectedRegistryItem.title            || '') ||
-        s.subTitle         !== (selectedRegistryItem.subTitle         || '') ||
-        s.vid              !== (selectedRegistryItem.vid              || '') ||
-        s.formulaFromRules !== (selectedRegistryItem.formulaFromRules || '')
+        s.title !== base.title ||
+        s.subTitle !== base.subTitle ||
+        s.formulaFromRules !== base.formulaFromRules
       );
     }
 
-    function titleMissingFromRegistry(title) {
-      const t = String(title || '').trim();
-      if (!t) return false;
-      return !getRegistryItems().some((item) => (item.title || '').trim() === t);
+    function shouldShowSaveToRegistryHint() {
+      if (!readFieldRaw('mvTitle').trim()) return false;
+      return isRegistryTextChanged();
     }
 
-    function shouldShowSaveToRegistryHint() {
-      const s = getFormSnapshot();
-      if (!s.title.trim()) return false;
-      if (isModifiedFromRegistry()) return true;
-      if (!selectedRegistryItem && titleMissingFromRegistry(s.title)) return true;
-      return false;
+    function saveToRegistryHintMessage() {
+      return selectedRegistryItem
+        ? 'Изменены формулировка, пункт правила или текст из правил'
+        : 'Новая запись — сохраните её в реестр';
     }
 
     function updateSaveToRegistryHint() {
@@ -830,15 +841,46 @@ const WizardModals = (() => {
           hint.id = 'mvSaveToRegistryHint';
           hint.className = 'mv-save-registry-hint';
           hint.innerHTML = `
-            <p class="mv-save-registry-hint-text">Этой формулировки нет в реестре</p>
-            <button type="button" class="btn-primary btn-sm" id="mvSaveNewToRegistry">Сохранить в реестр</button>
+            <p class="mv-save-registry-hint-text"></p>
+            <button type="button" class="btn-sm mv-save-registry-btn" id="mvSaveNewToRegistry">Сохранить в реестр</button>
           `;
           const footer = document.getElementById('modalFooter');
           footer?.parentElement?.insertBefore(hint, footer);
           document.getElementById('mvSaveNewToRegistry')?.addEventListener('click', saveCurrentToRegistry);
         }
+        hint.querySelector('.mv-save-registry-hint-text').textContent = saveToRegistryHintMessage();
       } else {
         hint?.remove();
+      }
+    }
+
+    async function syncVidToRegistryIfLinked() {
+      const vid = document.getElementById('mvVid')?.value?.trim();
+      if (!vid || isRegistryTextChanged()) return;
+      const s = getFormSnapshot();
+      let registryId = linkedRegistryItemId;
+      if (typeof registryId === 'string' && registryId.startsWith('reg-num:')) {
+        registryId = null;
+      }
+      const linked =
+        selectedRegistryItem ||
+        resolveRegistryItem(getRegistryItems(), {
+          id: registryId || '',
+          title: s.title,
+          titleKey: registryTitleKey(s.title),
+        });
+      if (!linked && !registryId) return;
+      const catalogForBind = ctx.getCatalog();
+      const ok = await ViolationRegistry.bindVidToRegistryItem(catalogForBind, {
+        registryId: linked?.id || registryId || null,
+        title: s.title,
+        subTitle: s.subTitle,
+        vid,
+      });
+      if (!ok) return;
+      await ctx.reloadCatalog();
+      if (selectedRegistryItem) {
+        selectedRegistryItem = { ...selectedRegistryItem, vid };
       }
     }
 

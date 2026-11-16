@@ -2235,9 +2235,20 @@
       margin: 0;
       line-height: 1.45;
     }
+    .mv-save-registry-btn,
     #mvSaveNewToRegistry {
       flex-shrink: 0;
       white-space: nowrap;
+      background: var(--success);
+      border: 1px solid var(--success);
+      color: #fff;
+      font-weight: 600;
+    }
+    .mv-save-registry-btn:hover,
+    #mvSaveNewToRegistry:hover {
+      background: #1b5e20;
+      border-color: #1b5e20;
+      color: #fff;
     }
 
     .mv-photo-add-slot {
