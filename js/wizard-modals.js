@@ -496,7 +496,7 @@ const WizardModals = (() => {
     function collectPlaceStats(mesto) {
       const place = String(mesto || '').trim();
       const counts = {};
-      const titles = {};
+      const buckets = new Map();
       if (!place || typeof ViolationSearch?.placesMatch !== 'function') {
         return { counts, top: [] };
       }
@@ -515,30 +515,34 @@ const WizardModals = (() => {
         if (liveDraft.id) byId.set(liveDraft.id, liveDraft);
         else loose.push(liveDraft);
       }
+      const registry = getRegistryItems();
       for (const akt of [...byId.values(), ...loose]) {
         for (const viol of akt.violations || []) {
           if (!ViolationSearch.placesMatch(viol?.mesto, place)) continue;
           const rawTitle = String(viol?.title || '').trim();
           const key = ViolationSearch.normalize(rawTitle);
           if (!key) continue;
-          counts[key] = (counts[key] || 0) + 1;
-          if (!titles[key]) titles[key] = rawTitle;
+          const reg = registryItemForNorm(registry, key) || registryItemForUserTitle(rawTitle);
+          if (!reg?.title) continue;
+          const registryKey = ViolationSearch.normalize(reg.title);
+          if (!registryKey) continue;
+          counts[registryKey] = (counts[registryKey] || 0) + 1;
+          if (!buckets.has(registryKey)) {
+            buckets.set(registryKey, { reg, count: 0, title: reg.title });
+          }
+          buckets.get(registryKey).count += 1;
         }
       }
-      const registry = getRegistryItems();
-      const top = Object.keys(counts)
-        .map((key) => {
-          const reg = registryItemForNorm(registry, key) || registryItemForUserTitle(titles[key]);
-          return {
-            key,
-            count: counts[key],
-            title: titles[key],
-            reg,
-            display: reg?.title || titles[key],
-          };
-        })
-        .sort((a, b) => b.count - a.count || a.display.localeCompare(b.display, 'ru'))
-        .slice(0, 5);
+      const top = [...buckets.values()]
+        .sort((a, b) => b.count - a.count || a.title.localeCompare(b.title, 'ru'))
+        .slice(0, 5)
+        .map((row) => ({
+          key: ViolationSearch.normalize(row.title),
+          count: row.count,
+          title: row.title,
+          reg: row.reg,
+          display: row.title,
+        }));
       return { counts, top };
     }
 
@@ -618,30 +622,21 @@ const WizardModals = (() => {
     function renderFreqBlock(rows) {
       if (!rows.length) return '';
       const body = rows
+        .filter((row) => row?.reg)
         .map((row) => {
-          const item = row.reg || registryItemForUserTitle(row.title);
-          if (item) {
-            const ds = registryRowDataset(item);
-            const displayTitle = row.title || item.title;
-            return `
+          const item = row.reg;
+          const ds = registryRowDataset(item);
+          return `
           <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(ds.id)}" data-reg-number="${AktUtils.escapeHtml(ds.number)}" data-reg-title="${AktUtils.escapeHtml(ds.titleKey)}">
             <span class="vr-result-num${ds.number ? '' : ' vr-result-num--muted'}">${AktUtils.escapeHtml(ds.number || '·')}</span>
             <div class="vr-result-body">
-              <div class="vr-result-title">${AktUtils.escapeHtml(displayTitle)}${alreadyBadge(displayTitle)}</div>
-              <div class="mv-suggest-count">${row.count} раз</div>
-            </div>
-          </div>`;
-          }
-          const freqTitleKey = registryTitleKey(row.title);
-          return `
-          <div class="viol-registry-result-item" data-freq-only="${AktUtils.escapeHtml(row.title)}" data-reg-title="${AktUtils.escapeHtml(freqTitleKey)}">
-            <div class="vr-result-body">
-              <div class="vr-result-title">${AktUtils.escapeHtml(row.title)}${alreadyBadge(row.title)}</div>
+              <div class="vr-result-title">${AktUtils.escapeHtml(item.title || '')}${alreadyBadge(item.title)}</div>
               <div class="mv-suggest-count">${row.count} раз</div>
             </div>
           </div>`;
         })
         .join('');
+      if (!body) return '';
       return `<div class="mv-suggest-block"><div class="mv-suggest-label">Часто в этом месте</div>${body}</div>`;
     }
 
