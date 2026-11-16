@@ -83,11 +83,6 @@ const EliminationEditor = (() => {
     };
   }
 
-  function buildCountLineHtml(eliminated, total, noViolations) {
-    if (noViolations) return '';
-    return `<p class="elimination-act-card__count">${eliminated} из ${total} устранено</p>`;
-  }
-
   function buildStatusLineHtml(overdue, noViolations) {
     if (noViolations) {
       return '<p class="elimination-act-card__status-line elimination-act-card__status-line--muted">Нарушения отсутствуют</p>';
@@ -478,11 +473,6 @@ const EliminationEditor = (() => {
           : `${item.eliminatedViolations}/${item.totalViolations}`;
         const headerHtml = buildActHeaderHtml(item.aktNumber, item.akt, item, noViolations);
         const objectHtml = buildObjectHtml(item.akt);
-        const countLineHtml = buildCountLineHtml(
-          item.eliminatedViolations,
-          item.totalViolations,
-          noViolations
-        );
         const statusLineHtml = buildStatusLineHtml(overdue, noViolations);
         const toggleHtml = buildToggleBtnHtml(item, allDone, overdue, noViolations);
         const ringStateClass = allDone
@@ -513,7 +503,6 @@ const EliminationEditor = (() => {
             </div>
             <div class="elimination-act-card__foot">
               ${objectHtml}
-              ${countLineHtml}
               ${statusLineHtml}
             </div>
           </div>
