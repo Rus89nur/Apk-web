@@ -47,7 +47,6 @@ function goTo(screenId, options = {}) {
   });
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
   document.getElementById('screen-' + screenId)?.classList.add('active');
-  document.querySelector('.main')?.classList.toggle('main--history-layout', screenId === 'history');
   document.getElementById('pageTitle').textContent = titles[screenId] || screenId;
 
   if (screenId === 'wizard' && !options.skipWizardReload) {
@@ -795,17 +794,9 @@ function bindRegistrySettings() {
   });
 }
 
-function syncHistoryMainLayout() {
-  document.querySelector('.main')?.classList.toggle(
-    'main--history-layout',
-    !!document.getElementById('screen-history')?.classList.contains('active')
-  );
-}
-
 function init() {
   syncAppBuildLabel();
   bindNavigation();
-  syncHistoryMainLayout();
   updateClock();
   setInterval(updateClock, 30000);
   registerServiceWorker();

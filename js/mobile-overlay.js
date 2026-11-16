@@ -246,7 +246,7 @@ var GazpromMobileOverlay = (() => {
 
   const getScreenScrollHost = (screen) => {
     if (!screen) return null;
-    if (screen.id === 'screen-history') return screen.querySelector('#historyList');
+    if (screen.id === 'screen-history') return screen;
     if (screen.id === 'screen-elimination') return screen.querySelector('#eliminationCardList');
     if (screen.id === 'screen-settings') return screen;
     if (screen.id === 'screen-wizard' || screen.id === 'screen-spravka') return screen.querySelector('.wizard-layout');

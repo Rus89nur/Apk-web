@@ -1117,23 +1117,13 @@
       border: none;
       border-bottom: 1px solid var(--border);
       background: transparent;
-      position: sticky;
-      top: 0;
-      z-index: 5;
-      left: 0;
-      right: 0;
+      position: static;
       width: 100%;
       box-sizing: border-box;
       overflow-x: hidden;
       overflow-y: hidden;
     }
 
-    body.gazprom-mobile-shell .main.main--history-layout #screen-history .history-list-toolbar {
-      position: relative;
-      top: auto;
-      left: auto;
-      right: auto;
-    }
     #screen-history .history-sort-btn {
       touch-action: manipulation;
     }
@@ -3948,13 +3938,8 @@
         margin-top: 0;
       }
       #screen-history .history-list-toolbar {
-        position: sticky;
-        top: 0;
-        z-index: 5;
-        left: 0;
-        right: 0;
+        position: static;
         width: 100%;
-        flex-shrink: 0;
         flex-wrap: nowrap;
         overflow-x: hidden;
         overflow-y: hidden;
@@ -6939,43 +6924,6 @@
       body.gazprom-mobile-shell #screen-history .history-card > .toolbar--history.history-card__toolbar {
         margin-bottom: 0;
         padding: 0 0 4px;
-        flex-shrink: 0;
-      }
-
-      body.gazprom-mobile-shell .main.main--history-layout {
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        overscroll-behavior: none;
-      }
-
-      body.gazprom-mobile-shell .main.main--history-layout > #screen-history.screen.active {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 auto;
-        min-height: 0;
-        height: auto;
-        max-height: none;
-        overflow: hidden;
-        padding-bottom: 0;
-      }
-
-      body.gazprom-mobile-shell .main.main--history-layout #screen-history .history-card {
-        display: flex;
-        flex-direction: column;
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow: hidden;
-      }
-
-      body.gazprom-mobile-shell .main.main--history-layout #screen-history #historyList.history-list {
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-x: hidden;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-        overscroll-behavior-y: contain;
-        touch-action: pan-y;
       }
 
       body.gazprom-mobile-shell #screen-history .toolbar-filters--pills::-webkit-scrollbar {
@@ -6988,17 +6936,12 @@
       }
 
       body.gazprom-mobile-shell #screen-history .history-list-toolbar {
-        position: relative;
-        top: auto;
-        z-index: 5;
-        left: auto;
-        right: auto;
+        position: static;
         width: 100%;
         background: transparent;
         border: none;
         border-bottom: 1px solid var(--border);
         flex-wrap: nowrap;
-        flex-shrink: 0;
         overflow-x: hidden;
         overflow-y: hidden;
         touch-action: pan-y;
