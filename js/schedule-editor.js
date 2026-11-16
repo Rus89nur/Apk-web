@@ -536,34 +536,28 @@ const ScheduleEditor = (() => {
 
   function openObjectPicker(catalog, context) {
     const objects = collectObjects(catalog);
-    const orgs = catalog.organizations || [];
     const { year, month } = context;
     const monthName = capitalizeMonth(MONTH_NAMES[month - 1]);
     let searchQuery = '';
 
     const overlay = mountOverlay(`
-      <div class="catalog-form-dialog catalog-form-dialog--wide card schedule-object-picker">
-        <h3>Объект проверки — ${monthName} ${year}</h3>
+      <div class="catalog-form-dialog card schedule-object-picker">
+        <header class="schedule-object-picker__head">
+          <h3>Объект проверки</h3>
+          <p class="schedule-object-picker__sub">${monthName} ${year}</p>
+          <button type="button" class="modal-close" data-cancel aria-label="Отмена">×</button>
+        </header>
         <div class="wizard-org-select-block schedule-picker-filter-block">
           <p class="wizard-hint wizard-org-hint wizard-object-filter wizard-object-filter--empty"
              id="scheduleObjectFilter"
              contenteditable="true"
              role="searchbox"
              spellcheck="false"
-             data-placeholder="Выберите объект из справочника"
+             data-placeholder="Поиск объекта в справочнике"
              aria-label="Поиск объекта в справочнике"></p>
         </div>
-        <div class="commission-divider"></div>
-        <div class="commission-catalog-section schedule-picker-catalog">
-          <div class="commission-catalog-header">
-            <span class="commission-catalog-label">Выбрать из справочника</span>
-          </div>
-          <p class="schedule-picker-section">Объекты проверки</p>
-          <div class="chip-list" id="scheduleObjectChips"></div>
-          <p class="schedule-picker-section">Организации</p>
-          <div class="chip-list" id="scheduleOrgChips"></div>
-        </div>
-        <div class="catalog-form-actions">
+        <div class="schedule-picker-catalog" id="scheduleObjectChips" role="list" aria-label="Объекты проверки"></div>
+        <div class="catalog-form-actions schedule-object-picker__foot">
           <button type="button" class="btn-ghost" data-cancel>Отмена</button>
         </div>
       </div>
@@ -571,7 +565,6 @@ const ScheduleEditor = (() => {
 
     const filterEl = overlay.querySelector('#scheduleObjectFilter');
     const objectHost = overlay.querySelector('#scheduleObjectChips');
-    const orgHost = overlay.querySelector('#scheduleOrgChips');
 
     const remove = () => {
       overlay.remove();
@@ -583,66 +576,36 @@ const ScheduleEditor = (() => {
       const fresh = await GazpromStore.get();
       openDateForm(fresh, { year, month, objectId });
     };
-    const pickOrg = async (orgId) => {
-      remove();
-      const fresh = await GazpromStore.get();
-      openDateForm(fresh, { year, month, orgId });
-    };
 
-    const renderChips = () => {
+    const renderCards = () => {
       const filteredObjects = objects.filter((o) => objectMatchesPickerSearch(o, searchQuery));
-      const filteredOrgs = orgs.filter((o) => objectMatchesPickerSearch(o, searchQuery));
 
-      if (!objects.length && !orgs.length) {
-        objectHost.innerHTML = '<p class="wizard-hint">Справочник объектов пуст. Добавьте объекты в разделе «Объекты» в настройках.</p>';
-        orgHost.innerHTML = '';
+      if (!objects.length) {
+        objectHost.innerHTML = '<p class="schedule-picker-empty">Справочник объектов пуст. Добавьте объекты в разделе «Объекты» в настройках.</p>';
         return;
       }
 
       if (!filteredObjects.length) {
-        objectHost.innerHTML = searchQuery.trim()
-          ? '<span class="wizard-hint">Ничего не найдено</span>'
-          : '<span class="wizard-hint">Нет объектов в справочнике</span>';
-      } else {
-        objectHost.innerHTML = filteredObjects
-          .map((o) => `<span class="chip chip-catalog" data-object-id="${o.id}" title="Нажмите, чтобы выбрать" role="button" tabindex="0">${AktUtils.formatObjectHtml(o)}</span>`)
-          .join('');
+        objectHost.innerHTML = '<p class="schedule-picker-empty">Ничего не найдено</p>';
+        return;
       }
 
-      if (!orgs.length) {
-        orgHost.innerHTML = '<span class="wizard-hint">Нет организаций в справочнике</span>';
-      } else if (!filteredOrgs.length) {
-        orgHost.innerHTML = searchQuery.trim()
-          ? '<span class="wizard-hint">Ничего не найдено</span>'
-          : '';
-      } else {
-        orgHost.innerHTML = filteredOrgs
-          .map((o) => `<span class="chip chip-catalog" data-org-id="${o.id}" title="Нажмите, чтобы выбрать" role="button" tabindex="0">${AktUtils.escapeHtml(o.title)}</span>`)
-          .join('');
-      }
+      objectHost.innerHTML = filteredObjects
+        .map((o) => {
+          const title = AktUtils.escapeHtml(o.title || '—');
+          const sub = o.subTitle && o.subTitle !== o.title
+            ? `<span class="schedule-object-card__sub">${AktUtils.escapeHtml(o.subTitle)}</span>`
+            : '';
+          return `<button type="button" class="schedule-object-card" data-object-id="${o.id}" role="listitem">
+            <strong class="schedule-object-card__title">${title}</strong>
+            ${sub}
+          </button>`;
+        })
+        .join('');
 
-      objectHost.querySelectorAll('[data-object-id]').forEach((chip) => {
-        const activate = () => {
-          pickObject(chip.dataset.objectId).catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
-        };
-        chip.addEventListener('click', activate);
-        chip.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            activate();
-          }
-        });
-      });
-      orgHost.querySelectorAll('[data-org-id]').forEach((chip) => {
-        const activate = () => {
-          pickOrg(chip.dataset.orgId).catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
-        };
-        chip.addEventListener('click', activate);
-        chip.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            activate();
-          }
+      objectHost.querySelectorAll('[data-object-id]').forEach((card) => {
+        card.addEventListener('click', () => {
+          pickObject(card.dataset.objectId).catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
         });
       });
     };
@@ -656,13 +619,15 @@ const ScheduleEditor = (() => {
     filterEl?.addEventListener('input', () => {
       searchQuery = filterEl.textContent || '';
       syncFilterEmpty();
-      renderChips();
+      renderCards();
     });
     filterEl?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') e.preventDefault();
     });
 
-    overlay.querySelector('[data-cancel]').onclick = remove;
+    overlay.querySelectorAll('[data-cancel]').forEach((btn) => {
+      btn.onclick = remove;
+    });
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) remove();
     });
@@ -670,7 +635,7 @@ const ScheduleEditor = (() => {
       if (e.key === 'Escape') remove();
     });
 
-    renderChips();
+    renderCards();
     setTimeout(() => filterEl?.focus(), 50);
   }
 
