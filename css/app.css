@@ -1115,6 +1115,7 @@
       gap: 8px;
       padding: 12px 0;
       border: none;
+      border-bottom: 1px solid var(--border);
       background: transparent;
       position: sticky;
       top: 0;
@@ -3968,6 +3969,7 @@
         overflow-y: hidden;
         background: transparent;
         border: none;
+        border-bottom: 1px solid var(--border);
         padding: 10px 0;
       }
       body.gazprom-mobile-shell #screen-history .history-card.card--flush {
@@ -6687,6 +6689,7 @@
         width: 100%;
         background: transparent;
         border: none;
+        border-bottom: 1px solid var(--border);
         flex-wrap: nowrap;
         overflow-x: hidden;
         overflow-y: hidden;
