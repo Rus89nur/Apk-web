@@ -568,6 +568,7 @@ const EliminationEditor = (() => {
   }
 
   function closeDetail() {
+    document.documentElement.classList.remove('elim-work-open');
     document.removeEventListener('keydown', onDetailKey);
     void flushPersist();
     if (document.querySelector('.elimination-detail-overlay')) {
@@ -798,13 +799,16 @@ const EliminationEditor = (() => {
       <div class="elimination-detail-sheet elim-work" role="dialog" aria-modal="true" aria-labelledby="elimDetailTitle">
         <section class="elim-work__screen" data-elim-screen="list">
           <header class="elim-work__head">
+            <div class="elim-work__bar">
+              <button type="button" class="elim-work__link" id="elimDetailClose">Закрыть</button>
+              <button type="button" class="elim-work__link" id="elimDetailHistory">История</button>
+            </div>
             <div class="elim-work__top">
               <div>
                 <p class="elim-work__kicker">Акт № ${AktUtils.escapeHtml(item.aktNumber)}</p>
                 <h3 id="elimDetailTitle">${AktUtils.escapeHtml(org)}</h3>
                 <p class="elim-work__sub">${AktUtils.escapeHtml(objectTitle)}</p>
               </div>
-              <button type="button" class="elim-work__link" id="elimDetailHistory">История</button>
             </div>
             <div class="elim-work__seg" role="group" aria-label="Режим">
               <button type="button" id="elimModeDone" class="is-on" aria-pressed="true">Устранено</button>
@@ -824,7 +828,10 @@ const EliminationEditor = (() => {
         </section>
         <section class="elim-work__screen" data-elim-screen="fact" hidden>
           <header class="elim-work__head">
-            <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+            <div class="elim-work__bar">
+              <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+              <button type="button" class="elim-work__link" data-elim-close>Закрыть</button>
+            </div>
             <h3>Дата факта</h3>
             <p class="elim-work__sub" id="elimFactSub">Для включённых ползунков</p>
           </header>
@@ -839,7 +846,10 @@ const EliminationEditor = (() => {
         </section>
         <section class="elim-work__screen" data-elim-screen="date" hidden>
           <header class="elim-work__head">
-            <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+            <div class="elim-work__bar">
+              <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+              <button type="button" class="elim-work__link" data-elim-close>Закрыть</button>
+            </div>
             <h3>Новый срок</h3>
             <p class="elim-work__sub" id="elimDateSub">Для включённых ползунков</p>
           </header>
@@ -856,7 +866,10 @@ const EliminationEditor = (() => {
         </section>
         <section class="elim-work__screen" data-elim-screen="hist" hidden>
           <header class="elim-work__head">
-            <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+            <div class="elim-work__bar">
+              <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+              <button type="button" class="elim-work__link" data-elim-close>Закрыть</button>
+            </div>
             <h3 id="elimHistTitle">История сроков</h3>
             <p class="elim-work__sub" id="elimHistSub">Все нарушения акта</p>
           </header>
@@ -869,10 +882,33 @@ const EliminationEditor = (() => {
     `;
     document.body.appendChild(overlay);
     GazpromMobileOverlay.lock();
+    document.documentElement.classList.add('elim-work-open');
     document.addEventListener('keydown', onDetailKey);
 
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeDetail();
+    let panX = 0;
+    let panY = 0;
+    overlay.addEventListener('touchstart', (e) => {
+      if (e.touches.length !== 1) return;
+      panX = e.touches[0].clientX;
+      panY = e.touches[0].clientY;
+    }, { passive: true });
+    overlay.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 1) return;
+      if (e.target.closest('input, textarea, select')) return;
+      const body = e.target.closest('.elim-work__body');
+      const dx = e.touches[0].clientX - panX;
+      const dy = e.touches[0].clientY - panY;
+      const vertical = Math.abs(dy) > Math.abs(dx);
+      const canScroll = body && body.scrollHeight > body.clientHeight + 1;
+      if (!body || !vertical || !canScroll) e.preventDefault();
+    }, { passive: false });
+    overlay.addEventListener('wheel', (e) => {
+      const body = e.target.closest('.elim-work__body');
+      if (!body || Math.abs(e.deltaX) > Math.abs(e.deltaY)) e.preventDefault();
+    }, { passive: false });
+
+    overlay.querySelectorAll('#elimDetailClose, [data-elim-close]').forEach((btn) => {
+      btn.addEventListener('click', closeDetail);
     });
     overlay.querySelectorAll('[data-elim-back]').forEach((btn) => {
       btn.addEventListener('click', () => showWorkScreen('list'));
