@@ -533,12 +533,47 @@ const WizardModals = (() => {
       return !(parsed.tokens || []).some((token) => !stop?.has?.(token));
     }
 
+    function registryTitleKey(title) {
+      return ViolationSearch.normalize(title || '');
+    }
+
+    function resolveRegistryItem(items, { id, number, titleKey, title }) {
+      const list = items || [];
+      if (id) {
+        const byId = list.find((row) => row.id === id);
+        if (byId) return byId;
+      }
+      if (number !== undefined && number !== null && String(number).trim() !== '') {
+        const n = Number(number);
+        const byNum = list.find((row) => row.number === n || String(row.number) === String(number));
+        if (byNum) return byNum;
+      }
+      const key = titleKey || registryTitleKey(title);
+      if (key) {
+        const byNorm = registryItemForNorm(list, key);
+        if (byNorm) return byNorm;
+        return list.find((row) => registryTitleKey(row.title) === key) || null;
+      }
+      return null;
+    }
+
+    function registryRowDataset(item) {
+      const hasNumber = item?.number !== undefined && item?.number !== null && String(item.number).trim() !== '';
+      const titleKey = registryTitleKey(item?.title);
+      return {
+        id: item?.id || '',
+        number: hasNumber ? String(item.number) : '',
+        titleKey,
+      };
+    }
+
     function resultRowHtml(item, index, extraHtml) {
       const displayVid = displayVidOf(item);
-      const num = item.number || index + 1;
+      const ds = registryRowDataset(item);
+      const numLabel = ds.number || '·';
       return `
-          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(item.id || '')}" data-reg-number="${AktUtils.escapeHtml(item.number ?? '')}">
-            <span class="vr-result-num">${AktUtils.escapeHtml(String(num))}</span>
+          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(ds.id)}" data-reg-number="${AktUtils.escapeHtml(ds.number)}" data-reg-title="${AktUtils.escapeHtml(ds.titleKey)}">
+            <span class="vr-result-num${ds.number ? '' : ' vr-result-num--muted'}">${AktUtils.escapeHtml(numLabel)}</span>
             <div class="vr-result-body">
               <div class="vr-result-title">${AktUtils.escapeHtml(item.title || '')}${alreadyBadge(item.title)}</div>
               ${item.subTitle ? `<div class="vr-result-sub">📄 ${AktUtils.escapeHtml(item.subTitle)}</div>` : ''}
@@ -558,17 +593,19 @@ const WizardModals = (() => {
         .map((row) => {
           if (row.reg) {
             const item = row.reg;
+            const ds = registryRowDataset(item);
             return `
-          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(item.id || '')}" data-reg-number="${AktUtils.escapeHtml(item.number ?? '')}">
-            <span class="vr-result-num">${AktUtils.escapeHtml(String(item.number || ''))}</span>
+          <div class="viol-registry-result-item" data-reg-id="${AktUtils.escapeHtml(ds.id)}" data-reg-number="${AktUtils.escapeHtml(ds.number)}" data-reg-title="${AktUtils.escapeHtml(ds.titleKey)}">
+            <span class="vr-result-num${ds.number ? '' : ' vr-result-num--muted'}">${AktUtils.escapeHtml(ds.number || '·')}</span>
             <div class="vr-result-body">
               <div class="vr-result-title">${AktUtils.escapeHtml(item.title || '')}${alreadyBadge(item.title)}</div>
               <div class="mv-suggest-count">${row.count} раз</div>
             </div>
           </div>`;
           }
+          const freqTitleKey = registryTitleKey(row.title);
           return `
-          <div class="viol-registry-result-item" data-freq-only="${AktUtils.escapeHtml(row.title)}">
+          <div class="viol-registry-result-item" data-freq-only="${AktUtils.escapeHtml(row.title)}" data-reg-title="${AktUtils.escapeHtml(freqTitleKey)}">
             <div class="vr-result-body">
               <div class="vr-result-title">${AktUtils.escapeHtml(row.title)}${alreadyBadge(row.title)}</div>
               <div class="mv-suggest-count">${row.count} раз</div>
@@ -625,14 +662,17 @@ const WizardModals = (() => {
 
     function renderRanked(ranked) {
       const leader = ViolationSearch.shouldShowLeader(ranked)
-        ? `<div class="mv-leader-card" data-reg-id="${AktUtils.escapeHtml(ranked[0].item.id || '')}" data-reg-number="${AktUtils.escapeHtml(ranked[0].item.number ?? '')}">
+        ? (() => {
+            const ds = registryRowDataset(ranked[0].item);
+            return `<div class="mv-leader-card" data-reg-id="${AktUtils.escapeHtml(ds.id)}" data-reg-number="${AktUtils.escapeHtml(ds.number)}" data-reg-title="${AktUtils.escapeHtml(ds.titleKey)}">
             <div class="mv-suggest-label">Наиболее подходящее</div>
             <div class="vr-result-title">${AktUtils.escapeHtml(ranked[0].item.title || '')}${alreadyBadge(ranked[0].item.title)}</div>
             <div class="mv-suggest-count">${AktUtils.escapeHtml(ranked[0].reasons.length ? ranked[0].reasons.join(' · ') : 'точное совпадение')}</div>
             <div class="mv-leader-actions">
               <button type="button" class="btn-primary btn-sm" data-leader-apply>Подставить</button>
             </div>
-          </div>`
+          </div>`;
+          })()
         : '';
       const rows = ranked
         .map((row, index) => {
@@ -880,17 +920,11 @@ const WizardModals = (() => {
     // Registry search
     function findRegistryItemFromEl(el) {
       if (!el) return null;
-      const items = getRegistryItems();
-      const id = el.dataset.regId || '';
-      if (id) {
-        const byId = items.find((row) => row.id === id);
-        if (byId) return byId;
-      }
-      const num = el.dataset.regNumber;
-      if (num !== undefined && num !== '') {
-        return items.find((row) => row.number === Number(num) || String(row.number) === String(num)) || null;
-      }
-      return null;
+      return resolveRegistryItem(getRegistryItems(), {
+        id: el.dataset.regId || '',
+        number: el.dataset.regNumber,
+        titleKey: el.dataset.regTitle || '',
+      });
     }
 
     function refreshRegistryPanel() {
@@ -940,7 +974,7 @@ const WizardModals = (() => {
       }
       if (formulaEl) formulaEl.value = item.formulaFromRules || '';
 
-      linkedRegistryItemId = item.id || null;
+      linkedRegistryItemId = item.id || (item.number != null ? `reg-num:${item.number}` : null);
       selectedRegistryItem = { ...item, vid: resolvedItemVid };
 
       document.querySelectorAll('#mvRegistryResults .viol-registry-result-item').forEach((x) =>
@@ -962,6 +996,13 @@ const WizardModals = (() => {
       root.querySelectorAll('.viol-registry-result-item, .mv-leader-card').forEach((el) => {
         el.addEventListener('click', () => {
           if (el.dataset.freqOnly) {
+            const picked =
+              findRegistryItemFromEl(el) ||
+              resolveRegistryItem(getRegistryItems(), { title: el.dataset.freqOnly });
+            if (picked) {
+              applyRegistryItem(picked, el);
+              return;
+            }
             const titleEl = document.getElementById('mvTitle');
             if (titleEl) titleEl.value = el.dataset.freqOnly;
             updateSaveToRegistryHint();
@@ -970,6 +1011,9 @@ const WizardModals = (() => {
           }
           const picked = findRegistryItemFromEl(el);
           if (picked) applyRegistryItem(picked, el);
+          else if (el.dataset.regTitle) {
+            GazpromToast.info('Запись в реестре не найдена. Введите формулировку вручную.');
+          }
         });
       });
       root.querySelectorAll('[data-leader-apply]').forEach((btn) => {

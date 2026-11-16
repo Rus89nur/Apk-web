@@ -3438,6 +3438,12 @@
       align-items: flex-start;
       gap: 10px;
     }
+    .vr-result-num--muted {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px dashed var(--border);
+      font-weight: 600;
+    }
     .vr-result-num {
       flex-shrink: 0;
       min-width: 24px;
