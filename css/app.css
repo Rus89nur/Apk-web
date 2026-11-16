@@ -547,6 +547,40 @@
       justify-content: center;
       flex-shrink: 0;
     }
+    .wizard-ready-lock-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid color-mix(in srgb, var(--success) 40%, var(--border));
+      background: color-mix(in srgb, var(--success) 12%, var(--surface));
+      font-size: 13px;
+      line-height: 1.4;
+    }
+    .wizard-ready-lock-banner__text {
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+    }
+    .wizard-ready-lock-banner__btn {
+      flex-shrink: 0;
+      background: var(--success);
+      border: 1px solid var(--success);
+      color: #fff;
+      font-weight: 600;
+    }
+    .wizard-ready-lock-banner__btn:hover {
+      background: #1b5e20;
+      border-color: #1b5e20;
+    }
+    .wizard--locked .viol-card--locked {
+      cursor: default;
+      opacity: 0.92;
+    }
     .wizard-step.done .wizard-step-num { background: var(--success); color: #fff; }
     .wizard-step.current .wizard-step-num { background: var(--primary); color: #fff; }
     .wizard-step-label {

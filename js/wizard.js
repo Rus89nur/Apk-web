@@ -81,7 +81,20 @@ const WizardController = (() => {
     syncViolFab();
   }
 
+  function isWizardLocked() {
+    return !!(draft && typeof AktUtils.isDraft === 'function' && !AktUtils.isDraft(draft));
+  }
+
+  async function unlockWizardToDraft() {
+    if (!draft || AktUtils.isDraft(draft)) return;
+    draft.urlToFllACT = null;
+    await saveDraft();
+    render();
+    GazpromToast.success('Акт возвращён в черновик — можно редактировать');
+  }
+
   function scheduleAutosave() {
+    if (isWizardLocked()) return;
     dirty = true;
     clearTimeout(dirtyIndicatorTimer);
     dirtyIndicatorTimer = setTimeout(() => {
@@ -366,6 +379,7 @@ const WizardController = (() => {
     editClass: 'w-viol-edit',
     delClass: 'w-viol-del',
     getDraft: () => draft,
+    isWizardLocked,
     getViolSearchQuery: () => violSearchQuery,
     setViolSearchQuery: (q) => { violSearchQuery = q; },
     getStep: () => step,
@@ -377,6 +391,55 @@ const WizardController = (() => {
     docLabel: 'акта',
     photoSectionTitle: 'Все фото акта',
   });
+
+  function syncReadyLockBanner() {
+    const root = document.getElementById('wizardRoot');
+    if (!root) return;
+    let banner = document.getElementById('wizardReadyLockBanner');
+    if (!isWizardLocked()) {
+      banner?.remove();
+      return;
+    }
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'wizardReadyLockBanner';
+      banner.className = 'wizard-ready-lock-banner';
+      root.insertBefore(banner, root.firstChild);
+    }
+    banner.innerHTML = `
+      <p class="wizard-ready-lock-banner__text">Акт отмечен <strong>готовым</strong> — редактирование заблокировано.</p>
+      <button type="button" class="btn-sm wizard-ready-lock-banner__btn" id="wizardUnlockFromBanner">Вернуть в черновик</button>
+    `;
+    banner.querySelector('#wizardUnlockFromBanner')?.addEventListener('click', () => {
+      void unlockWizardToDraft();
+    });
+  }
+
+  function applyWizardReadOnly() {
+    const root = document.getElementById('wizardRoot');
+    const locked = isWizardLocked();
+    root?.classList.toggle('wizard--locked', locked);
+    syncReadyLockBanner();
+    const next = document.getElementById('wizardNext');
+    if (locked && next) {
+      next.textContent = step < TOTAL_STEPS - 1 ? 'Далее →' : 'Просмотр';
+    }
+    if (!locked) return;
+    const panel = panelsHost()?.querySelector('.wizard-panel-active');
+    if (!panel) return;
+    panel.querySelectorAll('input, textarea, select').forEach((el) => {
+      if (el.type === 'hidden') return;
+      if (el.tagName === 'SELECT') el.disabled = true;
+      else if (el.type === 'checkbox' || el.type === 'radio' || el.type === 'file') el.disabled = true;
+      else el.readOnly = true;
+    });
+    panel.querySelectorAll('button').forEach((btn) => {
+      const id = btn.id;
+      if (id === 'wMarkReady' || id === 'wGenerateDocx' || id === 'wizardUnlockFromBanner') return;
+      if (btn.closest('#wizardStepper')) return;
+      btn.disabled = true;
+    });
+  }
 
   function syncStepperUI() {
     document.querySelectorAll('#wizardStepper .wizard-step').forEach((el) => {
@@ -392,7 +455,11 @@ const WizardController = (() => {
     const next = document.getElementById('wizardNext');
     if (prev) prev.style.visibility = step === 0 ? 'hidden' : 'visible';
     if (next) {
-      next.textContent = step === TOTAL_STEPS - 1 ? '💾 Сохранить черновик' : 'Далее →';
+      if (isWizardLocked()) {
+        next.textContent = step === TOTAL_STEPS - 1 ? 'Просмотр' : 'Далее →';
+      } else {
+        next.textContent = step === TOTAL_STEPS - 1 ? '💾 Сохранить черновик' : 'Далее →';
+      }
     }
   }
 
@@ -429,6 +496,7 @@ const WizardController = (() => {
     bindPanelEvents();
     bindAutosaveOnPanel();
     if (step === 4) bindVyvodyTextarea();
+    applyWizardReadOnly();
     syncViolFab();
     violUi.hydrateViolationThumbs();
     if (!options.skipLayoutSync) {
@@ -442,7 +510,7 @@ const WizardController = (() => {
     const fab = document.getElementById('wizardViolFab');
     if (!fab) return;
     const root = document.getElementById('wizardRoot');
-    fab.hidden = step !== 3 || !root || root.hidden;
+    fab.hidden = isWizardLocked() || step !== 3 || !root || root.hidden;
   }
 
   /** Высота #wVyvody: под текст + сохранение ручного растягивания. */
@@ -1064,11 +1132,12 @@ const WizardController = (() => {
     document.getElementById('wMarkReady')?.addEventListener('click', async () => {
       if (AktUtils.isDraft(draft)) {
         draft.urlToFllACT = `web:completed/${draft.id}`;
+        await saveDraft();
+        render();
+        GazpromToast.success('Акт отмечен готовым — редактирование заблокировано');
       } else {
-        draft.urlToFllACT = null;
+        await unlockWizardToDraft();
       }
-      await saveDraft();
-      render();
     });
   }
 
@@ -1120,7 +1189,7 @@ const WizardController = (() => {
 
 
   function commitStep(s) {
-    if (!draft) return;
+    if (!draft || isWizardLocked()) return;
 
     if (s === 0) {
       const dateEl = document.getElementById('wDate');
@@ -1301,6 +1370,10 @@ const WizardController = (() => {
 
   function bindGlobalControls() {
     document.getElementById('wizardViolFab')?.addEventListener('click', () => {
+      if (isWizardLocked()) {
+        GazpromToast.info('Акт готов. Нажмите «Вернуть в черновик», чтобы добавить нарушение.');
+        return;
+      }
       WizardModals.openViolationEditor(null);
     });
     document.getElementById('wizardNext')?.addEventListener('click', () => next());

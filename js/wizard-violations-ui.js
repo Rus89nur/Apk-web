@@ -24,6 +24,7 @@ const WizardViolationsUI = (() => {
       editClass,
       delClass,
       getDraft,
+      isWizardLocked,
       getViolSearchQuery,
       setViolSearchQuery,
       getStep,
@@ -59,7 +60,12 @@ const WizardViolationsUI = (() => {
       return idx >= 0 ? idx + 1 : '?';
     }
 
+    function wizardLocked() {
+      return typeof isWizardLocked === 'function' && isWizardLocked();
+    }
+
     function renderViolCardHtml(v, displayNum) {
+      const locked = wizardLocked();
       const fmt = resolveViolationFormat();
       const normalizedFmt = fmt && typeof SpravkaUtils?.normalizeViolationFormat === 'function'
         ? SpravkaUtils.normalizeViolationFormat(fmt)
@@ -89,7 +95,13 @@ const WizardViolationsUI = (() => {
             ${photos > maxThumbs ? `<div class="viol-card-thumb viol-card-thumb-more">+${photos - maxThumbs}</div>` : ''}
           </div>`
         : '';
-      return `<div class="viol-card" data-violation-id="${v.id}" role="button" tabindex="0" title="Открыть карточку нарушения" draggable="true">
+      const actionsHtml = locked
+        ? ''
+        : `<div class="viol-card-actions">
+          <button type="button" class="btn-ghost btn-sm ${editClass}" data-vid="${v.id}" title="Редактировать">✏️</button>
+          <button type="button" class="btn-ghost btn-sm modal-btn-danger ${delClass}" data-vid="${v.id}" title="Удалить">🗑</button>
+        </div>`;
+      return `<div class="viol-card${locked ? ' viol-card--locked' : ''}" data-violation-id="${v.id}" role="button" tabindex="0" title="${locked ? 'Просмотр — акт готов' : 'Открыть карточку нарушения'}" draggable="${locked ? 'false' : 'true'}">
         <div class="viol-card-num">${displayNum}</div>
         <div class="viol-card-body">
           <div class="viol-card-title">${AktUtils.escapeHtml(displayTitle)}</div>
@@ -102,10 +114,7 @@ const WizardViolationsUI = (() => {
           </div>
           ${thumbsHtml}
         </div>
-        <div class="viol-card-actions">
-          <button type="button" class="btn-ghost btn-sm ${editClass}" data-vid="${v.id}" title="Редактировать">✏️</button>
-          <button type="button" class="btn-ghost btn-sm modal-btn-danger ${delClass}" data-vid="${v.id}" title="Удалить">🗑</button>
-        </div>
+        ${actionsHtml}
       </div>`;
     }
 
@@ -216,6 +225,7 @@ const WizardViolationsUI = (() => {
     }
 
     function bindViolationDragDrop() {
+      if (wizardLocked()) return;
       const container = document.getElementById(ids.list);
       if (!container) return;
 
@@ -298,7 +308,13 @@ const WizardViolationsUI = (() => {
       bindViolationDragDrop();
 
       panelsHost()?.querySelectorAll('.viol-card[data-violation-id]').forEach((card) => {
-        const openCard = () => WizardModals.openViolationEditor(card.dataset.violationId);
+        const openCard = () => {
+          if (wizardLocked()) {
+            GazpromToast.info('Акт готов. Верните в черновик, чтобы редактировать нарушения.');
+            return;
+          }
+          WizardModals.openViolationEditor(card.dataset.violationId);
+        };
         card.addEventListener('click', (e) => {
           if (e.target.closest('.viol-card-actions')) return;
           if (e.target.closest('.viol-card-thumbs')) return;
@@ -316,6 +332,10 @@ const WizardViolationsUI = (() => {
       panelsHost()?.querySelectorAll(`.${editClass}`).forEach((btn) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          if (wizardLocked()) {
+            GazpromToast.info('Акт готов. Верните в черновик, чтобы редактировать нарушения.');
+            return;
+          }
           WizardModals.openViolationEditor(btn.dataset.vid);
         });
       });

@@ -357,6 +357,10 @@ const WizardModals = (() => {
 
   function openViolationEditor(violationId) {
     const draft = ctx.getDraft();
+    if (draft && typeof AktUtils.isDraft === 'function' && !AktUtils.isDraft(draft)) {
+      GazpromToast.info('Акт готов. Нажмите «Вернуть в черновик» в мастере, чтобы редактировать.');
+      return;
+    }
     const catalog = ctx.getCatalog();
     editingViolationId = violationId;
     photoHintGen += 1;
