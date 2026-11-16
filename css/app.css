@@ -1302,6 +1302,14 @@
       margin-bottom: 0;
     }
 
+    .history-list-item__status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+    }
+
     .history-list-item__object {
       font-size: 14px;
       font-weight: 600;
@@ -1373,23 +1381,22 @@
 
     .history-list-item__delete {
       flex-shrink: 0;
-      min-width: 44px;
+      margin-left: auto;
       min-height: 44px;
-      width: 44px;
-      height: 44px;
       border: none;
       background: transparent;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 22px;
+      font-family: inherit;
+      font-size: 14px;
       font-weight: 600;
-      line-height: 1;
+      line-height: 1.2;
       color: var(--danger);
       transition: background 0.15s;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0;
+      padding: 8px 4px;
     }
 
     .history-list-item__delete:hover,
@@ -6594,11 +6601,11 @@
       }
 
       body.gazprom-mobile-shell .history-list-item__delete {
-        min-width: 44px;
         min-height: 44px;
-        width: 44px;
-        height: 44px;
-        font-size: 24px;
+        width: auto;
+        height: auto;
+        font-size: 15px;
+        padding: 8px 4px;
       }
 
       body.gazprom-mobile-shell .history-list-item__chevron {

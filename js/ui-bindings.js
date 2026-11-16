@@ -392,7 +392,7 @@ const GazpromUI = (() => {
             ? 'history-list-item__detected'
             : 'history-list-item__detected history-list-item__detected--empty';
         const trashBtn = draft
-          ? `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину"><span aria-hidden="true">×</span></button>`
+          ? `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину">Удалить</button>`
           : '';
         const openLabel = short
           ? 'Редактировать сокращённый акт'
@@ -417,14 +417,16 @@ const GazpromUI = (() => {
               </div>
               <div class="history-list-item__aside">
                 <span class="${detectedClass}">Выявлено: ${detected}</span>
-                ${trashBtn}
                 <span class="history-list-item__chevron" aria-hidden="true">›</span>
               </div>
             </div>
             <div class="history-list-item__foot">
               ${objectHtml}
               <span class="history-list-item__type">${escapeHtml(actType)}</span>
-              ${draftHint}
+              <div class="history-list-item__status">
+                ${draftHint}
+                ${trashBtn}
+              </div>
             </div>
           </div>
         </div>`;

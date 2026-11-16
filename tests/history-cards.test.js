@@ -131,14 +131,16 @@ describe('карточки истории: выявлено', () => {
     expect(html).not.toContain('elim-ring');
   });
 
-  it('у черновика остаются data-history-trash и Черновик', () => {
+  it('у черновика «Удалить» внизу карточки, стрелка сверху', () => {
     const html = render(draft);
     const detectedAt = html.indexOf('history-list-item__detected');
-    const trashAt = html.indexOf('data-history-trash="draft-1"');
     const chevronAt = html.indexOf('history-list-item__chevron');
+    const trashAt = html.indexOf('data-history-trash="draft-1"');
     expect(html).toContain('Черновик');
-    expect(trashAt).toBeGreaterThan(detectedAt);
-    expect(chevronAt).toBeGreaterThan(trashAt);
+    expect(html).toContain('>Удалить</button>');
+    expect(html).not.toContain('×');
+    expect(chevronAt).toBeGreaterThan(detectedAt);
+    expect(trashAt).toBeGreaterThan(chevronAt);
     expect(html).toContain('<span class="history-list-item__detected">Выявлено: 1</span>');
     expect(html).not.toContain('stopPropagation');
   });
