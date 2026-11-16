@@ -732,7 +732,8 @@ const EliminationEditor = (() => {
     if (allBtn) {
       const allOn = open.length > 0 && open.every((id) => detailPickSet().has(id));
       allBtn.textContent = allOn ? 'Снять все' : 'Отметить все';
-      allBtn.hidden = open.length === 0;
+      allBtn.hidden = false;
+      allBtn.disabled = open.length === 0;
     }
   }
 

@@ -5182,11 +5182,18 @@
     .elimination-detail-overlay:has(.elim-work) {
       align-items: stretch;
       justify-content: stretch;
+      top: 0;
+      right: 0;
+      bottom: auto;
+      left: 0;
+      height: 100svh;
+      max-height: 100svh;
       padding: 0;
       overflow: hidden;
-      background: #f1f5f9;
+      background: #f6f8fb;
       touch-action: none;
       overscroll-behavior: none;
+      z-index: 10050;
     }
 
     .elimination-detail-sheet.elim-work {
@@ -5198,7 +5205,7 @@
       margin: 0;
       border-radius: 0;
       box-shadow: none;
-      background: #f1f5f9;
+      background: #f6f8fb;
       overflow: hidden;
       touch-action: none;
       overscroll-behavior: none;
@@ -5216,7 +5223,7 @@
       flex: 1 1 auto;
       min-height: 0;
       height: 100%;
-      background: #f1f5f9;
+      background: #f6f8fb;
       overflow: hidden;
       touch-action: none;
       overscroll-behavior: none;
@@ -5224,21 +5231,40 @@
 
     html[data-scheme="dark"] .elimination-detail-overlay:has(.elim-work),
     html[data-scheme="dark"] .elimination-detail-sheet.elim-work,
-    html[data-scheme="dark"] .elim-work__screen {
-      background: #16181f;
+    html[data-scheme="dark"] .elim-work__screen,
+    html[data-scheme="dark"] .elim-work__foot {
+      background: #121418;
     }
 
     html[data-scheme="dark"] .elim-work__line,
     html[data-scheme="dark"] .elim-work__block,
-    html[data-scheme="dark"] .elim-work__btn--ghost,
     html[data-scheme="dark"] .elim-work__input {
-      background: #2c2e36;
+      background: #1c1f24;
+      border-color: #343b44;
+    }
+
+    html[data-scheme="dark"] .elim-work__btn--ghost {
+      background: #1c1f24;
+      border: 1px solid #343b44;
+      color: #f3f5f7;
+    }
+
+    html[data-scheme="dark"] .elim-work__link {
+      color: #90caf9;
+    }
+
+    html[data-scheme="dark"] .elim-work__seg {
+      background: #1a3054;
+    }
+
+    html[data-scheme="dark"] .elim-work__seg button {
+      color: #f3f5f7;
     }
 
     html[data-scheme="dark"] .elim-work__seg button.is-on,
     html[data-scheme="dark"] .elim-work__btn--fill,
     html[data-scheme="dark"] .elim-work__switch[aria-pressed="true"] .elim-work__knob {
-      background: #0d47a1;
+      background: #1565c0;
       color: #fff;
     }
 
@@ -5286,6 +5312,7 @@
       padding: 12px 16px max(16px, env(safe-area-inset-bottom));
       flex-shrink: 0;
       touch-action: none;
+      background: #f6f8fb;
     }
 
     .elim-work__top {
@@ -5314,7 +5341,7 @@
     .elim-work__link {
       border: 0;
       background: transparent;
-      color: var(--primary);
+      color: #0d47a1;
       font: inherit;
       font-weight: 650;
       cursor: pointer;
@@ -5326,7 +5353,7 @@
       gap: 4px;
       margin-top: 10px;
       padding: 4px;
-      background: var(--primary-soft);
+      background: #e3f2fd;
       border-radius: 12px;
     }
 
@@ -5336,14 +5363,14 @@
       border: 0;
       border-radius: 9px;
       background: transparent;
-      color: var(--primary);
+      color: #0d47a1;
       font: inherit;
       font-weight: 650;
       cursor: pointer;
     }
 
     .elim-work__seg button.is-on {
-      background: var(--primary);
+      background: #0d47a1;
       color: #fff;
     }
 
@@ -5461,9 +5488,13 @@
     }
 
     .elim-work__btn--ghost {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text);
+      background: #fff;
+      border: 1px solid #e4e8ee;
+      color: #172033;
+    }
+
+    .elim-work__btn--ghost:disabled {
+      opacity: 0.45;
     }
 
     .elim-work__error {
