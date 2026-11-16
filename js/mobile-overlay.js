@@ -156,7 +156,6 @@ var GazpromMobileOverlay = (() => {
     '#screen-history .toolbar-filters--pills',
     '#screen-history .toolbar-history__body',
     '#screen-history .toolbar--history',
-    '#screen-history .history-list-toolbar',
   ].join(', ');
 
   const syncVisualViewport = () => {

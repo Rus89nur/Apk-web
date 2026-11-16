@@ -1128,7 +1128,7 @@
       overflow-y: hidden;
     }
     #screen-history .history-sort-btn {
-      touch-action: pan-x pinch-zoom;
+      touch-action: manipulation;
     }
 
     .history-list-toolbar::-webkit-scrollbar {
@@ -6653,6 +6653,37 @@
       body.gazprom-mobile-shell #screen-history .history-card > .toolbar--history.history-card__toolbar {
         margin-bottom: 0;
         padding: 0 0 4px;
+        flex-shrink: 0;
+      }
+
+      body.gazprom-mobile-shell #screen-history.active {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: calc(
+          100dvh - var(--gazprom-mobile-header-block, 44px) - var(--gazprom-nav-block, 64px)
+        );
+        overflow: hidden;
+        padding-bottom: 0;
+      }
+
+      body.gazprom-mobile-shell #screen-history .history-card {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      body.gazprom-mobile-shell #screen-history #historyList {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        touch-action: pan-y;
       }
 
       body.gazprom-mobile-shell #screen-history .toolbar-filters--pills::-webkit-scrollbar {
@@ -6665,18 +6696,20 @@
       }
 
       body.gazprom-mobile-shell #screen-history .history-list-toolbar {
-        position: sticky;
-        top: 0;
+        position: relative;
+        top: auto;
         z-index: 5;
-        left: 0;
-        right: 0;
+        left: auto;
+        right: auto;
         width: 100%;
         background: transparent;
         border: none;
         border-bottom: 1px solid var(--border);
         flex-wrap: nowrap;
+        flex-shrink: 0;
         overflow-x: hidden;
         overflow-y: hidden;
+        touch-action: pan-y;
         min-width: 0;
         max-width: 100%;
         padding: 10px 0;
