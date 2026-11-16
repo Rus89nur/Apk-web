@@ -96,33 +96,33 @@ describe('карточки истории: выявлено', () => {
     return historyList.innerHTML;
   }
 
-  it('три нарушения показывают Выявлено: 3 и выявлено 3 в aria-label', () => {
+  it('три нарушения показывают цифру 3 в кольце и выявлено 3 в aria-label', () => {
     const html = render(three);
-    expect(html).toContain('<span class="history-list-item__detected">Выявлено: 3</span>');
+    expect(html).toContain('history-list-item__ring--open');
+    expect(html).toContain('<span class="history-ring__label">3</span>');
     expect(html).toContain('выявлено 3');
-    expect(html).not.toContain('history-list-item__detected--empty');
+    expect(html).not.toContain('Выявлено:');
   });
 
-  it('пустой и отсутствующий violations дают Выявлено: 0 и класс --empty', () => {
+  it('пустой и отсутствующий violations дают 0 и класс --empty', () => {
     const emptyHtml = render(empty);
-    expect(emptyHtml).toContain(
-      '<span class="history-list-item__detected history-list-item__detected--empty">Выявлено: 0</span>'
-    );
+    expect(emptyHtml).toContain('history-list-item__ring--empty');
+    expect(emptyHtml).toContain('<span class="history-ring__label">0</span>');
     expect(emptyHtml).toContain('выявлено 0');
 
     const missingHtml = render(missing);
-    expect(missingHtml).toContain(
-      '<span class="history-list-item__detected history-list-item__detected--empty">Выявлено: 0</span>'
-    );
+    expect(missingHtml).toContain('history-list-item__ring--empty');
+    expect(missingHtml).toContain('<span class="history-ring__label">0</span>');
     expect(missingHtml).toContain('выявлено 0');
   });
 
-  it('две записи сокращённого акта дают Выявлено: 2', () => {
+  it('две записи сокращённого акта дают цифру 2 в кольце', () => {
     const html = render(shortTwo);
     expect(html).toContain('history-row--short');
-    expect(html).toContain('<span class="history-list-item__detected">Выявлено: 2</span>');
+    expect(html).toContain('history-list-item__ring--open');
+    expect(html).toContain('<span class="history-ring__label">2</span>');
     expect(html).toContain('выявлено 2');
-    expect(html).not.toContain('history-list-item__detected--empty');
+    expect(html).not.toContain('Выявлено:');
   });
 
   it('в разметке истории нет классов кольца устранения', () => {
@@ -133,15 +133,16 @@ describe('карточки истории: выявлено', () => {
 
   it('у черновика «Удалить» внизу карточки, стрелка сверху', () => {
     const html = render(draft);
-    const detectedAt = html.indexOf('history-list-item__detected');
+    const ringAt = html.indexOf('history-list-item__ring');
     const chevronAt = html.indexOf('history-list-item__chevron');
     const trashAt = html.indexOf('data-history-trash="draft-1"');
     expect(html).toContain('Черновик');
     expect(html).toContain('>Удалить</button>');
+    expect(html).toContain('<span class="history-ring__label">1</span>');
     expect(html).not.toContain('×');
-    expect(chevronAt).toBeGreaterThan(detectedAt);
+    expect(html).not.toContain('Выявлено:');
+    expect(chevronAt).toBeGreaterThan(ringAt);
     expect(trashAt).toBeGreaterThan(chevronAt);
-    expect(html).toContain('<span class="history-list-item__detected">Выявлено: 1</span>');
     expect(html).not.toContain('stopPropagation');
   });
 });

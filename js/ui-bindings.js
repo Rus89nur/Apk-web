@@ -285,10 +285,7 @@ const GazpromUI = (() => {
     return `<p class="history-list-item__object">${escapeHtml(objectTitle)}</p>`;
   }
 
-  const historyDocIcon = `<svg class="history-list-item__icon-svg" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d="M8 3h7l4 4v14a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
-    <path d="M15 3v4h4M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-  </svg>`;
+  const HISTORY_RING_C = (2 * Math.PI * 28).toFixed(3);
 
   function sameYearList(a, b) {
     const left = a || [];
@@ -387,10 +384,11 @@ const GazpromUI = (() => {
           ? '<span class="history-list-item__draft">Черновик</span>'
           : '<span class="history-list-item__ready">Готов</span>';
         const detected = countViolations(akt);
-        const detectedClass =
+        const ringClass =
           detected > 0
-            ? 'history-list-item__detected'
-            : 'history-list-item__detected history-list-item__detected--empty';
+            ? 'history-list-item__ring history-list-item__ring--open'
+            : 'history-list-item__ring history-list-item__ring--empty';
+        const ringDash = detected > 0 ? `${HISTORY_RING_C} 0` : `0 ${HISTORY_RING_C}`;
         const trashBtn = draft
           ? `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину">Удалить</button>`
           : '';
@@ -405,7 +403,13 @@ const GazpromUI = (() => {
             ? 'history-list-item history-row history-row--full card'
             : 'history-list-item history-row card';
         return `<div class="${rowClass}" data-akt-id="${escapeHtml(akt.id)}" data-akt-short="${short ? '1' : '0'}" role="listitem" tabindex="0" title="${openLabel}" aria-label="${openLabel}: № ${escapeHtml(akt.number)}, выявлено ${detected}">
-          <div class="history-list-item__icon">${historyDocIcon}</div>
+          <div class="${ringClass}" aria-hidden="true">
+            <svg class="history-ring" viewBox="0 0 68 68">
+              <circle class="history-ring__track" cx="34" cy="34" r="28"></circle>
+              <circle class="history-ring__fill" cx="34" cy="34" r="28" stroke-dasharray="${ringDash}"></circle>
+            </svg>
+            <span class="history-ring__label">${detected}</span>
+          </div>
           <div class="history-list-item__content">
             <div class="history-list-item__header">
               <div class="history-list-item__body">
@@ -416,7 +420,6 @@ const GazpromUI = (() => {
                 </div>
               </div>
               <div class="history-list-item__aside">
-                <span class="${detectedClass}">Выявлено: ${detected}</span>
                 <span class="history-list-item__chevron" aria-hidden="true">›</span>
               </div>
             </div>

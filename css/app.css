@@ -1216,21 +1216,51 @@
       outline-offset: 2px;
     }
 
-    .history-list-item__icon {
-      width: 40px;
-      height: 40px;
+    .history-list-item__ring {
+      position: relative;
+      width: 68px;
+      height: 68px;
       flex-shrink: 0;
-      border-radius: 8px;
-      background: var(--primary-soft);
+    }
+
+    .history-ring {
+      width: 68px;
+      height: 68px;
+      transform: rotate(-90deg);
+    }
+
+    .history-ring__track {
+      fill: none;
+      stroke: #e2e8f0;
+      stroke-width: 5;
+    }
+
+    .history-ring__fill {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 5;
+    }
+
+    .history-list-item__ring--empty .history-ring__fill {
+      stroke: #cbd5e1;
+    }
+
+    .history-ring__label {
+      position: absolute;
+      inset: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--primary);
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      pointer-events: none;
     }
 
-    .history-list-item__icon-svg {
-      width: 20px;
-      height: 20px;
+    .history-list-item__ring--empty .history-ring__label {
+      color: var(--text-muted);
     }
 
     .history-list-item__content {
@@ -1356,23 +1386,6 @@
       flex-shrink: 0;
     }
 
-    .history-list-item__detected {
-      display: inline-flex;
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 700;
-      white-space: nowrap;
-      line-height: 1.2;
-      background: var(--primary-soft);
-      color: var(--primary);
-    }
-
-    .history-list-item__detected--empty {
-      background: var(--bg);
-      color: var(--text-muted);
-    }
-
     .history-list-item__chevron {
       font-size: 20px;
       line-height: 1;
@@ -1411,16 +1424,6 @@
     }
 
     #screen-history .history-row--full .history-list-item__title {
-      color: #2e7d32;
-    }
-
-    #screen-history .history-row--short .history-list-item__icon {
-      background: rgba(237, 108, 2, 0.1);
-      color: #ed6c02;
-    }
-
-    #screen-history .history-row--full .history-list-item__icon {
-      background: rgba(46, 125, 50, 0.1);
       color: #2e7d32;
     }
 
@@ -6529,10 +6532,10 @@
       /* История: карточки актов — сетка как на Устранении (web-80) */
       body.gazprom-mobile-shell .history-list-item {
         display: grid;
-        grid-template-columns: 40px minmax(0, 1fr);
+        grid-template-columns: 56px minmax(0, 1fr);
         grid-template-rows: auto auto;
         grid-template-areas:
-          "icon header"
+          "ring header"
           "foot foot";
         gap: 8px 12px;
         min-width: 0;
@@ -6543,11 +6546,19 @@
         align-items: start;
       }
 
-      body.gazprom-mobile-shell .history-list-item__icon {
-        grid-area: icon;
-        width: 40px;
-        height: 40px;
-        flex-shrink: 0;
+      body.gazprom-mobile-shell .history-list-item__ring {
+        grid-area: ring;
+        width: 56px;
+        height: 56px;
+      }
+
+      body.gazprom-mobile-shell .history-list-item__ring .history-ring {
+        width: 56px;
+        height: 56px;
+      }
+
+      body.gazprom-mobile-shell .history-list-item__ring .history-ring__label {
+        font-size: 16px;
       }
 
       body.gazprom-mobile-shell .history-list-item__content {
@@ -6595,12 +6606,6 @@
         align-items: flex-end;
         gap: 4px;
         min-width: 0;
-      }
-
-      body.gazprom-mobile-shell .history-list-item__detected {
-        align-self: flex-end;
-        flex: 0 0 auto;
-        max-width: 100%;
       }
 
       body.gazprom-mobile-shell .history-list-item__delete {
