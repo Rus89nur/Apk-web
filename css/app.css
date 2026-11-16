@@ -3126,11 +3126,11 @@
       min-height: 0;
       max-height: none;
       width: 100%;
-      padding: 8px 0 max(16px, env(safe-area-inset-bottom, 0px));
+      padding: 10px 12px max(16px, env(safe-area-inset-bottom, 0px));
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      gap: 6px;
+      gap: 8px;
       background: transparent;
       box-sizing: border-box;
       -webkit-overflow-scrolling: touch;
@@ -3148,19 +3148,19 @@
       text-align: left;
       padding: 14px 16px;
       margin: 0;
-      border-radius: 0;
-      border: none;
-      border-bottom: 1px solid color-mix(in srgb, var(--primary) 14%, var(--border));
+      border-radius: var(--radius);
+      border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--border));
       background: color-mix(in srgb, var(--primary) 7%, var(--surface));
       color: inherit;
       font: inherit;
       cursor: pointer;
       box-sizing: border-box;
-      transition: background 0.12s, box-shadow 0.12s;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
     }
     .schedule-object-card:hover,
     .schedule-object-card:focus-visible {
       background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+      border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
       outline: none;
       box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 28%, transparent);
     }
