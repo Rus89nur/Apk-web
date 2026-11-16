@@ -3137,9 +3137,10 @@
     }
     .schedule-object-card {
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
       width: 100%;
       max-width: 100%;
       min-width: 0;
@@ -3157,12 +3158,46 @@
       box-sizing: border-box;
       transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
     }
+    .schedule-object-card__main {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
     .schedule-object-card:hover,
     .schedule-object-card:focus-visible {
       background: color-mix(in srgb, var(--primary) 12%, var(--surface));
       border-color: color-mix(in srgb, var(--primary) 34%, var(--border));
       outline: none;
       box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 28%, transparent);
+    }
+    .schedule-object-card--selected {
+      border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+      background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+      opacity: 0.92;
+    }
+    .schedule-object-card--selected .schedule-object-card__title {
+      color: color-mix(in srgb, var(--accent) 40%, var(--text));
+    }
+    .schedule-object-card__mark {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .schedule-object-divider {
+      flex: 0 0 auto;
+      width: 100%;
+      height: 0;
+      margin: 6px 0;
+      border: 0;
+      border-top: 2px dashed color-mix(in srgb, var(--text-muted) 45%, var(--border));
     }
     .schedule-object-picker .schedule-picker-empty {
       padding: 16px;

@@ -538,6 +538,14 @@ const ScheduleEditor = (() => {
     const objects = collectObjects(catalog);
     const { year, month } = context;
     const monthName = capitalizeMonth(MONTH_NAMES[month - 1]);
+    const monthItems = itemsForMonth(catalog, year, month);
+    const selectedByObjectId = new Map();
+    monthItems.forEach((item) => {
+      const id = item?.objectCheck?.id;
+      if (id == null || id === '') return;
+      const key = String(id);
+      if (!selectedByObjectId.has(key)) selectedByObjectId.set(key, item);
+    });
     let searchQuery = '';
 
     const overlay = mountOverlay(`
@@ -574,6 +582,35 @@ const ScheduleEditor = (() => {
       openDateForm(fresh, { year, month, objectId });
     };
 
+    const editSelected = async (objectId) => {
+      remove();
+      const fresh = await GazpromStore.get();
+      const item = itemsForMonth(fresh, year, month).find(
+        (x) => String(x?.objectCheck?.id) === String(objectId)
+      );
+      if (!item) {
+        openDateForm(fresh, { year, month, objectId });
+        return;
+      }
+      openForm(fresh, item, { year, month });
+    };
+
+    const objectCardHtml = (o, selected) => {
+      const title = AktUtils.escapeHtml(o.title || '—');
+      const sub = o.subTitle && o.subTitle !== o.title
+        ? `<span class="schedule-object-card__sub">${AktUtils.escapeHtml(o.subTitle)}</span>`
+        : '';
+      const selectedClass = selected ? ' schedule-object-card--selected' : '';
+      const mark = selected ? '<span class="schedule-object-card__mark">В графике</span>' : '';
+      return `<button type="button" class="schedule-object-card${selectedClass}" data-object-id="${o.id}" data-selected="${selected ? '1' : '0'}" role="listitem">
+        <span class="schedule-object-card__main">
+          <strong class="schedule-object-card__title">${title}</strong>
+          ${sub}
+        </span>
+        ${mark}
+      </button>`;
+    };
+
     const renderCards = () => {
       const filteredObjects = objects.filter((o) => objectMatchesPickerSearch(o, searchQuery));
 
@@ -587,22 +624,31 @@ const ScheduleEditor = (() => {
         return;
       }
 
-      objectHost.innerHTML = filteredObjects
-        .map((o) => {
-          const title = AktUtils.escapeHtml(o.title || '—');
-          const sub = o.subTitle && o.subTitle !== o.title
-            ? `<span class="schedule-object-card__sub">${AktUtils.escapeHtml(o.subTitle)}</span>`
-            : '';
-          return `<button type="button" class="schedule-object-card" data-object-id="${o.id}" role="listitem">
-            <strong class="schedule-object-card__title">${title}</strong>
-            ${sub}
-          </button>`;
-        })
-        .join('');
+      const available = filteredObjects.filter((o) => !selectedByObjectId.has(String(o.id)));
+      const selected = filteredObjects.filter((o) => selectedByObjectId.has(String(o.id)));
+
+      let html = '';
+      if (available.length) {
+        html += available.map((o) => objectCardHtml(o, false)).join('');
+      } else if (selected.length) {
+        html += '<p class="schedule-picker-empty">Все объекты уже в графике этого месяца</p>';
+      }
+
+      if (available.length && selected.length) {
+        html += '<div class="schedule-object-divider" role="separator" aria-label="Уже в графике"></div>';
+      }
+
+      if (selected.length) {
+        html += selected.map((o) => objectCardHtml(o, true)).join('');
+      }
+
+      objectHost.innerHTML = html;
 
       objectHost.querySelectorAll('[data-object-id]').forEach((card) => {
         card.addEventListener('click', () => {
-          pickObject(card.dataset.objectId).catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
+          const id = card.dataset.objectId;
+          const go = card.dataset.selected === '1' ? editSelected(id) : pickObject(id);
+          go.catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
         });
       });
     };
