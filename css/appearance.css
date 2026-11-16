@@ -448,6 +448,31 @@ html[data-scheme="dark"] #screen-wizard .chip-commission-member:focus-visible {
   box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.12);
 }
 
+/* День: уже добавленный член комиссии — как выбранная организация на шаге 2. */
+html[data-appearance="system"][data-scheme="light"] #screen-wizard .chip-commission-member {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: transparent;
+  box-shadow: none;
+}
+html[data-appearance="system"][data-scheme="light"] #screen-wizard .chip-commission-member:hover,
+html[data-appearance="system"][data-scheme="light"] #screen-wizard .chip-commission-member:focus-visible {
+  background: color-mix(in srgb, var(--text-muted) 14%, var(--surface));
+  color: var(--text);
+  border-color: transparent;
+  box-shadow: none;
+  opacity: 1;
+  outline: none;
+}
+html[data-appearance="system"][data-scheme="light"] #screen-wizard .chip-removable.chip-commission-member:active {
+  background: color-mix(in srgb, var(--text-muted) 14%, var(--surface));
+  color: var(--text);
+  border-color: transparent;
+  box-shadow: none;
+  opacity: 0.92;
+  outline: none;
+}
+
 html[data-appearance="system"][data-scheme="dark"] #screen-wizard .chip-catalog,
 html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template,
 html[data-appearance="system"][data-scheme="dark"] #screen-wizard .btn-template-empty,
