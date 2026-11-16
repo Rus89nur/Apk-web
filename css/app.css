@@ -2705,9 +2705,26 @@
     }
 
     /* Подсказка в просмотре нарушений */
-    /* График проверок — карточки месяцев */
+    /* График проверок — карточки месяцев, на весь экран */
+    .catalog-editor-root:has(.catalog-editor-panel--schedule) {
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+      background: var(--surface);
+    }
+    .catalog-editor-root:has(.catalog-editor-panel--schedule) .catalog-editor-backdrop {
+      display: none;
+    }
     .catalog-editor-panel--schedule {
-      max-width: 920px;
+      max-width: none;
+      width: 100%;
+      height: 100%;
+      max-height: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .catalog-editor-panel--schedule .catalog-editor-footer {
+      padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     }
     .schedule-year-controls {
       display: flex;
@@ -2743,8 +2760,8 @@
     }
     .schedule-year-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
     }
     .schedule-month-card {
       display: flex;
@@ -2970,9 +2987,6 @@
     @media (max-width: 480px) {
       .schedule-year-grid {
         grid-template-columns: 1fr;
-      }
-      .catalog-editor-panel--schedule {
-        max-width: 100%;
       }
       .schedule-month-card {
         min-height: 0;
@@ -8119,7 +8133,7 @@
         background: var(--surface);
       }
 
-      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule),
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel,
       body.gazprom-mobile-shell .catalog-form-overlay .catalog-form-dialog {
         width: 100%;
         max-width: 100%;
@@ -8132,8 +8146,16 @@
         box-shadow: none;
       }
 
-      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule) {
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel {
         padding: 0;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-root:has(.catalog-editor-panel--schedule):not([hidden]),
+      html.gazprom-scroll-lock body.gazprom-mobile-shell .catalog-editor-root:has(.catalog-editor-panel--schedule):not([hidden]) {
+        align-items: stretch;
+        justify-content: stretch;
+        padding: env(safe-area-inset-top, 0px) 0 0 0;
+        background: var(--surface);
       }
 
       body.gazprom-mobile-shell .catalog-form-overlay .catalog-form-dialog {
@@ -8215,10 +8237,23 @@
         );
       }
 
-      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule),
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel,
       body.gazprom-mobile-shell .catalog-form-overlay .catalog-form-dialog {
         height: 100%;
         max-height: none;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-panel--schedule .catalog-editor-body {
+        padding: 12px 14px 16px;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-panel--schedule .schedule-year-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-panel--schedule .schedule-month-card {
+        min-height: 0;
       }
 
       /* График: заголовок и «×» в первой строке, выбор года — отдельно ниже (без наложения) */
@@ -8658,8 +8693,13 @@
         max-height: min(88dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 12px));
       }
 
-      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel:not(.catalog-editor-panel--schedule),
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel,
       body.gazprom-mobile-shell .catalog-form-overlay .catalog-form-dialog {
+        height: 100%;
+        max-height: none;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-panel--schedule {
         height: 100%;
         max-height: none;
       }
