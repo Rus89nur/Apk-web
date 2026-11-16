@@ -249,30 +249,66 @@ const ScheduleEditor = (() => {
     });
   }
 
+  function factDateIso(item) {
+    const plan = getPlanDate(item);
+    if (plan) {
+      const d = new Date(plan);
+      if (!Number.isNaN(d.getTime())) return d.toISOString();
+    }
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0).toISOString();
+  }
+
+  async function toggleItemDone(itemId, year, month) {
+    const fresh = await GazpromStore.get();
+    const item = (fresh.scheduleItems || []).find((x) => x?.id === itemId);
+    if (!item) {
+      GazpromToast.error('Запись не найдена');
+      return;
+    }
+    const wasDone = !!item.actualDate;
+    item.actualDate = wasDone ? null : factDateIso(item);
+    await GazpromStore.set(fresh);
+    GazpromStore.invalidateCache();
+    await GazpromUI.refreshAll();
+    GazpromToast.success(wasDone ? 'Отметка снята' : 'Отмечено выполненным');
+    showMonthDetail(await GazpromStore.get(), year, month);
+  }
+
   function showMonthDetail(catalog, year, month) {
     const root = ensureRoot();
     root.hidden = false;
     addEscListener();
     const monthItems = itemsForMonth(catalog, year, month);
-    const monthName = MONTH_NAMES[month - 1];
+    const monthName = capitalizeMonth(MONTH_NAMES[month - 1]);
+    const doneCount = monthItems.filter((i) => i?.actualDate).length;
+    const kpiText = monthItems.length
+      ? `${monthItems.length} проверки · ${doneCount} выполнено`
+      : 'Нет запланированных проверок';
 
-    const rows = monthItems
+    const cards = monthItems
       .map((item) => {
         const title = AktUtils.escapeHtml(getItemTitle(item, catalog));
         const plan = getPlanDate(item);
         const fact = item.actualDate;
-        const statusClass = fact ? 'badge-green' : 'badge-orange';
-        const statusText = fact ? 'Выполнено' : 'Запланировано';
-        return `<tr data-id="${item.id}">
-          <td>${title}</td>
-          <td>${plan ? AktUtils.formatDateShort(plan) : '—'}</td>
-          <td>${fact ? AktUtils.formatDateShort(fact) : '—'}</td>
-          <td><span class="badge ${statusClass}">${statusText}</span></td>
-          <td class="schedule-row-actions">
-            <button type="button" class="btn-ghost btn-sm" data-edit="${item.id}" aria-label="Изменить">✏️</button>
-            <button type="button" class="btn-ghost btn-sm modal-btn-danger" data-del="${item.id}" aria-label="Удалить">×</button>
-          </td>
-        </tr>`;
+        const done = !!fact;
+        const planStr = plan ? AktUtils.formatDateShort(plan) : '—';
+        const factStr = fact ? AktUtils.formatDateShort(fact) : 'нет';
+        return `
+          <article class="schedule-item-card${done ? ' schedule-item-card--done' : ''}" data-id="${item.id}">
+            <div class="schedule-item-card__top">
+              <strong class="schedule-item-card__title">${title}</strong>
+              <span class="schedule-item-card__badge${done ? ' is-done' : ''}">${done ? 'Выполнено' : 'План'}</span>
+            </div>
+            <p class="schedule-item-card__meta">План ${planStr} · Факт ${factStr}</p>
+            <div class="schedule-item-card__actions">
+              <button type="button" class="schedule-done-btn${done ? ' is-on' : ''}"
+                      data-toggle-done="${item.id}"
+                      aria-pressed="${done ? 'true' : 'false'}">Выполнено</button>
+              <button type="button" class="btn-ghost btn-sm" data-edit="${item.id}">Изменить</button>
+              <button type="button" class="btn-ghost btn-sm modal-btn-danger" data-del="${item.id}" aria-label="Удалить">×</button>
+            </div>
+          </article>`;
       })
       .join('');
 
@@ -284,19 +320,11 @@ const ScheduleEditor = (() => {
           <h3 class="schedule-header-title">${monthName} ${year}</h3>
           <button type="button" class="modal-close schedule-header-close" data-close aria-label="Закрыть">×</button>
         </div>
-        <div class="catalog-editor-body">
-          <table class="list-table schedule-detail-table">
-            <thead>
-              <tr>
-                <th>Объект</th>
-                <th>План</th>
-                <th>Факт</th>
-                <th>Статус</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>${rows || '<tr><td colspan="5">Нет запланированных проверок</td></tr>'}</tbody>
-          </table>
+        <div class="catalog-editor-body schedule-month-body">
+          <div class="schedule-year-kpi" aria-label="Итог месяца">${AktUtils.escapeHtml(kpiText)}</div>
+          <div class="schedule-item-list">
+            ${cards || '<p class="schedule-item-empty">Нет проверок. Нажмите «Добавить объект».</p>'}
+          </div>
         </div>
         <div class="catalog-editor-footer">
           <button type="button" class="btn-primary" data-add>+ Добавить объект</button>
@@ -313,6 +341,14 @@ const ScheduleEditor = (() => {
     root.querySelector('[data-add]')?.addEventListener('click', async () => {
       const fresh = await GazpromStore.get();
       openObjectPicker(fresh, { year, month });
+    });
+
+    root.querySelectorAll('[data-toggle-done]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        toggleItemDone(btn.dataset.toggleDone, year, month).catch((err) => {
+          GazpromToast.error(err?.message || 'Ошибка');
+        });
+      });
     });
 
     root.querySelectorAll('[data-edit]').forEach((btn) => {
