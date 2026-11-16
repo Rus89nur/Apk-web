@@ -538,13 +538,22 @@ const ScheduleEditor = (() => {
     const objects = collectObjects(catalog);
     const { year, month } = context;
     const monthName = capitalizeMonth(MONTH_NAMES[month - 1]);
-    const monthItems = itemsForMonth(catalog, year, month);
-    const selectedByObjectId = new Map();
-    monthItems.forEach((item) => {
+    // Уже в графике года — чтобы в любом месяце сверху оставались свободные объекты
+    const inYearByObjectId = new Map();
+    itemsForYear(catalog, year).forEach((item) => {
       const id = item?.objectCheck?.id;
       if (id == null || id === '') return;
       const key = String(id);
-      if (!selectedByObjectId.has(key)) selectedByObjectId.set(key, item);
+      if (inYearByObjectId.has(key)) return;
+      const itemMonth = getItemMonth(item);
+      inYearByObjectId.set(key, {
+        item,
+        month: itemMonth,
+        inMonth: itemMonth === month,
+        monthLabel: itemMonth >= 1 && itemMonth <= 12
+          ? capitalizeMonth(MONTH_NAMES[itemMonth - 1])
+          : 'В графике',
+      });
     });
     let searchQuery = '';
 
@@ -595,14 +604,21 @@ const ScheduleEditor = (() => {
       openForm(fresh, item, { year, month });
     };
 
-    const objectCardHtml = (o, selected) => {
+    const objectCardHtml = (o, meta) => {
       const title = AktUtils.escapeHtml(o.title || '—');
       const sub = o.subTitle && o.subTitle !== o.title
         ? `<span class="schedule-object-card__sub">${AktUtils.escapeHtml(o.subTitle)}</span>`
         : '';
+      const selected = Boolean(meta);
       const selectedClass = selected ? ' schedule-object-card--selected' : '';
-      const mark = selected ? '<span class="schedule-object-card__mark">В графике</span>' : '';
-      return `<button type="button" class="schedule-object-card${selectedClass}" data-object-id="${o.id}" data-selected="${selected ? '1' : '0'}" role="listitem">
+      const markText = meta
+        ? (meta.inMonth ? 'В графике' : meta.monthLabel)
+        : '';
+      const mark = selected
+        ? `<span class="schedule-object-card__mark">${AktUtils.escapeHtml(markText)}</span>`
+        : '';
+      const inMonth = meta?.inMonth ? '1' : '0';
+      return `<button type="button" class="schedule-object-card${selectedClass}" data-object-id="${o.id}" data-selected="${selected ? '1' : '0'}" data-in-month="${inMonth}" role="listitem">
         <span class="schedule-object-card__main">
           <strong class="schedule-object-card__title">${title}</strong>
           ${sub}
@@ -624,14 +640,14 @@ const ScheduleEditor = (() => {
         return;
       }
 
-      const available = filteredObjects.filter((o) => !selectedByObjectId.has(String(o.id)));
-      const selected = filteredObjects.filter((o) => selectedByObjectId.has(String(o.id)));
+      const available = filteredObjects.filter((o) => !inYearByObjectId.has(String(o.id)));
+      const selected = filteredObjects.filter((o) => inYearByObjectId.has(String(o.id)));
 
       let html = '';
       if (available.length) {
-        html += available.map((o) => objectCardHtml(o, false)).join('');
+        html += available.map((o) => objectCardHtml(o, null)).join('');
       } else if (selected.length) {
-        html += '<p class="schedule-picker-empty">Все объекты уже в графике этого месяца</p>';
+        html += '<p class="schedule-picker-empty">Все объекты уже есть в графике этого года</p>';
       }
 
       if (available.length && selected.length) {
@@ -639,7 +655,7 @@ const ScheduleEditor = (() => {
       }
 
       if (selected.length) {
-        html += selected.map((o) => objectCardHtml(o, true)).join('');
+        html += selected.map((o) => objectCardHtml(o, inYearByObjectId.get(String(o.id)))).join('');
       }
 
       objectHost.innerHTML = html;
@@ -647,7 +663,8 @@ const ScheduleEditor = (() => {
       objectHost.querySelectorAll('[data-object-id]').forEach((card) => {
         card.addEventListener('click', () => {
           const id = card.dataset.objectId;
-          const go = card.dataset.selected === '1' ? editSelected(id) : pickObject(id);
+          const inMonth = card.dataset.inMonth === '1';
+          const go = inMonth ? editSelected(id) : pickObject(id);
           go.catch((err) => GazpromToast.error(err?.message || 'Ошибка'));
         });
       });
