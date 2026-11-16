@@ -657,7 +657,8 @@ const WizardModals = (() => {
       const list = renderPlainList(ViolationSearch.filterRegistry(items, ''));
       const emptyList = `<div class="viol-registry-empty">Реестр нарушений пуст</div>`;
       if (!freq.length && !recent.length) return list || emptyList;
-      return `${renderFreqBlock(freq)}${renderRecentBlock(recent)}${list || emptyList}`;
+      const main = list || emptyList;
+      return `${renderFreqBlock(freq)}${renderRecentBlock(recent)}<div class="mv-registry-list-section">${main}</div>`;
     }
 
     function renderRanked(ranked) {
@@ -895,9 +896,13 @@ const WizardModals = (() => {
     }
 
     function bindFieldChangeWatchers() {
-      ['mvTitle', 'mvUrl', 'mvVid', 'mvFormula'].forEach((id) => {
+      ['mvTitle', 'mvUrl', 'mvFormula'].forEach((id) => {
         document.getElementById(id)?.addEventListener('input', updateSaveToRegistryHint);
         document.getElementById(id)?.addEventListener('change', updateSaveToRegistryHint);
+      });
+      document.getElementById('mvVid')?.addEventListener('change', () => {
+        updateSaveToRegistryHint();
+        void syncVidToRegistryIfLinked();
       });
     }
 
