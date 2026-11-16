@@ -3167,12 +3167,8 @@
       line-height: 1.35;
       color: var(--text-muted);
     }
-    .schedule-object-picker__foot {
-      flex-shrink: 0;
-      margin-top: 0;
-      padding: 12px 16px max(12px, env(safe-area-inset-bottom, 0px));
-      border-top: 1px solid var(--border);
-      background: var(--surface);
+    .schedule-object-picker .schedule-picker-catalog {
+      padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
     }
     .schedule-picker-list {
       overflow-y: auto;

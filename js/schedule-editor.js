@@ -557,9 +557,6 @@ const ScheduleEditor = (() => {
              aria-label="Поиск объекта в справочнике"></p>
         </div>
         <div class="schedule-picker-catalog" id="scheduleObjectChips" role="list" aria-label="Объекты проверки"></div>
-        <div class="catalog-form-actions schedule-object-picker__foot">
-          <button type="button" class="btn-ghost" data-cancel>Отмена</button>
-        </div>
       </div>
     `);
 
