@@ -563,23 +563,12 @@ const EliminationEditor = (() => {
       detailState.pickedDone.clear();
       detailState.pickedExtend.clear();
       renderDetailViolations();
-      updateDetailHeader();
       updateDetailFooter();
     }
   }
 
-  function formatDeadlineLong(iso) {
-    if (!iso) return null;
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toLocaleDateString('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  }
-
   function closeDetail() {
+    document.removeEventListener('keydown', onDetailKey);
     void flushPersist();
     if (document.querySelector('.elimination-detail-overlay')) {
       GazpromMobileOverlay.unlock();
@@ -611,6 +600,58 @@ const EliminationEditor = (() => {
     return [...detailPickSet()].filter((id) => open.has(id));
   }
 
+  function onDetailKey(e) {
+    if (e.key !== 'Escape') return;
+    if (!document.querySelector('.elimination-detail-overlay')) return;
+    if (detailState?.screen && detailState.screen !== 'list') {
+      showWorkScreen('list');
+      return;
+    }
+    closeDetail();
+  }
+
+  function detailRowMeta(el, akt, done, overdue) {
+    if (done) {
+      const when = el?.eliminationDate || el?.eliminatedAt;
+      return {
+        text: when ? `Устранено · ${AktUtils.formatDateShort(when)}` : 'Устранено',
+        cls: 'elim-work__meta elim-work__meta--ok',
+      };
+    }
+    const deadline = el ? eliminationDeadline(el, akt) : null;
+    if (!deadline) return { text: 'Срок не установлен', cls: 'elim-work__meta' };
+    if (overdue) {
+      return {
+        text: `Просрочено · ${AktUtils.formatDateShort(deadline)}`,
+        cls: 'elim-work__meta elim-work__meta--bad',
+      };
+    }
+    return { text: `Срок: ${AktUtils.formatDateShort(deadline)}`, cls: 'elim-work__meta' };
+  }
+
+  function deadlineHistoryLines(el, akt) {
+    const lines = [];
+    const extensions = AktUtils.extensionDeadlineHistory(el?.deadlineHistory);
+    const original = el?.originalEliminationDate;
+    const current = el ? eliminationDeadline(el, akt) : AktUtils.getEliminationDeadline(akt);
+    const listed = (iso) => lines.some((line) => AktUtils.sameDeadlineDay(line.iso, iso));
+    if (original) {
+      lines.push({ iso: original, date: AktUtils.formatDateShort(original), note: 'Исходный срок' });
+    }
+    extensions.forEach((h) => {
+      if (!h?.deadlineDate || listed(h.deadlineDate)) return;
+      lines.push({
+        iso: h.deadlineDate,
+        date: AktUtils.formatDateShort(h.deadlineDate),
+        note: h.reason || 'Продление',
+      });
+    });
+    if (current && !listed(current)) {
+      lines.push({ iso: current, date: AktUtils.formatDateShort(current), note: 'Текущий срок' });
+    }
+    return lines;
+  }
+
   function renderDetailViolations() {
     if (!detailState) return;
     const { violations, akt, mode } = detailState;
@@ -622,77 +663,48 @@ const EliminationEditor = (() => {
       : violations;
 
     if (!toShow.length) {
-      body.innerHTML = '<p class="elimination-empty" role="status">Открытых нарушений нет.</p>';
+      body.innerHTML = '<p class="elim-work__hint" role="status">Открытых нарушений нет.</p>';
       return;
     }
 
     body.innerHTML = toShow
-      .map((v, index) => {
+      .map((v) => {
         const el = detailElimination(v.id);
         const done = Boolean(el?.isEliminated);
         const overdue = el && isEliminationOverdue(el, akt);
-        let titleClass = 'elimination-violation-row__title';
-        if (done) titleClass += ' elimination-violation-row__title--done';
-        else if (overdue) titleClass += ' elimination-violation-row__title--overdue';
-        const deadline = el ? eliminationDeadline(el, akt) : null;
-        const deadlineLine = deadline
-          ? `<div class="elimination-violation-row__deadline${overdue && !done ? ' elimination-violation-row__deadline--overdue' : ''}">Срок: ${AktUtils.formatDateShort(deadline)}${overdue && !done ? '<span class="elimination-violation-row__overdue-badge">ПРОСРОЧЕНО</span>' : ''}</div>`
-          : '<div class="elimination-violation-row__deadline">Срок не установлен</div>';
         const pressed = done || pickSet.has(v.id);
-        const switchClass = done ? 'elim-switch is-done' : 'elim-switch';
+        const switchClass = done ? 'elim-work__switch is-done' : 'elim-work__switch';
         const switchLabel = done
           ? `Снять отметку: ${v.title || ''}`
           : `Ползунок: ${v.title || ''}`;
+        const meta = detailRowMeta(el, akt, done, overdue);
 
-        return `<div class="elimination-violation-row" data-violation-id="${AktUtils.escapeHtml(v.id)}">
-          <button type="button" class="elimination-violation-row__open" data-elim-history="${AktUtils.escapeHtml(v.id)}">
-            <span class="elimination-violation-row__head">
-              <span class="elimination-violation-row__num">${index + 1}.</span>
-              <span class="${titleClass}">${AktUtils.escapeHtml(v.title)}</span>
-            </span>
-            <span class="elimination-violation-row__mesto">Место: ${AktUtils.escapeHtml(v.mesto || '—')}</span>
-            ${deadlineLine}
+        return `<div class="elim-work__line">
+          <button type="button" class="elim-work__main" data-elim-history="${AktUtils.escapeHtml(v.id)}">
+            <span class="elim-work__title">${AktUtils.escapeHtml(v.title)}</span>
+            <span class="${meta.cls}">${AktUtils.escapeHtml(meta.text)}</span>
           </button>
           <button type="button" class="${switchClass}" data-elim-switch="${AktUtils.escapeHtml(v.id)}" aria-pressed="${pressed ? 'true' : 'false'}" aria-label="${AktUtils.escapeHtml(switchLabel)}">
-            <span class="elim-switch__knob" aria-hidden="true"></span>
+            <span class="elim-work__knob" aria-hidden="true"></span>
           </button>
         </div>`;
       })
       .join('');
   }
 
-  function updateDetailHeader() {
+  function showWorkScreen(name) {
     if (!detailState) return;
-    const { item, eliminations, akt } = detailState;
-    const eliminated = eliminations.filter((e) => e.isEliminated).length;
-    const total = (akt.violations || []).length;
-    const allDone = total > 0 && eliminated === total;
-    const hasOverdue = eliminations.some((e) => isEliminationOverdue(e, akt));
+    detailState.screen = name;
+    document.querySelectorAll('[data-elim-screen]').forEach((section) => {
+      section.hidden = section.dataset.elimScreen !== name;
+    });
+  }
 
-    const countEl = document.getElementById('elimDetailCount');
-    if (countEl) {
-      countEl.textContent = `${eliminated}/${total} ${violationsLabel(total)} устранено`;
-      countEl.className = 'elimination-detail-count';
-      if (allDone) countEl.classList.add('elimination-detail-count--done');
-      else if (hasOverdue) countEl.classList.add('elimination-detail-count--overdue');
-    }
-
-    const deadlines = eliminations
-      .filter((e) => !e.isEliminated)
-      .map((e) => eliminationDeadline(e, akt))
-      .filter(Boolean);
-    let earliest = minDeadline(deadlines) || item.earliestDeadline;
-
-    const deadlineEl = document.getElementById('elimDetailDeadline');
-    if (deadlineEl) {
-      const long = formatDeadlineLong(earliest);
-      deadlineEl.textContent = long
-        ? `Срок устранения: ${long}`
-        : 'Срок устранения не установлен';
-      deadlineEl.className = 'elimination-detail-deadline';
-      if (allDone) deadlineEl.classList.add('elimination-detail-deadline--done');
-      else if (hasOverdue) deadlineEl.classList.add('elimination-detail-deadline--overdue');
-    }
+  function setListError(message) {
+    const el = document.getElementById('elimWorkError');
+    if (!el) return;
+    el.hidden = !message;
+    el.textContent = message || '';
   }
 
   function updateDetailFooter() {
@@ -701,7 +713,7 @@ const EliminationEditor = (() => {
     const open = detailOpenIds();
     const picked = detailPickedOpenIds();
     const countEl = document.getElementById('elimPickedCount');
-    if (countEl) countEl.textContent = `Включено: ${picked.length}`;
+    if (countEl) countEl.textContent = String(picked.length);
     const hint = document.getElementById('elimModeHint');
     if (hint) {
       hint.textContent = extend
@@ -710,10 +722,10 @@ const EliminationEditor = (() => {
     }
     const apply = document.getElementById('elimDetailApply');
     if (apply) {
-      apply.hidden = open.length === 0;
       apply.textContent = extend ? 'Продлить' : 'Устранено';
-      apply.classList.toggle('elim-btn-mark-all', !extend);
-      apply.classList.toggle('elim-btn-extend', extend);
+      apply.className = extend
+        ? 'elim-work__btn elim-work__btn--fill'
+        : 'elim-work__btn elim-work__btn--ok';
     }
     const allBtn = document.getElementById('elimDetailToggleAll');
     if (allBtn) {
@@ -732,6 +744,7 @@ const EliminationEditor = (() => {
     extBtn?.classList.toggle('is-on', mode === 'extend');
     doneBtn?.setAttribute('aria-pressed', mode === 'done' ? 'true' : 'false');
     extBtn?.setAttribute('aria-pressed', mode === 'extend' ? 'true' : 'false');
+    setListError('');
     renderDetailViolations();
     updateDetailFooter();
   }
@@ -745,6 +758,7 @@ const EliminationEditor = (() => {
       if (allOn) set.delete(id);
       else set.add(id);
     });
+    setListError('');
     renderDetailViolations();
     updateDetailFooter();
   }
@@ -769,6 +783,8 @@ const EliminationEditor = (() => {
       violations: [...(akt.violations || [])],
       eliminations,
       mode: 'done',
+      screen: 'list',
+      histViolationId: null,
       pickedDone: new Set(),
       pickedExtend: new Set(),
     };
@@ -779,55 +795,135 @@ const EliminationEditor = (() => {
     const overlay = document.createElement('div');
     overlay.className = 'elimination-detail-overlay';
     overlay.innerHTML = `
-      <div class="elimination-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="elimDetailTitle">
-        <div class="elimination-detail-grabber" aria-hidden="true"></div>
-        <div class="elimination-detail-header">
-          <div class="elimination-detail-top">
-            <div>
-              <h3 id="elimDetailTitle">Акт №${AktUtils.escapeHtml(item.aktNumber)}</h3>
-              <div class="elimination-detail-meta">${AktUtils.escapeHtml(org)}</div>
-              <div class="elimination-detail-meta">${AktUtils.escapeHtml(objectTitle)}</div>
+      <div class="elimination-detail-sheet elim-work" role="dialog" aria-modal="true" aria-labelledby="elimDetailTitle">
+        <section class="elim-work__screen" data-elim-screen="list">
+          <header class="elim-work__head">
+            <div class="elim-work__top">
+              <div>
+                <p class="elim-work__kicker">Акт № ${AktUtils.escapeHtml(item.aktNumber)}</p>
+                <h3 id="elimDetailTitle">${AktUtils.escapeHtml(org)}</h3>
+                <p class="elim-work__sub">${AktUtils.escapeHtml(objectTitle)}</p>
+              </div>
+              <button type="button" class="elim-work__link" id="elimDetailHistory">История</button>
             </div>
-            <button type="button" class="btn-ghost btn-sm" id="elimDetailHistory">История</button>
+            <div class="elim-work__seg" role="group" aria-label="Режим">
+              <button type="button" id="elimModeDone" class="is-on" aria-pressed="true">Устранено</button>
+              <button type="button" id="elimModeExtend" aria-pressed="false">Продлить</button>
+            </div>
+          </header>
+          <div class="elim-work__body">
+            <p class="elim-work__hint" id="elimModeHint"></p>
+            <div class="elim-work__lines" id="elimDetailBody"></div>
+            <p class="elim-work__error" id="elimWorkError" hidden>Включите ползунок хотя бы у одного нарушения.</p>
           </div>
-          <div class="elimination-detail-count" id="elimDetailCount"></div>
-          <div class="elimination-detail-deadline" id="elimDetailDeadline"></div>
-          <div class="elim-mode-seg" role="group" aria-label="Режим">
-            <button type="button" id="elimModeDone" class="is-on" aria-pressed="true">Устранено</button>
-            <button type="button" id="elimModeExtend" aria-pressed="false">Продлить</button>
+          <footer class="elim-work__foot">
+            <p class="elim-work__count" aria-live="polite">Включено: <span id="elimPickedCount">0</span></p>
+            <button type="button" class="elim-work__btn elim-work__btn--ok" id="elimDetailApply">Устранено</button>
+            <button type="button" class="elim-work__btn elim-work__btn--ghost" id="elimDetailToggleAll">Отметить все</button>
+          </footer>
+        </section>
+        <section class="elim-work__screen" data-elim-screen="fact" hidden>
+          <header class="elim-work__head">
+            <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+            <h3>Дата факта</h3>
+            <p class="elim-work__sub" id="elimFactSub">Для включённых ползунков</p>
+          </header>
+          <div class="elim-work__body">
+            <label class="elim-work__label" for="elimFactDate">Когда устранили</label>
+            <input class="elim-work__input" id="elimFactDate" type="date">
+            <p class="elim-work__error" id="elimFactErr" hidden>Укажите дату факта.</p>
           </div>
-          <p class="elim-mode-hint" id="elimModeHint"></p>
-        </div>
-        <div class="elimination-detail-body" id="elimDetailBody"></div>
-        <div class="elimination-detail-footer">
-          <p class="elim-picked-count" id="elimPickedCount" aria-live="polite">Включено: 0</p>
-          <button type="button" class="elim-btn-mark-all" id="elimDetailApply">Устранено</button>
-          <button type="button" class="btn-secondary" id="elimDetailToggleAll">Отметить все</button>
-          <button type="button" class="btn-ghost" id="elimDetailClose">Закрыть</button>
-        </div>
+          <footer class="elim-work__foot">
+            <button type="button" class="elim-work__btn elim-work__btn--ok" id="elimFactSave">Сохранить</button>
+          </footer>
+        </section>
+        <section class="elim-work__screen" data-elim-screen="date" hidden>
+          <header class="elim-work__head">
+            <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+            <h3>Новый срок</h3>
+            <p class="elim-work__sub" id="elimDateSub">Для включённых ползунков</p>
+          </header>
+          <div class="elim-work__body">
+            <label class="elim-work__label" for="elimExtendDate">Дата</label>
+            <input class="elim-work__input" id="elimExtendDate" type="date">
+            <label class="elim-work__label" for="elimExtendReason">Причина</label>
+            <input class="elim-work__input" id="elimExtendReason" type="text" placeholder="Ожидание материалов">
+            <p class="elim-work__error" id="elimDateErr" hidden>Укажите новый срок.</p>
+          </div>
+          <footer class="elim-work__foot">
+            <button type="button" class="elim-work__btn elim-work__btn--fill" id="elimDateSave">Продлить</button>
+          </footer>
+        </section>
+        <section class="elim-work__screen" data-elim-screen="hist" hidden>
+          <header class="elim-work__head">
+            <button type="button" class="elim-work__link" data-elim-back>Назад</button>
+            <h3 id="elimHistTitle">История сроков</h3>
+            <p class="elim-work__sub" id="elimHistSub">Все нарушения акта</p>
+          </header>
+          <div class="elim-work__body" id="elimHistBody"></div>
+          <footer class="elim-work__foot" id="elimUnmarkFoot" hidden>
+            <button type="button" class="elim-work__btn elim-work__btn--ghost" id="elimUnmark">Снять отметку</button>
+          </footer>
+        </section>
       </div>
     `;
     document.body.appendChild(overlay);
     GazpromMobileOverlay.lock();
+    document.addEventListener('keydown', onDetailKey);
 
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeDetail();
     });
-    overlay.querySelector('#elimDetailClose')?.addEventListener('click', closeDetail);
+    overlay.querySelectorAll('[data-elim-back]').forEach((btn) => {
+      btn.addEventListener('click', () => showWorkScreen('list'));
+    });
     overlay.querySelector('#elimModeDone')?.addEventListener('click', () => setDetailMode('done'));
     overlay.querySelector('#elimModeExtend')?.addEventListener('click', () => setDetailMode('extend'));
     overlay.querySelector('#elimDetailHistory')?.addEventListener('click', () => showDeadlineHistory());
     overlay.querySelector('#elimDetailToggleAll')?.addEventListener('click', toggleAllDetailPicks);
     overlay.querySelector('#elimDetailApply')?.addEventListener('click', () => {
       if (!detailPickedOpenIds().length) {
-        GazpromToast.error('Включите ползунок хотя бы у одного нарушения');
+        setListError('Включите ползунок хотя бы у одного нарушения.');
         return;
       }
+      setListError('');
       if (detailState?.mode === 'extend') showExtendDateDialog();
       else showFactDateDialog();
     });
+    overlay.querySelector('#elimFactSave')?.addEventListener('click', async () => {
+      const dateVal = document.getElementById('elimFactDate')?.value;
+      const err = document.getElementById('elimFactErr');
+      if (!dateVal) {
+        if (err) {
+          err.hidden = false;
+          err.textContent = 'Укажите дату факта.';
+        }
+        return;
+      }
+      if (err) err.hidden = true;
+      await markPickedEliminated(new Date(dateVal + 'T12:00:00').toISOString());
+    });
+    overlay.querySelector('#elimDateSave')?.addEventListener('click', async () => {
+      const dateVal = document.getElementById('elimExtendDate')?.value;
+      const err = document.getElementById('elimDateErr');
+      if (!dateVal) {
+        if (err) {
+          err.hidden = false;
+          err.textContent = 'Укажите новый срок.';
+        }
+        return;
+      }
+      if (err) err.hidden = true;
+      const reason = document.getElementById('elimExtendReason')?.value?.trim() || null;
+      await extendDeadlinesForSelected(new Date(dateVal + 'T12:00:00').toISOString(), reason);
+    });
+    overlay.querySelector('#elimUnmark')?.addEventListener('click', async () => {
+      const id = detailState?.histViolationId;
+      if (!id) return;
+      await clearElimination(id);
+      showWorkScreen('list');
+    });
 
-    updateDetailHeader();
     updateDetailFooter();
     renderDetailViolations();
 
@@ -849,90 +945,36 @@ const EliminationEditor = (() => {
       const set = detailPickSet();
       if (set.has(vid)) set.delete(vid);
       else set.add(vid);
+      setListError('');
       renderDetailViolations();
       updateDetailFooter();
     });
   }
 
   function showExtendDateDialog() {
-    const overlay = document.createElement('div');
-    overlay.className = 'catalog-form-overlay catalog-form-overlay--elevated';
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 30);
-    overlay.innerHTML = `
-      <div class="catalog-form-dialog card">
-        <h3>Новый срок устранения</h3>
-        <div class="form-group">
-          <label>Дата</label>
-          <input type="date" class="form-control" id="elimExtendDate" value="${AktUtils.toDateInputValue(defaultDate.toISOString())}">
-        </div>
-        <div class="form-group">
-          <label>Причина (необязательно)</label>
-          <input type="text" class="form-control" id="elimExtendReason" placeholder="Причина продления">
-        </div>
-        <div class="catalog-form-actions">
-          <button type="button" class="btn-ghost" data-cancel>Отмена</button>
-          <button type="button" class="btn-primary" data-save>Продлить</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    GazpromMobileOverlay.lock();
-    const remove = () => {
-      overlay.remove();
-      GazpromMobileOverlay.unlock();
-    };
-    overlay.querySelector('[data-cancel]').onclick = remove;
-    overlay.querySelector('[data-save]').onclick = async () => {
-      const dateVal = document.getElementById('elimExtendDate')?.value;
-      if (!dateVal) {
-        GazpromToast.error('Укажите дату');
-        return;
-      }
-      const reason = document.getElementById('elimExtendReason')?.value?.trim() || null;
-      const newIso = new Date(dateVal + 'T12:00:00').toISOString();
-      const ok = await extendDeadlinesForSelected(newIso, reason);
-      if (ok) remove();
-    };
+    const sub = document.getElementById('elimDateSub');
+    if (sub) sub.textContent = `Для включённых: ${detailPickedOpenIds().length}`;
+    const err = document.getElementById('elimDateErr');
+    if (err) err.hidden = true;
+    const input = document.getElementById('elimExtendDate');
+    if (input) {
+      const next = new Date();
+      next.setDate(next.getDate() + 30);
+      input.value = AktUtils.toDateInputValue(next.toISOString());
+    }
+    const reason = document.getElementById('elimExtendReason');
+    if (reason) reason.value = '';
+    showWorkScreen('date');
   }
 
   function showFactDateDialog() {
-    const overlay = document.createElement('div');
-    overlay.className = 'catalog-form-overlay catalog-form-overlay--elevated';
-    overlay.innerHTML = `
-      <div class="catalog-form-dialog card">
-        <h3>Дата факта</h3>
-        <p class="elim-mode-hint">Для включённых: ${detailPickedOpenIds().length}</p>
-        <div class="form-group">
-          <label>Когда устранили</label>
-          <input type="date" class="form-control" id="elimFactDate" value="${AktUtils.toDateInputValue(new Date().toISOString())}">
-        </div>
-        <div class="catalog-form-actions">
-          <button type="button" class="btn-ghost" data-cancel>Отмена</button>
-          <button type="button" class="btn-primary" data-save>Сохранить</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    GazpromMobileOverlay.lock();
-    const remove = () => {
-      overlay.remove();
-      GazpromMobileOverlay.unlock();
-    };
-    overlay.querySelector('[data-cancel]').onclick = remove;
-    overlay.addEventListener('click', (ev) => {
-      if (ev.target === overlay) remove();
-    });
-    overlay.querySelector('[data-save]').onclick = async () => {
-      const dateVal = document.getElementById('elimFactDate')?.value;
-      if (!dateVal) {
-        GazpromToast.error('Укажите дату факта');
-        return;
-      }
-      const newIso = new Date(dateVal + 'T12:00:00').toISOString();
-      const ok = await markPickedEliminated(newIso);
-      if (ok) remove();
-    };
+    const sub = document.getElementById('elimFactSub');
+    if (sub) sub.textContent = `Для включённых: ${detailPickedOpenIds().length}`;
+    const err = document.getElementById('elimFactErr');
+    if (err) err.hidden = true;
+    const input = document.getElementById('elimFactDate');
+    if (input) input.value = AktUtils.toDateInputValue(new Date().toISOString());
+    showWorkScreen('fact');
   }
 
   async function extendDeadlinesForSelected(newIso, reason) {
@@ -953,7 +995,7 @@ const EliminationEditor = (() => {
       return {
         ...e,
         newEliminationDate: newIso,
-        originalEliminationDate: newIso,
+        originalEliminationDate: e.originalEliminationDate || prevDeadline,
         deadlineHistory: [
           ...history,
           {
@@ -968,7 +1010,11 @@ const EliminationEditor = (() => {
     });
 
     if (extendedCount === 0) {
-      GazpromToast.error('Новый срок совпадает с текущим');
+      const err = document.getElementById('elimDateErr');
+      if (err) {
+        err.hidden = false;
+        err.textContent = 'Новый срок совпадает с текущим.';
+      }
       return false;
     }
 
@@ -978,65 +1024,47 @@ const EliminationEditor = (() => {
       aktIdMatch(e.aktId, akt.id)
     );
     renderDetailViolations();
-    updateDetailHeader();
     updateDetailFooter();
     refreshEliminationLight(catalog, akt.id);
+    showWorkScreen('list');
     GazpromToast.success('Сроки продлены');
     return true;
   }
 
   function showDeadlineHistory(violationId) {
     if (!detailState) return;
-    const entries = [];
-    for (const e of detailState.eliminations) {
-      if (violationId && e.violationId !== violationId) continue;
-      for (const h of AktUtils.extensionDeadlineHistory(e.deadlineHistory)) {
-        entries.push({
-          violation: e.violationTitle,
-          date: h.deadlineDate,
-          changeDate: h.changeDate || h.changedAt,
-          reason: h.reason,
-        });
-      }
+    detailState.histViolationId = violationId || null;
+    const { violations, akt, eliminations } = detailState;
+    const one = violationId ? violations.find((v) => v.id === violationId) : null;
+    const title = document.getElementById('elimHistTitle');
+    const sub = document.getElementById('elimHistSub');
+    if (title) title.textContent = one?.title || 'История сроков';
+    if (sub) sub.textContent = one ? 'Сроки этого нарушения' : 'Все нарушения акта';
+
+    const list = one ? [one] : violations;
+    const body = document.getElementById('elimHistBody');
+    if (body) {
+      body.innerHTML = list
+        .map((v) => {
+          const el = eliminations.find((e) => e.violationId === v.id);
+          const lines = deadlineHistoryLines(el, akt);
+          const items = lines.length
+            ? lines
+                .map(
+                  (line) =>
+                    `<li><span>${AktUtils.escapeHtml(line.date)}</span><span>${AktUtils.escapeHtml(line.note)}</span></li>`
+                )
+                .join('')
+            : '<li><span>—</span><span>Сроков нет</span></li>';
+          return `<article class="elim-work__block"><h3>${AktUtils.escapeHtml(v.title || 'Нарушение')}</h3><ol class="elim-work__ol">${items}</ol></article>`;
+        })
+        .join('');
     }
-    entries.sort(
-      (a, b) => new Date(b.changeDate || 0).getTime() - new Date(a.changeDate || 0).getTime()
-    );
 
-    const overlay = document.createElement('div');
-    overlay.className = 'catalog-form-overlay catalog-form-overlay--elevated';
-    const rows = entries.length
-      ? entries
-          .map(
-            (en) =>
-              `<li style="margin-bottom:10px;font-size:13px"><strong>${AktUtils.escapeHtml((en.violation || '').slice(0, 60))}</strong><br>Срок: ${AktUtils.formatDateShort(en.date)} · ${AktUtils.formatDateShort(en.changeDate)}${en.reason ? `<br>Причина: ${AktUtils.escapeHtml(en.reason)}` : ''}</li>`
-          )
-          .join('')
-      : '<li style="color:var(--text-muted)">Продлений не было</li>';
-    const one = violationId
-      ? detailState.violations.find((v) => v.id === violationId)
-      : null;
-    const title = one?.title ? AktUtils.escapeHtml(one.title) : 'История сроков';
-
-    overlay.innerHTML = `
-      <div class="catalog-form-dialog card" style="max-width:520px;max-height:80vh;overflow:auto">
-        <h3>${title}</h3>
-        <ul style="padding-left:18px;margin:12px 0">${rows}</ul>
-        <div class="catalog-form-actions">
-          <button type="button" class="btn-primary" data-close>Закрыть</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-    GazpromMobileOverlay.lock();
-    const removeHistory = () => {
-      overlay.remove();
-      GazpromMobileOverlay.unlock();
-    };
-    overlay.querySelector('[data-close]').onclick = removeHistory;
-    overlay.addEventListener('click', (ev) => {
-      if (ev.target === overlay) removeHistory();
-    });
+    const foot = document.getElementById('elimUnmarkFoot');
+    const eliminated = Boolean(one && eliminations.find((e) => e.violationId === one.id)?.isEliminated);
+    if (foot) foot.hidden = !eliminated;
+    showWorkScreen('hist');
   }
 
   async function clearElimination(violationId) {
@@ -1057,7 +1085,6 @@ const EliminationEditor = (() => {
       aktIdMatch(e.aktId, akt.id)
     );
     renderDetailViolations();
-    updateDetailHeader();
     updateDetailFooter();
     refreshEliminationLight(catalog, akt.id);
   }
@@ -1098,9 +1125,9 @@ const EliminationEditor = (() => {
       aktIdMatch(e.aktId, akt.id)
     );
     renderDetailViolations();
-    updateDetailHeader();
     updateDetailFooter();
     refreshEliminationLight(catalog, akt.id);
+    showWorkScreen('list');
     GazpromToast.success('Отмечено как устранённое');
     return true;
   }
