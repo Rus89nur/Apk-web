@@ -8,6 +8,33 @@ const AktSearch = (() => {
     return akt.organization?.shortTitle || akt.organization?.title || '';
   }
 
+  /** Календарный локальный год, как в списке («Проверка: …»). Невалидная дата — года нет. */
+  function getAktYear(akt) {
+    const iso = akt?.date;
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return null;
+    return d.getFullYear();
+  }
+
+  function normalizeYearList(values) {
+    const out = [];
+    for (const value of values || []) {
+      const y = parseInt(value, 10);
+      if (!Number.isNaN(y)) out.push(y);
+    }
+    return out;
+  }
+
+  function collectYears(akts) {
+    const years = new Set();
+    for (const akt of akts || []) {
+      const y = getAktYear(akt);
+      if (y != null) years.add(y);
+    }
+    return [...years].sort((a, b) => b - a);
+  }
+
   function filterAkts(
     akts,
     {
@@ -25,15 +52,18 @@ const AktSearch = (() => {
 
     const yearSet =
       years != null && years.length
-        ? years
+        ? normalizeYearList(years)
         : year != null
-          ? [year]
+          ? normalizeYearList([year])
           : null;
     if (yearSet?.length) {
-      list = list.filter((a) => {
-        const d = new Date(a.date);
-        return !Number.isNaN(d.getTime()) && yearSet.includes(d.getFullYear());
-      });
+      const coversAllKnown = collectYears(list).every((y) => yearSet.includes(y));
+      if (!coversAllKnown) {
+        list = list.filter((a) => {
+          const y = getAktYear(a);
+          return y != null && yearSet.includes(y);
+        });
+      }
     }
 
     if (violationsOnly) {
@@ -48,12 +78,14 @@ const AktSearch = (() => {
       list = list.filter((a) => !isDraft(a));
     }
 
-    if (shortOnly) {
-      list = list.filter((a) => AktUtils.isShortFormat(a));
-    }
-
-    if (fullOnly) {
-      list = list.filter((a) => AktUtils.isFullFormat(a));
+    if (shortOnly || fullOnly) {
+      list = list.filter((a) => {
+        const short = AktUtils.isShortFormat(a);
+        const full = AktUtils.isFullFormat(a);
+        if (shortOnly && fullOnly) return short || full;
+        if (shortOnly) return short;
+        return full;
+      });
     }
 
     const q = String(query).trim().toLowerCase();
@@ -158,5 +190,14 @@ const AktSearch = (() => {
     return { years, violationsOnly, draftsOnly, shortOnly, fullOnly };
   }
 
-  return { filterAkts, sortAkts, parseFilterPill, filterFromActivePills, isDraft, getOrgTitle };
+  return {
+    filterAkts,
+    sortAkts,
+    parseFilterPill,
+    filterFromActivePills,
+    isDraft,
+    getOrgTitle,
+    getAktYear,
+    collectYears,
+  };
 })();

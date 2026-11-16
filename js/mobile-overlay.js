@@ -152,12 +152,10 @@ var GazpromMobileOverlay = (() => {
     '.wizard-stepper',
     '.pred-filter-row',
     '.toolbar-filters--pills',
-    '.history-list-toolbar',
     '#screen-history .toolbar-filters',
     '#screen-history .toolbar-filters--pills',
     '#screen-history .toolbar-history__body',
     '#screen-history .toolbar--history',
-    '#screen-history .history-list-toolbar',
   ].join(', ');
 
   const syncVisualViewport = () => {
@@ -594,7 +592,7 @@ var GazpromMobileOverlay = (() => {
     if (!node) return null;
     if (node.scrollWidth > node.clientWidth + 2) return node;
     const inner = node.querySelector?.(
-      '.toolbar-filters--pills, .history-list-toolbar, .toolbar-filters'
+      '.toolbar-filters--pills, .toolbar-filters'
     );
     if (inner && inner.scrollWidth > inner.clientWidth + 2) return inner;
     return node;

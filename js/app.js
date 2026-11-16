@@ -579,39 +579,54 @@ function scrollToBackupImport() {
 }
 
 function bindHistory() {
-  const pills = document.querySelectorAll('#screen-history .filter-pill[data-filter]');
-  const subPills = () => [...pills].filter((p) => p.dataset.filter !== 'all');
-  const allPill = () => document.querySelector('#screen-history .filter-pill[data-filter="all"]');
+  const pillsRoot = document.querySelector('#screen-history .toolbar-filters--pills');
 
-  const applyFiltersFromPills = async () => {
-    GazpromUI.setHistoryFilter(AktSearch.filterFromActivePills(subPills()));
+  const rerenderHistory = async () => {
     const data = await GazpromStore.get();
     GazpromUI.renderHistory(data);
   };
 
-  const syncAllPill = () => {
-    const all = allPill();
-    if (!all) return;
-    const subs = subPills();
-    const allSubActive = subs.length > 0 && subs.every((p) => p.classList.contains('active'));
-    const noneSubActive = subs.every((p) => !p.classList.contains('active'));
-    all.classList.toggle('active', allSubActive || noneSubActive);
-  };
+  pillsRoot?.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.filter-pill[data-filter]');
+    if (!btn || !pillsRoot.contains(btn)) return;
 
-  pills.forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (btn.dataset.filter === 'all') {
-        const subs = subPills();
-        const allSubActive = subs.every((p) => p.classList.contains('active'));
-        subs.forEach((p) => p.classList.toggle('active', !allSubActive));
-        syncAllPill();
-        await applyFiltersFromPills();
-        return;
-      }
-      btn.classList.toggle('active');
-      syncAllPill();
-      await applyFiltersFromPills();
-    });
+    const kind = btn.dataset.filter;
+    const current = GazpromUI.getHistoryFilter();
+
+    if (kind === 'all') {
+      GazpromUI.setHistoryFilter({
+        years: [],
+        violationsOnly: false,
+        draftsOnly: false,
+        shortOnly: false,
+        fullOnly: false,
+      });
+      await rerenderHistory();
+      return;
+    }
+
+    if (kind === 'year') {
+      const y = parseInt(btn.dataset.filterValue, 10);
+      if (Number.isNaN(y)) return;
+      const years = [...(current.years || [])];
+      const idx = years.indexOf(y);
+      if (idx >= 0) years.splice(idx, 1);
+      else years.push(y);
+      GazpromUI.setHistoryFilter({ ...current, years });
+      await rerenderHistory();
+      return;
+    }
+
+    const flagByKind = {
+      violations: 'violationsOnly',
+      drafts: 'draftsOnly',
+      short: 'shortOnly',
+      full: 'fullOnly',
+    };
+    const flag = flagByKind[kind];
+    if (!flag) return;
+    GazpromUI.setHistoryFilter({ ...current, [flag]: !current[flag] });
+    await rerenderHistory();
   });
 
   document.getElementById('historySearch')?.addEventListener('input', async (e) => {

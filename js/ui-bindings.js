@@ -293,9 +293,81 @@ const GazpromUI = (() => {
     <path d="M15 3v4h4M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
   </svg>`;
 
+  function sameYearList(a, b) {
+    const left = a || [];
+    const right = b || [];
+    if (left.length !== right.length) return false;
+    for (let i = 0; i < left.length; i += 1) {
+      if (parseInt(left[i], 10) !== parseInt(right[i], 10)) return false;
+    }
+    return true;
+  }
+
+  function historyFiltersClear(filter = historyFilter) {
+    return (
+      !(filter.years || []).length &&
+      !filter.violationsOnly &&
+      !filter.draftsOnly &&
+      !filter.shortOnly &&
+      !filter.fullOnly
+    );
+  }
+
+  function syncHistoryFilterPills(akts) {
+    const container = document.querySelector('#screen-history .toolbar-filters--pills');
+    if (!container || typeof AktSearch?.collectYears !== 'function') return;
+
+    const knownYears = AktSearch.collectYears(akts);
+    const known = new Set(knownYears);
+    const selected = (historyFilter.years || [])
+      .map((y) => parseInt(y, 10))
+      .filter((y) => !Number.isNaN(y) && known.has(y));
+    if (!sameYearList(historyFilter.years, selected)) {
+      historyFilter = { ...historyFilter, years: selected };
+    }
+
+    const pillsScrollLeft = container.scrollLeft;
+    container.querySelectorAll('.filter-pill[data-filter="year"]').forEach((btn) => btn.remove());
+
+    const selectedSet = new Set(
+      (historyFilter.years || []).map((y) => parseInt(y, 10)).filter((y) => !Number.isNaN(y))
+    );
+    const frag = document.createDocumentFragment();
+    for (const year of knownYears) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-pill';
+      if (selectedSet.has(year)) btn.classList.add('active');
+      btn.dataset.filter = 'year';
+      btn.dataset.filterValue = String(year);
+      btn.textContent = String(year);
+      frag.appendChild(btn);
+    }
+    const anchor = container.querySelector('.filter-pill[data-filter="violations"]');
+    if (anchor) container.insertBefore(frag, anchor);
+    else container.appendChild(frag);
+
+    const flags = {
+      violations: !!historyFilter.violationsOnly,
+      short: !!historyFilter.shortOnly,
+      full: !!historyFilter.fullOnly,
+      drafts: !!historyFilter.draftsOnly,
+    };
+    Object.entries(flags).forEach(([kind, on]) => {
+      const btn = container.querySelector(`.filter-pill[data-filter="${kind}"]`);
+      if (btn) btn.classList.toggle('active', on);
+    });
+
+    const allBtn = container.querySelector('.filter-pill[data-filter="all"]');
+    if (allBtn) allBtn.classList.toggle('active', historyFiltersClear());
+    container.scrollLeft = pillsScrollLeft;
+  }
+
   function renderHistory(data, options = {}) {
     const list = document.querySelector('#historyList');
     if (!list) return;
+
+    syncHistoryFilterPills(data?.akts);
 
     const query = options.query ?? historyQuery;
     const filter = options.filter ?? historyFilter;
@@ -332,6 +404,11 @@ const GazpromUI = (() => {
         const draftHint = draft
           ? '<span class="history-list-item__draft">Черновик</span>'
           : '<span class="history-list-item__ready">Готов</span>';
+        const detected = countViolations(akt);
+        const detectedClass =
+          detected > 0
+            ? 'history-list-item__detected'
+            : 'history-list-item__detected history-list-item__detected--empty';
         const trashBtn = draft
           ? `<button type="button" class="history-list-item__delete" data-history-trash="${escapeHtml(akt.id)}" aria-label="Переместить акт № ${escapeHtml(akt.number)} в корзину" title="В корзину"><span aria-hidden="true">×</span></button>`
           : '';
@@ -345,7 +422,7 @@ const GazpromUI = (() => {
           : full
             ? 'history-list-item history-row history-row--full card'
             : 'history-list-item history-row card';
-        return `<div class="${rowClass}" data-akt-id="${escapeHtml(akt.id)}" data-akt-short="${short ? '1' : '0'}" role="listitem" tabindex="0" title="${openLabel}" aria-label="${openLabel}: № ${escapeHtml(akt.number)}">
+        return `<div class="${rowClass}" data-akt-id="${escapeHtml(akt.id)}" data-akt-short="${short ? '1' : '0'}" role="listitem" tabindex="0" title="${openLabel}" aria-label="${openLabel}: № ${escapeHtml(akt.number)}, выявлено ${detected}">
           <div class="history-list-item__icon">${historyDocIcon}</div>
           <div class="history-list-item__content">
             <div class="history-list-item__header">
@@ -357,6 +434,7 @@ const GazpromUI = (() => {
                 </div>
               </div>
               <div class="history-list-item__aside">
+                <span class="${detectedClass}">Выявлено: ${detected}</span>
                 ${trashBtn}
                 <span class="history-list-item__chevron" aria-hidden="true">›</span>
               </div>
@@ -484,13 +562,27 @@ const GazpromUI = (() => {
   }
 
   function setHistoryFilter(filter) {
-    historyFilter = {
+    const next = {
       years: [],
       violationsOnly: false,
       draftsOnly: false,
       shortOnly: false,
       fullOnly: false,
       ...filter,
+    };
+    next.years = (next.years || [])
+      .map((y) => parseInt(y, 10))
+      .filter((y) => !Number.isNaN(y));
+    historyFilter = next;
+  }
+
+  function getHistoryFilter() {
+    return {
+      years: [...(historyFilter.years || [])],
+      violationsOnly: !!historyFilter.violationsOnly,
+      draftsOnly: !!historyFilter.draftsOnly,
+      shortOnly: !!historyFilter.shortOnly,
+      fullOnly: !!historyFilter.fullOnly,
     };
   }
 
@@ -598,6 +690,7 @@ const GazpromUI = (() => {
     renderDataStatus,
     setHistoryQuery,
     setHistoryFilter,
+    getHistoryFilter,
     toggleHistorySort,
   };
 })();
