@@ -641,9 +641,18 @@ const ScheduleEditor = (() => {
     const y = year || getItemYear(item) || currentYear;
     const m = month || getItemMonth(item) || 1;
     const planVal = AktUtils.toDateInputValue(getPlanDate(item));
+    const factVal = AktUtils.toDateInputValue(item?.actualDate);
     const defaultPlan = planVal || `${y}-${String(m).padStart(2, '0')}-15`;
     const title = getSelectionTitle(catalog, { objectId, orgId, item });
     const isEdit = !!item;
+    const showFact = isEdit && !!item?.actualDate;
+
+    const factField = showFact
+      ? `<div class="form-group">
+          <label>Факт (дата)</label>
+          <input type="date" class="form-control" data-fact value="${factVal}">
+        </div>`
+      : '';
 
     const form = mountOverlay(`
       <div class="catalog-form-dialog card">
@@ -656,6 +665,7 @@ const ScheduleEditor = (() => {
           <label>План (дата)</label>
           <input type="date" class="form-control" data-plan value="${defaultPlan}">
         </div>
+        ${factField}
         <div class="catalog-form-actions">
           <button type="button" class="btn-ghost" data-cancel>Отмена</button>
           <button type="button" class="btn-primary" data-save>Сохранить</button>
@@ -690,8 +700,14 @@ const ScheduleEditor = (() => {
           orgId,
           plan,
         });
-        /* Факт ставится кнопкой «Выполнено» в карточке, не при добавлении. */
-        if (isEdit) {
+        if (showFact) {
+          const fact = form.querySelector('[data-fact]')?.value || '';
+          if (!fact) {
+            GazpromToast.error('Укажите фактическую дату или снимите «Выполнено» в карточке');
+            return;
+          }
+          record.actualDate = new Date(fact + 'T12:00:00').toISOString();
+        } else if (isEdit) {
           record.actualDate = item?.actualDate || null;
         } else {
           record.actualDate = null;
@@ -705,7 +721,7 @@ const ScheduleEditor = (() => {
       }
     };
 
-    setTimeout(() => form.querySelector('[data-plan]')?.focus(), 50);
+    setTimeout(() => form.querySelector(showFact ? '[data-fact]' : '[data-plan]')?.focus(), 50);
   }
 
   function openForm(catalog, item, context) {
