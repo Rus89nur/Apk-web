@@ -8,6 +8,7 @@ const ScheduleEditor = (() => {
   ];
 
   let currentYear = new Date().getFullYear();
+  let escListener = null;
 
   function getPlanDate(item) {
     if (!item) return null;
@@ -67,9 +68,39 @@ const ScheduleEditor = (() => {
       root = document.createElement('div');
       root.id = 'scheduleEditorRoot';
       root.className = 'catalog-editor-root';
+      root.hidden = true;
       document.body.appendChild(root);
     }
     return root;
+  }
+
+  function closeEditorForms() {
+    document.querySelectorAll('.schedule-form-overlay, .catalog-form-overlay.schedule-form-overlay').forEach((overlay) => {
+      overlay.remove();
+      GazpromMobileOverlay.unlock();
+    });
+  }
+
+  function close() {
+    closeEditorForms();
+    const root = document.getElementById('scheduleEditorRoot');
+    const wasOpen = root && !root.hidden;
+    if (root) {
+      root.hidden = true;
+      root.innerHTML = '';
+    }
+    if (wasOpen) GazpromMobileOverlay.unlock();
+    if (escListener) {
+      document.removeEventListener('keydown', escListener);
+      escListener = null;
+    }
+    GazpromMobileOverlay.scheduleRecoverViewportLayout?.();
+  }
+
+  function addEscListener() {
+    if (escListener) document.removeEventListener('keydown', escListener);
+    escListener = (e) => { if (e.key === 'Escape') close(); };
+    document.addEventListener('keydown', escListener);
   }
 
   function bindClose(root, onClose) {
@@ -90,6 +121,12 @@ const ScheduleEditor = (() => {
 
   function showYearGrid(catalog) {
     const root = ensureRoot();
+    const alreadyOpen = !root.hidden;
+    root.hidden = false;
+    /* Повторный lock при смене года / «← Год» оставлял gazprom-scroll-lock и блокировал меню. */
+    if (!alreadyOpen) GazpromMobileOverlay.lock();
+    addEscListener();
+
     const year = currentYear;
     const yearItems = itemsForYear(catalog, year);
 
@@ -115,8 +152,6 @@ const ScheduleEditor = (() => {
         </div>`;
     }).join('');
 
-    root.hidden = false;
-    GazpromMobileOverlay.lock();
     root.innerHTML = `
       <div class="catalog-editor-backdrop" data-close></div>
       <div class="catalog-editor-panel catalog-editor-panel--schedule card">
@@ -139,10 +174,6 @@ const ScheduleEditor = (() => {
       </div>
     `;
 
-    const close = () => {
-      root.hidden = true;
-      GazpromMobileOverlay.unlock();
-    };
     bindClose(root, close);
 
     root.querySelector('[data-year-prev]')?.addEventListener('click', () => {
@@ -169,6 +200,8 @@ const ScheduleEditor = (() => {
 
   function showMonthDetail(catalog, year, month) {
     const root = ensureRoot();
+    root.hidden = false;
+    addEscListener();
     const monthItems = itemsForMonth(catalog, year, month);
     const monthName = MONTH_NAMES[month - 1];
 
@@ -192,7 +225,6 @@ const ScheduleEditor = (() => {
       })
       .join('');
 
-    root.hidden = false;
     root.innerHTML = `
       <div class="catalog-editor-backdrop" data-close></div>
       <div class="catalog-editor-panel catalog-editor-panel--schedule card">
@@ -222,10 +254,6 @@ const ScheduleEditor = (() => {
       </div>
     `;
 
-    const close = () => {
-      root.hidden = true;
-      GazpromMobileOverlay.unlock();
-    };
     const goBack = () => showYearGrid(catalog);
 
     bindClose(root, close);
