@@ -30,6 +30,7 @@ const ReportsDashboard = (() => {
 
   let scheduleYears = new Set();
   let overdueViewMode = 'contractors';
+  let contractorViewMode = 'map';
 
   let openGroup = null;
   let bound = false;
@@ -433,6 +434,78 @@ const ReportsDashboard = (() => {
     if (!onlyThis) filters.contractors.add(org);
   }
 
+  function aggregateContractorsFromRows(rows) {
+    const byOrg = new Map();
+    for (const r of rows) {
+      const org = r.org && r.org !== '—' ? r.org : 'Организация не указана';
+      if (!byOrg.has(org)) {
+        byOrg.set(org, { total: 0, done: 0, overdue: 0, ontime: 0, nodeadline: 0 });
+      }
+      const bucket = byOrg.get(org);
+      bucket.total += 1;
+      bucket[r.status] += 1;
+    }
+    return [...byOrg.entries()].sort((a, b) => b[1].total - a[1].total);
+  }
+
+  function contractorShortLabel(title, maxChars) {
+    const raw = String(title || '').trim().replace(/^ООО\s+/i, '').replace(/^«|»$/g, '');
+    if (!raw) return '—';
+    if (raw.length <= maxChars) return raw;
+    return `${raw.slice(0, Math.max(3, maxChars - 1))}…`;
+  }
+
+  function contractorFilterOrg(org) {
+    return org === 'Организация не указана' ? '—' : org;
+  }
+
+  function renderContractorOrgButton(org, counts, extraClass = '') {
+    const filterOrg = contractorFilterOrg(org);
+    const isActive = isContractorFilterActive(org, filterOrg);
+    const color = orgBlockColor(counts);
+    const activeCls = isActive ? ' reports-treemap-index__btn--active' : '';
+    return `<button type="button" class="reports-treemap-index__btn${activeCls}${extraClass}" data-reports-org="${AktUtils.escapeHtml(filterOrg)}" title="${AktUtils.escapeHtml(org)} — ${counts.total} нарушений" aria-pressed="${isActive}" aria-label="Фильтр: ${AktUtils.escapeHtml(org)}, ${counts.total} нарушений" style="--treemap-accent:${color}">
+      <span class="reports-treemap-index__dot" aria-hidden="true"></span>
+      <span class="reports-treemap-index__name">${AktUtils.escapeHtml(org)}</span>
+      <span class="reports-treemap-index__val">${counts.total}</span>
+    </button>`;
+  }
+
+  function renderContractorIndex(entries) {
+    if (!entries.length) return '';
+    return `<ul class="reports-treemap-index" aria-label="Подрядчики — полные названия">${entries
+      .map(([org, counts]) => `<li>${renderContractorOrgButton(org, counts)}</li>`)
+      .join('')}</ul>`;
+  }
+
+  function renderContractorViewFilters() {
+    const wrap = document.getElementById('reportsContractorViewFilters');
+    if (!wrap) return;
+    wrap.querySelectorAll('[data-reports-contractor-view]').forEach((btn) => {
+      const active = btn.dataset.reportsContractorView === contractorViewMode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function renderContractorList(entries) {
+    const max = entries[0]?.[1]?.total || 1;
+    return `<div class="reports-contractor-list" role="list">${entries
+      .map(([org, counts]) => {
+        const filterOrg = contractorFilterOrg(org);
+        const isActive = isContractorFilterActive(org, filterOrg);
+        const color = orgBlockColor(counts);
+        const pct = Math.max(4, Math.round((counts.total / max) * 100));
+        return `<div class="reports-contractor-list__row" role="listitem">
+          ${renderContractorOrgButton(org, counts, ' reports-treemap-index__btn--list')}
+          <div class="reports-contractor-list__track" aria-hidden="true">
+            <div class="reports-contractor-list__fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+        </div>`;
+      })
+      .join('')}</div>`;
+  }
+
   /**
    * Делит прямоугольник на вложенные блоки: площадь каждого ∝ числу нарушений.
    * Координаты 0…100 (проценты), чередуются горизонтальные/вертикальные разрезы.
@@ -493,27 +566,23 @@ const ReportsDashboard = (() => {
         return;
       }
 
-      const byOrg = new Map();
-      for (const r of rows) {
-        const org = r.org && r.org !== '—' ? r.org : 'Организация не указана';
-        if (!byOrg.has(org)) {
-          byOrg.set(org, { total: 0, done: 0, overdue: 0, ontime: 0, nodeadline: 0 });
-        }
-        const bucket = byOrg.get(org);
-        bucket.total += 1;
-        bucket[r.status] += 1;
+      const entries = aggregateContractorsFromRows(rows);
+
+      if (contractorViewMode === 'list') {
+        wrap.innerHTML = renderContractorList(entries);
+        return;
       }
 
-      const entries = [...byOrg.entries()];
       const rects = layoutContractorTreemap(entries);
       const gap = 3;
 
-      wrap.innerHTML = `<div class="reports-treemap" role="group" aria-label="Нарушения по подрядчикам, площадь блока пропорциональна количеству">${rects
+      const treemapHtml = rects
         .map(({ org, counts, x, y, w, h }) => {
-          const filterOrg = org === 'Организация не указана' ? '—' : org;
+          const filterOrg = contractorFilterOrg(org);
           const isActive = isContractorFilterActive(org, filterOrg);
           const color = orgBlockColor(counts);
-          const compact = w < 14 || h < 16;
+          const area = w * h;
+          const labelMax = area > 220 ? 22 : area > 80 ? 14 : area > 35 ? 9 : 0;
           const style = [
             `left:calc(${x}% + ${gap / 2}px)`,
             `top:calc(${y}% + ${gap / 2}px)`,
@@ -521,15 +590,23 @@ const ReportsDashboard = (() => {
             `height:calc(${h}% - ${gap}px)`,
             `background:${color}`,
           ].join(';');
-          const nameHtml = compact
-            ? ''
-            : `<span class="reports-treemap__name">${AktUtils.escapeHtml(org)}</span>`;
-          return `<button type="button" class="reports-treemap__cell${isActive ? ' reports-treemap__cell--active' : ''}${compact ? ' reports-treemap__cell--compact' : ''}" style="${style}" data-reports-org="${AktUtils.escapeHtml(filterOrg)}" title="${AktUtils.escapeHtml(org)} — ${counts.total}" aria-pressed="${isActive}" aria-label="Фильтр: ${AktUtils.escapeHtml(org)}, ${counts.total} нарушений">
+          const nameHtml =
+            labelMax > 0
+              ? `<span class="reports-treemap__name">${AktUtils.escapeHtml(contractorShortLabel(org, labelMax))}</span>`
+              : '';
+          const sizeCls =
+            area < 50 ? ' reports-treemap__cell--tiny' : area < 100 ? ' reports-treemap__cell--small' : '';
+          return `<button type="button" class="reports-treemap__cell${isActive ? ' reports-treemap__cell--active' : ''}${sizeCls}" style="${style}" data-reports-org="${AktUtils.escapeHtml(filterOrg)}" title="${AktUtils.escapeHtml(org)} — ${counts.total}" aria-pressed="${isActive}" aria-label="Фильтр: ${AktUtils.escapeHtml(org)}, ${counts.total} нарушений">
             ${nameHtml}
             <span class="reports-treemap__val">${counts.total}</span>
           </button>`;
         })
-        .join('')}</div>`;
+        .join('');
+
+      wrap.innerHTML = `<div class="reports-contractor-map">
+        <div class="reports-treemap" role="group" aria-label="Карта: площадь блока пропорциональна числу нарушений">${treemapHtml}</div>
+        ${renderContractorIndex(entries)}
+      </div>`;
     } catch (err) {
       console.error('ReportsDashboard: renderOrgTreemap', err);
       wrap.innerHTML =
@@ -831,6 +908,7 @@ const ReportsDashboard = (() => {
     }
     renderFilterGroups(displayOptions);
     renderTreemapLegend();
+    renderContractorViewFilters();
 
     const { rows, akts } = collectRows(data);
     const stats = countByStatus(rows);
@@ -879,6 +957,14 @@ const ReportsDashboard = (() => {
       if (overdueViewBtn) {
         e.stopPropagation();
         overdueViewMode = overdueViewBtn.dataset.reportsOverdueView || 'contractors';
+        requestRender();
+        return;
+      }
+
+      const contractorViewBtn = e.target.closest('[data-reports-contractor-view]');
+      if (contractorViewBtn) {
+        e.stopPropagation();
+        contractorViewMode = contractorViewBtn.dataset.reportsContractorView || 'map';
         requestRender();
         return;
       }
