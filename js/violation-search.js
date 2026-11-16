@@ -15,6 +15,7 @@ const ViolationSearch = (() => {
   const MAX_RESULTS = 200;
   const LEADER_SCORE_RATIO = 1.35;
   const PLACE_BONUS = 30;
+  const DESCRIPTION_ALL_TOKENS_BONUS = 32;
   const PHOTO_HINT_MIN_ITEM = 0.25;
   const PHOTO_HINT_MIN_TOP = 0.35;
 
@@ -22,6 +23,8 @@ const ViolationSearch = (() => {
     'в', 'во', 'на', 'по', 'с', 'со', 'к', 'ко', 'о', 'об', 'у', 'от', 'из',
     'для', 'при', 'до', 'за', 'а', 'и', 'или', 'это', 'как', 'же', 'бы', 'ли', 'то', 'что',
   ]);
+  /** Не участвует в подсчёте «полного» совпадения — иначе «не» встречается почти в каждой формулировке. */
+  const SUGGEST_WEAK_TOKENS = new Set(['не']);
 
   const ABSENCE_QUERY = new Set(['нет', 'отсутствует', 'отсутствуют', 'нету']);
   const ABSENCE_FIELD = new Set(['нет', 'отсутствует', 'отсутствуют', 'нету', 'не', 'без']);
@@ -37,6 +40,7 @@ const ViolationSearch = (() => {
     ['каска', 'шлем'],
     ['работник', 'рабочий', 'персонал'],
     ['огнетушитель'],
+    ['перезаряд', 'перезарядк', 'перезарядка', 'перезаряж', 'перезаряжен', 'зарядк', 'зарядка'],
     ['щитовая', 'электрощитовая'],
     ['захламление', 'загромождение'],
     ['светильник', 'лампа', 'электролампа'],
@@ -319,13 +323,36 @@ const ViolationSearch = (() => {
     return wordsOf(field.expanded).some((word) => word === token);
   }
 
+  function sharedRootHit(token, field) {
+    if (!token || !field.expanded || isDigits(token) || token.length < 9) return false;
+    const tokenStem = stemRu(token);
+    const minRoot = tokenStem.length >= 10 ? 7 : 6;
+    const maxRoot = Math.min(tokenStem.length, 11);
+    for (let len = maxRoot; len >= minRoot; len -= 1) {
+      const root = tokenStem.slice(0, len);
+      if (root.length < minRoot) break;
+      if (
+        wordsOf(field.expanded).some((word) => {
+          if (isDigits(word) || word.length < minRoot) return false;
+          const wordStem = stemRu(word);
+          return wordStem.startsWith(root) || word.startsWith(root);
+        })
+      ) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   function stemHit(token, field) {
     if (!token || !field.expanded || isDigits(token)) return false;
     const tokenStem = stemRu(token);
-    return wordsOf(field.expanded).some((word) => {
-      if (isDigits(word)) return false;
-      return stemsMatch(tokenStem, stemRu(word));
-    });
+    return (
+      wordsOf(field.expanded).some((word) => {
+        if (isDigits(word)) return false;
+        return stemsMatch(tokenStem, stemRu(word));
+      }) || sharedRootHit(token, field)
+    );
   }
 
   function levenshteinWithin(a, b, maxDist) {
@@ -460,19 +487,21 @@ const ViolationSearch = (() => {
 
   function suggestTokens(parsed) {
     const tokens = [];
+    const weak = [];
     const seen = new Set();
     for (const token of parsed.tokens) {
       if (!token || STOP_WORDS.has(token) || seen.has(token)) continue;
       seen.add(token);
-      tokens.push(token);
+      if (SUGGEST_WEAK_TOKENS.has(token)) weak.push(token);
+      else tokens.push(token);
     }
-    return tokens;
+    return { tokens, weak };
   }
 
   function suggestRegistry(items, query, { placeCounts } = {}) {
     const parsed = parseQuery(query);
-    const tokens = suggestTokens(parsed);
-    if (!parsed.phrases.length && !tokens.length) {
+    const { tokens, weak } = suggestTokens(parsed);
+    if (!parsed.phrases.length && !tokens.length && !weak.length) {
       return { empty: true, ranked: [] };
     }
 
@@ -509,6 +538,10 @@ const ViolationSearch = (() => {
         if (hit.mechanism === 'typo') typo = true;
         if (hit.mechanism === 'synonym') synonym = true;
       }
+      for (const token of weak) {
+        const hit = matchToken(token, maps);
+        if (hit) weightSum += hit.weight * 0.35;
+      }
 
       const required = parsed.phrases.length + tokens.length;
       if (!matched || matched < 1) continue;
@@ -526,6 +559,16 @@ const ViolationSearch = (() => {
         score += PLACE_BONUS;
         reasons.push('часто в этом месте');
       }
+      if (tokens.length >= 2 && maps.description) {
+        let descHits = 0;
+        for (const token of tokens) {
+          if (matchToken(token, { description: maps.description })) descHits += 1;
+        }
+        if (descHits === tokens.length) {
+          score += DESCRIPTION_ALL_TOKENS_BONUS;
+          reasons.push('описание в реестре');
+        }
+      }
 
       ranked.push({ item, score, matched, required, full, reasons });
     }
@@ -533,6 +576,7 @@ const ViolationSearch = (() => {
     ranked.sort(
       (a, b) =>
         (a.full === b.full ? 0 : a.full ? -1 : 1) ||
+        b.matched - a.matched ||
         b.score - a.score ||
         (a.item.number || 0) - (b.item.number || 0)
     );

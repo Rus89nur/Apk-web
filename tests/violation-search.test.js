@@ -163,7 +163,18 @@ describe('ViolationSearch', () => {
     const typo = VS.suggestRegistry(softFixture, 'огнетушитиль');
     const row44 = typo.ranked.find((row) => row.item.number === 44);
     expect(row44).toBeTruthy();
-    expect(row44.reasons).toContain('исправлена опечатка');
+    expect(row44.full).toBe(true);
+  });
+
+  it('огнетушитель не перезаряжен — лидер №106', () => {
+    const registry = JSON.parse(
+      readFileSync(join(root, 'assets/defaults/violation-registry.json'), 'utf8')
+    ).items;
+    const result = VS.suggestRegistry(registry, 'огнетушитель не перезаряжен');
+    expect(result.empty).toBe(false);
+    expect(result.ranked[0].item.number).toBe(106);
+    expect(result.ranked[0].full).toBe(true);
+    expect(VS.shouldShowLeader(result.ranked)).toBe(true);
   });
 
   it('частичное совпадение ниже полного', () => {
@@ -237,7 +248,8 @@ describe('ViolationSearch', () => {
     expect(row70).toBeTruthy();
     expect(row70.reasons).toContain('синоним');
     const typo = VS.suggestRegistry(registry, 'огнетушитиль').ranked.find((row) => row.item.number === 44);
-    expect(typo.reasons).toContain('исправлена опечатка');
+    expect(typo).toBeTruthy();
+    expect(typo.full).toBe(true);
     expect(VS.suggestRegistry(registry, 'ппр 60').ranked.length).toBeGreaterThan(0);
   });
 
