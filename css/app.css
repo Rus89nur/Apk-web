@@ -8428,10 +8428,14 @@
         background: var(--surface);
       }
 
-      /* Комиссия и др. списки: фон как у Истории (--bg), список под верх/низ */
+      /* Комиссия и др.: тот же фон, что у body/Истории — непрозрачно, меню настроек не просвечивает */
       body.gazprom-mobile-shell .catalog-editor-root:not([hidden]):not(:has(.catalog-editor-panel--schedule)),
       html.gazprom-scroll-lock body.gazprom-mobile-shell .catalog-editor-root:not([hidden]):not(:has(.catalog-editor-panel--schedule)) {
-        background: var(--bg);
+        background: inherit;
+      }
+
+      body.gazprom-mobile-shell .catalog-editor-root:not(:has(.catalog-editor-panel--schedule)) > .catalog-editor-backdrop {
+        background: transparent;
       }
 
       body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel,
