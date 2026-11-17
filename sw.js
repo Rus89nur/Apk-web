@@ -1,10 +1,10 @@
-const CACHE_NAME = 'gazprom-web-v389';
+const CACHE_NAME = 'gazprom-web-v390';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/app.css?v=389',
+  './css/app.css?v=390',
   './css/appearance.css?v=346',
   './js/appearance.js?v=272',
   './js/idb-connection.js?v=22',
@@ -23,6 +23,8 @@ const STATIC_ASSETS = [
   './js/ml-image-service.js?v=6',
   './js/ml-training-wizard.js?v=10',
   './js/offline-status.js?v=1',
+  './js/deepseek-config.js?v=1',
+  './js/deepseek-service.js?v=1',
   './js/ui-bindings.js?v=48',
   './js/doc-generator.js?v=44',
   './js/template-builder-wizard.js?v=3',
@@ -34,7 +36,7 @@ const STATIC_ASSETS = [
   './js/catalog-editor.js?v=23',
   './js/schedule-editor.js?v=15',
   './js/elimination-editor.js?v=18',
-  './js/wizard-modals.js?v=82',
+  './js/wizard-modals.js?v=83',
   './js/wizard.js?v=79',
   './js/spravka-utils.js?v=4',
   './js/spravka-wizard.js?v=14',
