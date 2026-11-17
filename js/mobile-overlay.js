@@ -28,7 +28,7 @@ var GazpromMobileOverlay = (() => {
       document.body.style.removeProperty('--gazprom-safari-bottom-inset');
       return 0;
     }
-    /* Клавиатура в мастере: бар не поднимаем вслед за vv (web-307). */
+    /* Клавиатура на экране (история, мастер…): бар не поднимаем над клавиатурой. */
     if (document.documentElement.classList.contains('gazprom-wizard-keyboard')) {
       nav.style.removeProperty('bottom');
       document.body.style.setProperty('--gazprom-safari-bottom-inset', '0px');
@@ -71,18 +71,18 @@ var GazpromMobileOverlay = (() => {
     const field = document.activeElement;
     const fieldFocused =
       !!active &&
-      (active.id === 'screen-wizard' || active.id === 'screen-spravka') &&
       field &&
       active.contains(field) &&
-      field.matches(TEXT_FIELD_SELECTOR);
+      field.matches?.(TEXT_FIELD_SELECTOR);
     const keyboardOpen = isMainKeyboardOpen();
     const isCatalogFilter =
       field?.id === 'wPredFilter' || field?.id === 'wObjectFilter';
+    /* Скрываем bottom-nav при любом поле экрана (в т.ч. #historySearch), не только в мастере. */
     document.documentElement.classList.toggle(
       'gazprom-wizard-keyboard',
       fieldFocused && (keyboardOpen || isCatalogFilter)
     );
-    if (fieldFocused) positionBottomNav();
+    positionBottomNav();
   };
 
   const WIZARD_CATALOG_BY_FILTER = {

@@ -13,4 +13,13 @@ describe('mobile wizard keyboard / pred catalog scroll', () => {
     expect(overlaySrc).toContain('revealCatalog');
     expect(overlaySrc).toContain('wPredCatalogChips');
   });
+
+  it('hides bottom nav for any screen text field including history search', () => {
+    expect(overlaySrc).toMatch(
+      /fieldFocused && \(keyboardOpen \|\| isCatalogFilter\)/
+    );
+    expect(overlaySrc).not.toMatch(
+      /active\.id === 'screen-wizard' \|\| active\.id === 'screen-spravka'/
+    );
+  });
 });
