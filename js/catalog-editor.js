@@ -64,6 +64,7 @@ const CatalogEditor = (() => {
 
   let root = null;
   let escListener = null;
+  let chromeResizeListener = null;
 
   function ensureRoot() {
     if (root) return root;
@@ -85,6 +86,10 @@ const CatalogEditor = (() => {
   function close() {
     closeEditorForms();
     const wasOpen = root && !root.hidden;
+    if (chromeResizeListener) {
+      window.removeEventListener('resize', chromeResizeListener);
+      chromeResizeListener = null;
+    }
     if (root) {
       root.hidden = true;
       root.innerHTML = '';
@@ -195,15 +200,17 @@ const CatalogEditor = (() => {
     el.innerHTML = `
       <div class="catalog-editor-backdrop" data-close></div>
       <div class="catalog-editor-panel card">
-        <div class="catalog-editor-header">
-          <div>
-            <h3>${cfg.icon || ''} ${cfg.title}</h3>
-            <small class="catalog-editor-count" style="color:var(--text-muted);">${countHint(query, filtered)}</small>
+        <div class="catalog-editor-top">
+          <div class="catalog-editor-header">
+            <div>
+              <h3>${cfg.icon || ''} ${cfg.title}</h3>
+              <small class="catalog-editor-count" style="color:var(--text-muted);">${countHint(query, filtered)}</small>
+            </div>
+            <button type="button" class="modal-close" data-close>×</button>
           </div>
-          <button type="button" class="modal-close" data-close>×</button>
-        </div>
-        <div class="catalog-editor-search-bar">
-          <input type="search" class="form-control catalog-search-input" placeholder="🔍 Поиск…" value="${escHtml(query)}" autocomplete="off">
+          <div class="catalog-editor-search-bar">
+            <input type="search" class="form-control catalog-search-input" placeholder="🔍 Поиск…" value="${escHtml(query)}" autocomplete="off">
+          </div>
         </div>
         <div class="catalog-editor-body">
           <table class="list-table catalog-list-table">
@@ -220,6 +227,26 @@ const CatalogEditor = (() => {
 
     el.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', close));
 
+    const panel = el.querySelector('.catalog-editor-panel');
+    const bodyEl = el.querySelector('.catalog-editor-body');
+    const topEl = el.querySelector('.catalog-editor-top');
+    const footerEl = el.querySelector('.catalog-editor-footer');
+    const syncChromeInsets = () => {
+      if (!bodyEl) return;
+      const topH = topEl ? Math.ceil(topEl.getBoundingClientRect().height) : 0;
+      const footH = footerEl ? Math.ceil(footerEl.getBoundingClientRect().height) : 0;
+      bodyEl.style.paddingTop = `${topH}px`;
+      bodyEl.style.paddingBottom = `${footH}px`;
+      panel?.style.setProperty('--catalog-chrome-top', `${topH}px`);
+      panel?.style.setProperty('--catalog-chrome-bottom', `${footH}px`);
+    };
+    if (chromeResizeListener) {
+      window.removeEventListener('resize', chromeResizeListener);
+    }
+    chromeResizeListener = syncChromeInsets;
+    requestAnimationFrame(syncChromeInsets);
+    window.addEventListener('resize', syncChromeInsets, { passive: true });
+
     const tbody = el.querySelector('tbody');
     const countEl = el.querySelector('.catalog-editor-count');
     const searchInput = el.querySelector('.catalog-search-input');
@@ -230,6 +257,7 @@ const CatalogEditor = (() => {
       tbody.innerHTML = buildRowsHtml(cfg, fields, f, q ? 'Ничего не найдено' : 'Нет записей — нажмите «+ Добавить»');
       countEl.textContent = countHint(q, f);
       bindRowButtons(tbody, all, cfg, catalog, () => searchInput.value);
+      requestAnimationFrame(syncChromeInsets);
     });
 
     el.querySelector('[data-add]')?.addEventListener('click', () => openForm(cfg, catalog, null, searchInput?.value ?? query));
