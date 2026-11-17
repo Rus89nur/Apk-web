@@ -3730,6 +3730,26 @@
       gap: 8px;
       margin-top: 8px;
     }
+    .mv-title-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .mv-title-label-row .form-label {
+      margin-bottom: 0;
+    }
+    .mv-ai-btn {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+    .mv-ai-btn.is-loading,
+    .mv-ai-btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
     .mv-photo-hints {
       width: 100%;
       min-width: 0;

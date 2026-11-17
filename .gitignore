@@ -6,3 +6,7 @@ _site/
 *.log
 * 2.*
 * 2
+.env
+.env.*
+proxy/.dev.vars
+
