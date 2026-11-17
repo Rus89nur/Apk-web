@@ -189,6 +189,24 @@ html[data-appearance="system"][data-scheme="dark"] .modal-dialog {
   border-color: var(--border);
   box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
+html[data-appearance="system"][data-scheme="light"] #screen-wizard .wizard-panel--date.card,
+html[data-appearance="system"][data-scheme="light"] #screen-spravka .wizard-panel--date.card,
+html[data-appearance="system"][data-scheme="dark"] #screen-wizard .wizard-panel--date.card,
+html[data-appearance="system"][data-scheme="dark"] #screen-spravka .wizard-panel--date.card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html[data-appearance="system"][data-scheme="light"] body.gazprom-mobile-shell .catalog-editor-panel.card:not(.catalog-editor-panel--schedule),
+html[data-appearance="system"][data-scheme="dark"] body.gazprom-mobile-shell .catalog-editor-panel.card:not(.catalog-editor-panel--schedule) {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 html[data-appearance="system"][data-scheme="dark"] .sidebar {
   background: var(--sidebar);
   color: var(--text);

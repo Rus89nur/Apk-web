@@ -8439,6 +8439,15 @@
         padding: 0;
       }
 
+      /* Справочники (Комиссия и др.): без фона большой .card — остаются только карточки строк */
+      body.gazprom-mobile-shell .catalog-editor-root .catalog-editor-panel.card:not(.catalog-editor-panel--schedule) {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+
       body.gazprom-mobile-shell .catalog-editor-root:has(.catalog-editor-panel--schedule):not([hidden]),
       html.gazprom-scroll-lock body.gazprom-mobile-shell .catalog-editor-root:has(.catalog-editor-panel--schedule):not([hidden]) {
         align-items: stretch;
