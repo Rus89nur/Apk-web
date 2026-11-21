@@ -888,6 +888,21 @@ const ReportsDashboard = (() => {
         void ReportExporter.exportSchedule().catch((err) => {
           GazpromToast.error(err.message);
         });
+        return;
+      }
+
+      if (e.target.closest('#reportsRegistryAnalyticsBtn')) {
+        void (async () => {
+          try {
+            if (typeof ViolationRegistry === 'undefined' || !ViolationRegistry.exportAnalyticsDocx) {
+              throw new Error('Модуль реестра недоступен');
+            }
+            const total = await ViolationRegistry.exportAnalyticsDocx();
+            GazpromToast.success(`Аналитическая справка скачана (${total} формулировок)`);
+          } catch (err) {
+            GazpromToast.error(err?.message || 'Не удалось сформировать справку');
+          }
+        })();
       }
     });
 
