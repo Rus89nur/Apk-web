@@ -441,14 +441,12 @@ const DocGenerator = (() => {
   function buildRegistryAnalyticsDocumentXml(model) {
     const meta = model?.meta || {};
     const parts = [
-      wParagraph('Аналитическая справка по реестру нарушений', { bold: true }),
+      wParagraph('Аналитическая справка по выявленным нарушениям', { bold: true }),
       wParagraph(''),
       wParagraph(`Дата формирования: ${formatAnalyticsDateRu(meta.generatedAt)}`),
-      wParagraph(`Число формулировок: ${meta.total ?? 0}`),
+      wParagraph(`Период: ${meta.period || 'весь период'}`),
+      wParagraph(`Число нарушений: ${meta.total ?? 0}`),
     ];
-    if (meta.registryName) {
-      parts.push(wParagraph(`Реестр: ${meta.registryName}`));
-    }
     parts.push(wParagraph(''));
     parts.push(wParagraph('Часть I. Выжимка по видам нарушений', { bold: true }));
     parts.push(wParagraph(''));
@@ -514,7 +512,7 @@ const DocGenerator = (() => {
       'docProps/core.xml',
       `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <dc:title>Аналитическая справка по реестру нарушений</dc:title>
+  <dc:title>Аналитическая справка по выявленным нарушениям</dc:title>
   <dc:creator>Gazprom Web</dc:creator>
   <dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created>
 </cp:coreProperties>`

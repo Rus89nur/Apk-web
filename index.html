@@ -6,7 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <script>window.GAZPROM_ASSET_V = '392';</script>
+  <script>window.GAZPROM_ASSET_V = '393';</script>
   <script>
   (function () {
     var mode = 'classic';
@@ -117,7 +117,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=391" id="appCss">
+  <link rel="stylesheet" href="css/app.css?v=393" id="appCss">
   <link rel="stylesheet" href="css/appearance.css?v=346" id="appearanceCss">
   <script>
   (function () {
@@ -192,7 +192,7 @@
       </div>
       <div class="sidebar-footer" id="sidebarAppBuild" aria-label="Версия веб-приложения">
         <span class="sidebar-footer__brand">программа НЕТ</span>
-        Сборка: <span data-app-build>web-392</span> · PWA
+        Сборка: <span data-app-build>web-393</span> · PWA
       </div>
     </aside>
 
@@ -263,7 +263,7 @@
             <div class="stat-label">Черновиков</div>
           </div>
         </div>
-        <p class="app-build-id" id="appBuildId" aria-label="Версия веб-приложения">Сборка: web-392</p>
+        <p class="app-build-id" id="appBuildId" aria-label="Версия веб-приложения">Сборка: web-393</p>
       </section>
 
       <section class="screen" id="screen-wizard">
@@ -642,7 +642,7 @@
           </div>
         </div>
         <div class="card settings-app-update" id="settingsAppUpdate">
-          <p class="settings-app-update__label">Версия приложения: <strong id="settingsAppBuild">web-392</strong></p>
+          <p class="settings-app-update__label">Версия приложения: <strong id="settingsAppBuild">web-393</strong></p>
           <p class="settings-app-update__avail" id="settingsAppUpdateAvail" hidden></p>
           <p class="settings-app-update__hint">Кнопка подтягивает сборку с сайта и не откатится на более старую версию.</p>
           <button type="button" class="btn-secondary btn-sm" id="appForceRefreshBtn">Обновить приложение</button>
@@ -679,7 +679,7 @@
             <div class="violations-screen-actions">
               <button class="btn-primary btn-sm" type="button" id="vrScreenAddBtn">+ Добавить</button>
               <button class="btn-secondary btn-sm" type="button" id="vrScreenExportBtn">📊 Экспорт Excel</button>
-              <button class="btn-secondary btn-sm" type="button" id="vrScreenAnalyticsBtn">📋 Аналитическая справка</button>
+              <button class="btn-secondary btn-sm" type="button" id="vrScreenAnalyticsBtn" title="По нарушениям из актов за период (не по справочнику реестра)">📋 Аналитическая справка</button>
             </div>
             <p class="vr-screen-source defaults-source" id="vrScreenSourceMeta" aria-live="polite"></p>
           </div>
@@ -823,6 +823,61 @@
     </div>
   </div>
 
+  <!-- ——— Модал: период аналитической справки ——— -->
+  <div id="analyticsPeriodModal" class="catalog-form-overlay" hidden>
+    <div class="catalog-form-dialog card backup-modal-dialog analytics-period-dialog" role="dialog" aria-modal="true" aria-labelledby="analyticsPeriodTitle">
+      <h3 id="analyticsPeriodTitle">Период аналитической справки</h3>
+      <p class="backup-import-hint analytics-period-hint">
+        Справка строится по нарушениям из актов за выбранный период (не по справочнику формулировок реестра).
+        Месяц и квартал взаимоисключающие: при выборе одного другое сбрасывается (приоритет у месяца).
+      </p>
+      <label class="backup-merge-option analytics-period-all">
+        <input type="checkbox" id="analyticsPeriodAll">
+        Весь период
+      </label>
+      <div class="form-group">
+        <label class="form-label" for="analyticsPeriodYear">Год</label>
+        <select class="form-control" id="analyticsPeriodYear"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="analyticsPeriodYearInput">Или введите год</label>
+        <input type="number" class="form-control" id="analyticsPeriodYearInput" min="2000" max="2100" step="1" inputmode="numeric" placeholder="напр. 2025">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="analyticsPeriodMonth">Месяц</label>
+        <select class="form-control" id="analyticsPeriodMonth">
+          <option value="all">Все месяцы</option>
+          <option value="1">Январь</option>
+          <option value="2">Февраль</option>
+          <option value="3">Март</option>
+          <option value="4">Апрель</option>
+          <option value="5">Май</option>
+          <option value="6">Июнь</option>
+          <option value="7">Июль</option>
+          <option value="8">Август</option>
+          <option value="9">Сентябрь</option>
+          <option value="10">Октябрь</option>
+          <option value="11">Ноябрь</option>
+          <option value="12">Декабрь</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="analyticsPeriodQuarter">Квартал</label>
+        <select class="form-control" id="analyticsPeriodQuarter">
+          <option value="all">Все кварталы</option>
+          <option value="1">I квартал</option>
+          <option value="2">II квартал</option>
+          <option value="3">III квартал</option>
+          <option value="4">IV квартал</option>
+        </select>
+      </div>
+      <div class="catalog-form-actions">
+        <button type="button" class="btn-ghost" data-analytics-period-cancel>Отмена</button>
+        <button type="button" class="btn-primary" data-analytics-period-confirm>Сформировать</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ——— Модал: экспорт и управление копиями ——— -->
   <div id="backupModal" class="catalog-form-overlay" hidden>
     <div class="catalog-form-dialog card backup-modal-dialog">
@@ -921,11 +976,11 @@
   <script src="js/offline-status.js?v=1"></script>
   <script src="js/deepseek-config.js?v=1"></script>
   <script src="js/deepseek-service.js?v=1"></script>
-  <script src="js/doc-generator.js?v=46"></script>
+  <script src="js/doc-generator.js?v=47"></script>
   <script src="js/template-builder-wizard.js?v=3"></script>
   <script src="js/defaults-bootstrap.js?v=15"></script>
-  <script src="js/registry-analytics.js?v=1"></script>
-  <script src="js/violation-registry.js?v=17"></script>
+  <script src="js/registry-analytics.js?v=2"></script>
+  <script src="js/violation-registry.js?v=18"></script>
   <script src="js/catalog-service.js?v=4"></script>
   <script src="js/backup-import.js?v=32"></script>
   <script src="js/spravka-utils.js?v=4"></script>
@@ -935,7 +990,7 @@
   <script src="js/schedule-editor.js?v=15"></script>
   <script src="js/elimination-editor.js?v=18"></script>
   <script src="js/report-exporter.js?v=2"></script>
-  <script src="js/reports-dashboard.js?v=23"></script>
+  <script src="js/reports-dashboard.js?v=24"></script>
   <script src="js/wizard-modals.js?v=83"></script>
   <script src="js/wizard.js?v=79"></script>
   <script src="js/spravka-wizard.js?v=14"></script>

@@ -420,11 +420,12 @@ const ViolationRegistry = (() => {
       }
     });
 
-    // Аналитическая справка (.docx)
+    // Аналитическая справка (.docx) — по нарушениям из актов за период (не справочник)
     document.getElementById('vrScreenAnalyticsBtn')?.addEventListener('click', async () => {
       try {
-        const total = await exportAnalyticsDocx();
-        GazpromToast.success(`Аналитическая справка скачана (${total} формулировок)`);
+        const total = await openAnalyticsPeriodDialog();
+        if (total == null) return;
+        GazpromToast.success(`Аналитическая справка скачана (${total} нарушений)`);
       } catch (err) {
         GazpromToast.error(err?.message || 'Не удалось сформировать справку');
       }
@@ -432,10 +433,148 @@ const ViolationRegistry = (() => {
   }
 
   /**
-   * Локальная аналитическая справка по текущему реестру → .docx (без LLM).
-   * @returns {Promise<number>} число формулировок
+   * Модалка выбора периода → экспорт аналитической справки по нарушениям из актов.
+   * @returns {Promise<number|null>} число нарушений или null при отмене
    */
-  async function exportAnalyticsDocx() {
+  async function openAnalyticsPeriodDialog() {
+    if (typeof RegistryAnalytics === 'undefined' || !RegistryAnalytics.buildAnalyticsModel) {
+      throw new Error('Модуль аналитики не загружен');
+    }
+    const catalog = await GazpromStore.get();
+    const akts = catalog?.akts || [];
+    const years = RegistryAnalytics.collectYearsFromAkts(akts);
+    const period = await showAnalyticsPeriodModal(years);
+    if (!period) return null;
+    return exportAnalyticsDocx(period);
+  }
+
+  function showAnalyticsPeriodModal(years) {
+    return new Promise((resolve) => {
+      const modal = document.getElementById('analyticsPeriodModal');
+      if (!modal) {
+        resolve({ allPeriod: true });
+        return;
+      }
+
+      const yearSelect = modal.querySelector('#analyticsPeriodYear');
+      const yearInput = modal.querySelector('#analyticsPeriodYearInput');
+      const monthSelect = modal.querySelector('#analyticsPeriodMonth');
+      const quarterSelect = modal.querySelector('#analyticsPeriodQuarter');
+      const allPeriodCb = modal.querySelector('#analyticsPeriodAll');
+      const confirmBtn = modal.querySelector('[data-analytics-period-confirm]');
+      const cancelBtns = modal.querySelectorAll('[data-analytics-period-cancel]');
+
+      if (yearSelect) {
+        const opts = ['<option value="">— выберите год —</option>']
+          .concat(years.map((y) => `<option value="${y}">${y}</option>`));
+        yearSelect.innerHTML = opts.join('');
+        if (years.length) yearSelect.value = String(years[0]);
+      }
+      if (yearInput) yearInput.value = years.length ? String(years[0]) : '';
+      if (monthSelect) monthSelect.value = 'all';
+      if (quarterSelect) quarterSelect.value = 'all';
+      if (allPeriodCb) allPeriodCb.checked = false;
+
+      function syncDisabled() {
+        const all = !!allPeriodCb?.checked;
+        [yearSelect, yearInput, monthSelect, quarterSelect].forEach((el) => {
+          if (el) el.disabled = all;
+        });
+      }
+      syncDisabled();
+
+      function onMonthChange() {
+        if (monthSelect?.value && monthSelect.value !== 'all' && quarterSelect) {
+          quarterSelect.value = 'all';
+        }
+      }
+      function onQuarterChange() {
+        if (quarterSelect?.value && quarterSelect.value !== 'all' && monthSelect) {
+          monthSelect.value = 'all';
+        }
+      }
+      function onYearSelectChange() {
+        if (yearInput && yearSelect?.value) yearInput.value = yearSelect.value;
+      }
+      function onYearInputChange() {
+        const typed = String(yearInput?.value || '').trim();
+        if (!yearSelect) return;
+        if (!typed) return;
+        const match = [...yearSelect.options].some((o) => o.value === typed);
+        yearSelect.value = match ? typed : '';
+      }
+
+      function cleanup(result) {
+        modal.hidden = true;
+        allPeriodCb?.removeEventListener('change', syncDisabled);
+        monthSelect?.removeEventListener('change', onMonthChange);
+        quarterSelect?.removeEventListener('change', onQuarterChange);
+        yearSelect?.removeEventListener('change', onYearSelectChange);
+        yearInput?.removeEventListener('input', onYearInputChange);
+        confirmBtn?.removeEventListener('click', onConfirm);
+        cancelBtns.forEach((b) => b.removeEventListener('click', onCancel));
+        modal.removeEventListener('keydown', onKey);
+        if (typeof GazpromMobileOverlay !== 'undefined') GazpromMobileOverlay.unlock();
+        resolve(result);
+      }
+
+      function onCancel() {
+        cleanup(null);
+      }
+
+      function onConfirm() {
+        if (allPeriodCb?.checked) {
+          cleanup({ allPeriod: true });
+          return;
+        }
+        // Приоритет у поля ввода года, если пользователь явно его изменил.
+        const yearRaw =
+          (yearInput?.value && yearInput.value.trim()) ||
+          (yearSelect?.value && yearSelect.value.trim()) ||
+          '';
+        const year = yearRaw ? Number(yearRaw) : null;
+        if (!Number.isFinite(year)) {
+          GazpromToast.error('Укажите год или выберите «весь период»');
+          return;
+        }
+        const month = monthSelect?.value && monthSelect.value !== 'all' ? Number(monthSelect.value) : null;
+        const quarter =
+          quarterSelect?.value && quarterSelect.value !== 'all' ? Number(quarterSelect.value) : null;
+        cleanup(
+          RegistryAnalytics.normalizePeriod({
+            allPeriod: false,
+            year,
+            month,
+            quarter,
+          })
+        );
+      }
+
+      function onKey(e) {
+        if (e.key === 'Escape') onCancel();
+      }
+
+      allPeriodCb?.addEventListener('change', syncDisabled);
+      monthSelect?.addEventListener('change', onMonthChange);
+      quarterSelect?.addEventListener('change', onQuarterChange);
+      yearSelect?.addEventListener('change', onYearSelectChange);
+      yearInput?.addEventListener('input', onYearInputChange);
+      confirmBtn?.addEventListener('click', onConfirm);
+      cancelBtns.forEach((b) => b.addEventListener('click', onCancel));
+      modal.addEventListener('keydown', onKey);
+
+      modal.hidden = false;
+      if (typeof GazpromMobileOverlay !== 'undefined') GazpromMobileOverlay.lock();
+      confirmBtn?.focus();
+    });
+  }
+
+  /**
+   * Аналитическая справка по нарушениям из актов за период → .docx (без LLM).
+   * @param {{ allPeriod?: boolean, year?: number, month?: number|null, quarter?: number|null }} period
+   * @returns {Promise<number>} число нарушений
+   */
+  async function exportAnalyticsDocx(period) {
     if (typeof RegistryAnalytics === 'undefined' || !RegistryAnalytics.buildAnalyticsModel) {
       throw new Error('Модуль аналитики не загружен');
     }
@@ -444,13 +583,18 @@ const ViolationRegistry = (() => {
     }
     const catalog = await GazpromStore.get();
     if (catalog && typeof ViolationTypes !== 'undefined') ViolationTypes.ensureCatalog(catalog);
-    const list = await getAll();
-    if (!list.length) throw new Error('Реестр пуст — нечего анализировать');
-    const registryName =
-      typeof DefaultsBootstrap !== 'undefined' && DefaultsBootstrap.registrySourceLabel
-        ? DefaultsBootstrap.registrySourceLabel(catalog)
-        : catalog?.violationRegistryLabel || undefined;
-    const model = RegistryAnalytics.buildAnalyticsModel(list, { catalog, registryName });
+
+    const periodNorm = RegistryAnalytics.normalizePeriod(period || { allPeriod: true });
+    const filteredAkts = RegistryAnalytics.filterAktsByPeriod(catalog?.akts || [], periodNorm);
+    const violations = RegistryAnalytics.collectViolationsFromAkts(filteredAkts);
+    if (!violations.length) {
+      throw new Error('За выбранный период нет нарушений в актах');
+    }
+
+    const model = RegistryAnalytics.buildAnalyticsModel(violations, {
+      catalog,
+      period: periodNorm,
+    });
     await DocGenerator.downloadRegistryAnalyticsDocx(model);
     return model.meta.total;
   }
@@ -610,6 +754,7 @@ const ViolationRegistry = (() => {
     importFromExcel,
     exportToExcel,
     exportAnalyticsDocx,
+    openAnalyticsPeriodDialog,
     loadXlsx,
   };
 })();
