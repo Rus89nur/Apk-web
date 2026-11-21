@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gazprom-web-v391';
+const CACHE_NAME = 'gazprom-web-v392';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
   './',
@@ -26,7 +26,7 @@ const STATIC_ASSETS = [
   './js/deepseek-config.js?v=1',
   './js/deepseek-service.js?v=1',
   './js/ui-bindings.js?v=48',
-  './js/doc-generator.js?v=45',
+  './js/doc-generator.js?v=46',
   './js/template-builder-wizard.js?v=3',
   './js/defaults-bootstrap.js?v=15',
   './js/registry-analytics.js?v=1',
