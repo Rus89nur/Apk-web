@@ -419,6 +419,40 @@ const ViolationRegistry = (() => {
         GazpromToast.error(err.message);
       }
     });
+
+    // Аналитическая справка (.docx)
+    document.getElementById('vrScreenAnalyticsBtn')?.addEventListener('click', async () => {
+      try {
+        const total = await exportAnalyticsDocx();
+        GazpromToast.success(`Аналитическая справка скачана (${total} формулировок)`);
+      } catch (err) {
+        GazpromToast.error(err?.message || 'Не удалось сформировать справку');
+      }
+    });
+  }
+
+  /**
+   * Локальная аналитическая справка по текущему реестру → .docx (без LLM).
+   * @returns {Promise<number>} число формулировок
+   */
+  async function exportAnalyticsDocx() {
+    if (typeof RegistryAnalytics === 'undefined' || !RegistryAnalytics.buildAnalyticsModel) {
+      throw new Error('Модуль аналитики не загружен');
+    }
+    if (typeof DocGenerator === 'undefined' || !DocGenerator.downloadRegistryAnalyticsDocx) {
+      throw new Error('Генератор документов не загружен');
+    }
+    const catalog = await GazpromStore.get();
+    if (catalog && typeof ViolationTypes !== 'undefined') ViolationTypes.ensureCatalog(catalog);
+    const list = await getAll();
+    if (!list.length) throw new Error('Реестр пуст — нечего анализировать');
+    const registryName =
+      typeof DefaultsBootstrap !== 'undefined' && DefaultsBootstrap.registrySourceLabel
+        ? DefaultsBootstrap.registrySourceLabel(catalog)
+        : catalog?.violationRegistryLabel || undefined;
+    const model = RegistryAnalytics.buildAnalyticsModel(list, { catalog, registryName });
+    await DocGenerator.downloadRegistryAnalyticsDocx(model);
+    return model.meta.total;
   }
 
   /* ——— Форма добавления / редактирования ——— */
@@ -575,6 +609,7 @@ const ViolationRegistry = (() => {
     bindVidToRegistryItem,
     importFromExcel,
     exportToExcel,
+    exportAnalyticsDocx,
     loadXlsx,
   };
 })();

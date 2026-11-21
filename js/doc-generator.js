@@ -423,6 +423,107 @@ const DocGenerator = (() => {
     return zip;
   }
 
+  function formatAnalyticsDateRu(iso) {
+    const d = iso ? new Date(iso) : new Date();
+    if (Number.isNaN(d.getTime())) return String(iso || '');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  }
+
+  function buildRegistryAnalyticsDocumentXml(model) {
+    const meta = model?.meta || {};
+    const parts = [
+      wParagraph('Аналитическая справка по реестру нарушений', { bold: true }),
+      wParagraph(''),
+      wParagraph(`Дата формирования: ${formatAnalyticsDateRu(meta.generatedAt)}`),
+      wParagraph(`Число формулировок: ${meta.total ?? 0}`),
+    ];
+    if (meta.registryName) {
+      parts.push(wParagraph(`Реестр: ${meta.registryName}`));
+    }
+    parts.push(wParagraph(''));
+    parts.push(wParagraph('Часть I. Выжимка по видам нарушений', { bold: true }));
+    parts.push(wParagraph(''));
+
+    const byVid = model?.byVid || [];
+    if (!byVid.length) {
+      parts.push(wParagraph('Нет данных для группировки по видам.'));
+    } else {
+      byVid.forEach((row) => {
+        parts.push(
+          wParagraph(`${row.vid} — ${row.count} шт., доля ${row.sharePct}%`, { bold: true })
+        );
+        (row.samples || []).forEach((s) => {
+          parts.push(wParagraph(`• ${s}`));
+        });
+        parts.push(wParagraph(''));
+      });
+    }
+
+    parts.push(wParagraph('Типовые кластеры формулировок', { bold: true }));
+    parts.push(wParagraph(''));
+    const clusters = model?.clusters || [];
+    if (!clusters.length) {
+      parts.push(wParagraph('Совпадений по кластерам не найдено.'));
+      parts.push(wParagraph(''));
+    } else {
+      clusters.forEach((c) => {
+        parts.push(wParagraph(`${c.title} — ${c.count} шт.`, { bold: true }));
+        (c.samples || []).forEach((s) => {
+          parts.push(wParagraph(`• ${s}`));
+        });
+        parts.push(wParagraph(''));
+      });
+    }
+
+    parts.push(wParagraph('Часть II. Чек-лист направлений проверки', { bold: true }));
+    parts.push(wParagraph(''));
+    (model?.checklist || []).forEach((block, idx) => {
+      parts.push(wParagraph(`${idx + 1}. ${block.direction}`, { bold: true }));
+      (block.questions || []).forEach((q, qIdx) => {
+        parts.push(wParagraph(`${qIdx + 1}) ${q}`));
+      });
+      parts.push(wParagraph(''));
+    });
+
+    parts.push(
+      '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134"/></w:sectPr>'
+    );
+
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>${parts.join('')}</w:body>
+</w:document>`;
+  }
+
+  async function downloadRegistryAnalyticsDocx(model) {
+    await ensurePizZip();
+    const zip = buildBlankTemplateZip();
+    const xml = buildRegistryAnalyticsDocumentXml(model);
+    zip.file('word/document.xml', xml);
+    const now = new Date().toISOString();
+    zip.file(
+      'docProps/core.xml',
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <dc:title>Аналитическая справка по реестру нарушений</dc:title>
+  <dc:creator>Gazprom Web</dc:creator>
+  <dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created>
+</cp:coreProperties>`
+    );
+    const blob = zip.generate({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
+    const fileName =
+      typeof RegistryAnalytics !== 'undefined' && RegistryAnalytics.analyticsFileName
+        ? RegistryAnalytics.analyticsFileName(model)
+        : `Analiticheskaya_spravka_reestr_${String(model?.meta?.generatedAt || now).slice(0, 10)}.docx`;
+    return openDocxBlob(blob, fileName);
+  }
+
   async function downloadBlankTemplate() {
     await ensurePizZip();
     const zip = buildBlankTemplateZip();
@@ -1814,6 +1915,8 @@ const DocGenerator = (() => {
     getMarkerLabel,
     downloadBlankTemplate,
     downloadBlankSpravkaTemplate,
+    downloadRegistryAnalyticsDocx,
+    buildRegistryAnalyticsDocumentXml,
     BLANK_TEMPLATE_FILENAME,
     BLANK_SPRAVKA_TEMPLATE_FILENAME,
     TEMPLATE_KEY,
