@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>АПК — варианты дизайна с нуля</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Montserrat:wght@600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: 'Manrope', system-ui, sans-serif;
+      background: #12161c;
+      color: #e8edf4;
+    }
+
+    .studio {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    .rail {
+      background: #0c1016;
+      border-right: 1px solid #243041;
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .rail h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      line-height: 1.35;
+    }
+
+    .rail .lede {
+      font-size: 12px;
+      line-height: 1.55;
+      color: #8b9bb0;
+    }
+
+    .variant-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .variant-btn {
+      text-align: left;
+      border: 1px solid #2a3a4f;
+      background: #151b24;
+      color: inherit;
+      border-radius: 12px;
+      padding: 14px 14px 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .variant-btn:hover { border-color: #4a6280; }
+    .variant-btn.active {
+      border-color: #5b9fd4;
+      background: #182433;
+    }
+    .variant-btn .name {
+      display: block;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .variant-btn .hint {
+      display: block;
+      font-size: 11px;
+      color: #8b9bb0;
+      line-height: 1.45;
+    }
+    .variant-btn .swatches {
+      display: flex;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    .variant-btn .swatches i {
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      display: block;
+    }
+
+    .device-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .device-toggle button {
+      border: 1px solid #2a3a4f;
+      background: #151b24;
+      color: #c5d0de;
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .device-toggle button.active {
+      background: #2a4a6a;
+      border-color: #5b9fd4;
+      color: #fff;
+    }
+
+    .screen-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .screen-nav button {
+      border: 0;
+      background: transparent;
+      color: #9aabbf;
+      text-align: left;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .screen-nav button:hover { background: #1a2230; color: #fff; }
+    .screen-nav button.active {
+      background: #243247;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .rail-note {
+      margin-top: auto;
+      font-size: 11px;
+      color: #6b7c90;
+      line-height: 1.5;
+      border-top: 1px solid #243041;
+      padding-top: 16px;
+    }
+
+    .stage {
+      padding: 28px 32px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: center;
+    }
+
+    .stage-head {
+      width: min(1100px, 100%);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .stage-head h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .stage-head p {
+      color: #8b9bb0;
+      font-size: 13px;
+      max-width: 560px;
+      line-height: 1.5;
+      margin-top: 6px;
+    }
+    .pick-badge {
+      flex-shrink: 0;
+      border: 1px solid #3d5570;
+      background: #1a2533;
+      color: #cfe0f2;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pick-badge.chosen {
+      background: #1e4d2f;
+      border-color: #3d9a5f;
+      color: #d4f5e0;
+    }
+
+    .frame-wrap {
+      width: min(1100px, 100%);
+      display: flex;
+      justify-content: center;
+    }
+
+    .device {
+      width: 100%;
+      max-width: 1080px;
+      border-radius: 18px;
+      overflow: hidden;
+      border: 1px solid #31455c;
+      background: #fff;
+      color: #0f172a;
+      min-height: 640px;
+      transition: max-width 0.2s;
+    }
+    body[data-device="phone"] .device {
+      max-width: 390px;
+      min-height: 760px;
+      border-radius: 28px;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: 640px;
+      height: 100%;
+    }
+    body[data-device="phone"] .app-shell {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto;
+      min-height: 760px;
+    }
+
+    .mock-sidebar { display: flex; flex-direction: column; padding: 18px 12px; gap: 4px; }
+    body[data-device="phone"] .mock-sidebar { display: none; }
+
+    .mock-main {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+    }
+    .mock-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid transparent;
+      gap: 12px;
+    }
+    .mock-header h3 { font-size: 16px; font-weight: 700; }
+    .mock-content {
+      flex: 1;
+      padding: 20px;
+      overflow: auto;
+    }
+    .mock-bottom {
+      display: none;
+      border-top: 1px solid transparent;
+      padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+    body[data-device="phone"] .mock-bottom {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 2px;
+    }
+    .mock-bottom button {
+      border: 0;
+      background: transparent;
+      font-size: 10px;
+      padding: 8px 2px;
+      cursor: pointer;
+      color: inherit;
+      opacity: 0.55;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .mock-bottom button.active { opacity: 1; font-weight: 700; }
+    .mock-bottom .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 5px;
+      background: currentColor;
+      opacity: 0.25;
+    }
+    .mock-bottom button.active .dot { opacity: 0.9; }
+
+    .nav-hit {
+      border: 0;
+      background: transparent;
+      text-align: left;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      cursor: pointer;
+      color: inherit;
+      opacity: 0.72;
+    }
+    .nav-hit.active { opacity: 1; font-weight: 650; }
+
+    .brand-mark { margin-bottom: 16px; padding: 0 8px 12px; }
+    .brand-mark .logo { font-weight: 800; line-height: 1.2; }
+    .brand-mark small { opacity: 0.65; font-size: 11px; }
+
+    .cta {
+      border: 0;
+      cursor: pointer;
+      font-weight: 700;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+    }
+    .cta-ghost {
+      background: transparent;
+      border: 1px solid currentColor;
+      opacity: 0.8;
+    }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 16px;
+    }
+    body[data-device="phone"] .stat-row { grid-template-columns: 1fr; }
+
+    .mini-card {
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .mini-card .v { font-size: 22px; font-weight: 800; }
+    .mini-card .l { font-size: 12px; opacity: 0.65; margin-top: 2px; }
+
+    .wizard-steps {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+    .wizard-steps span {
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      opacity: 0.55;
+    }
+    .wizard-steps span.on { opacity: 1; font-weight: 700; }
+
+    .form-block {
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .field {
+      display: grid;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .field b { font-weight: 600; opacity: 0.8; }
+    .field .box {
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    .hist-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid transparent;
+    }
+    .hist-item:last-child { border-bottom: 0; }
+    .hist-item .t { font-weight: 700; font-size: 14px; }
+    .hist-item .s { font-size: 12px; opacity: 0.6; margin-top: 3px; }
+    .hist-item .tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 999px;
+      align-self: flex-start;
+      white-space: nowrap;
+    }
+
+    /* ===== A: Северный инспектор ===== */
+    [data-variant="north"] .device {
+      font-family: 'Montserrat', 'Manrope', sans-serif;
+    }
+    [data-variant="north"] .app-shell {
+      background:
+        radial-gradient(1200px 500px at 10% -10%, #1a3a66 0%, transparent 55%),
+        linear-gradient(180deg, #07111f 0%, #0b1a2e 40%, #10233a 100%);
+      color: #e8f1ff;
+    }
+    [data-variant="north"] .mock-sidebar {
+      background: rgba(4, 12, 24, 0.55);
+      border-right: 1px solid rgba(120, 170, 230, 0.12);
+    }
+    [data-variant="north"] .brand-mark .logo {
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+    [data-variant="north"] .brand-mark .logo span { color: #7ec8ff; }
+    [data-variant="north"] .nav-hit.active {
+      background: rgba(80, 160, 255, 0.18);
+      color: #9fd4ff;
+    }
+    [data-variant="north"] .mock-header {
+      background: transparent;
+      border-bottom-color: rgba(120, 170, 230, 0.12);
+    }
+    [data-variant="north"] .mock-content { background: transparent; }
+    [data-variant="north"] .hero {
+      padding: 8px 4px 20px;
+    }
+    [data-variant="north"] .hero .brand-hero {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 10px;
+    }
+    [data-variant="north"] .hero .brand-hero span { color: #7ec8ff; }
+    [data-variant="north"] .hero .line {
+      font-family: 'Manrope', sans-serif;
+      font-size: 15px;
+      opacity: 0.78;
+      max-width: 28ch;
+      line-height: 1.45;
+      margin-bottom: 22px;
+    }
+    [data-variant="north"] .cta-primary {
+      background: #3d9bff;
+      color: #041018;
+    }
+    [data-variant="north"] .cta-ghost { color: #cfe4ff; border-color: rgba(180,210,255,0.35); }
+    [data-variant="north"] .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    [data-variant="north"] .progress {
+      margin-top: 28px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(120, 170, 230, 0.14);
+      font-family: 'Manrope', sans-serif;
+    }
+    [data-variant="north"] .progress .bar {
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.08);
+      overflow: hidden;
+      margin: 8px 0;
+    }
+    [data-variant="north"] .progress .fill {
+      width: 62%;
+      height: 100%;
+      background: linear-gradient(90deg, #2f7fd4, #7ec8ff);
+    }
+    [data-variant="north"] .mini-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(140,180,230,0.12);
+      font-family: 'Manrope', sans-serif;
+    }
+    [data-variant="north"] .wizard-steps span {
+      background: rgba(255,255,255,0.06);
+      font-family: 'Manrope', sans-serif;
+    }
+    [data-variant="north"] .wizard-steps span.on {
+      background: rgba(61, 155, 255, 0.25);
+      color: #9fd4ff;
+    }
+    [data-variant="north"] .form-block {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(140,180,230,0.12);
+      font-family: 'Manrope', sans-serif;
+    }
+    [data-variant="north"] .field .box {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(140,180,230,0.16);
+    }
+    [data-variant="north"] .hist-item { border-bottom-color: rgba(140,180,230,0.12); font-family: 'Manrope', sans-serif; }
+    [data-variant="north"] .hist-item .tag { background: rgba(61,155,255,0.2); color: #9fd4ff; }
+    [data-variant="north"] .mock-bottom {
+      background: rgba(4, 12, 24, 0.9);
+      border-top-color: rgba(120, 170, 230, 0.12);
+      color: #9fd4ff;
+    }
+
+    /* ===== B: Полевой режим ===== */
+    [data-variant="field"] .device {
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    }
+    [data-variant="field"] .app-shell {
+      background: #1c1f17;
+      color: #f4f1e4;
+    }
+    [data-variant="field"] .mock-sidebar {
+      background: #141610;
+      border-right: 1px solid #323628;
+    }
+    [data-variant="field"] .brand-mark .logo {
+      font-size: 17px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    [data-variant="field"] .brand-mark .logo span { color: #e8b84a; }
+    [data-variant="field"] .nav-hit {
+      border-radius: 6px;
+      font-size: 14px;
+      padding: 12px;
+    }
+    [data-variant="field"] .nav-hit.active {
+      background: #e8b84a;
+      color: #1a1608;
+      opacity: 1;
+    }
+    [data-variant="field"] .mock-header {
+      background: #23271c;
+      border-bottom-color: #3a4030;
+    }
+    [data-variant="field"] .mock-content { background: #1c1f17; }
+    [data-variant="field"] .hero .eyebrow {
+      color: #e8b84a;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    [data-variant="field"] .hero .brand-hero {
+      font-size: clamp(26px, 3.5vw, 34px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 10px;
+    }
+    [data-variant="field"] .hero .line {
+      font-size: 16px;
+      opacity: 0.8;
+      margin-bottom: 20px;
+      max-width: 28ch;
+    }
+    [data-variant="field"] .cta-primary {
+      background: #e8b84a;
+      color: #1a1608;
+      border-radius: 8px;
+      font-size: 16px;
+      padding: 16px 18px;
+      width: 100%;
+    }
+    [data-variant="field"] .cta-ghost {
+      border-radius: 8px;
+      border-color: #6a7258;
+      color: #f4f1e4;
+      width: 100%;
+      padding: 14px 18px;
+      font-size: 15px;
+    }
+    [data-variant="field"] .actions { display: grid; gap: 10px; }
+    [data-variant="field"] .progress {
+      margin-top: 22px;
+      background: #272b20;
+      border: 1px solid #3d4432;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    [data-variant="field"] .progress .bar {
+      height: 12px;
+      border-radius: 4px;
+      background: #141610;
+      margin: 10px 0 6px;
+      overflow: hidden;
+    }
+    [data-variant="field"] .progress .fill {
+      width: 62%;
+      height: 100%;
+      background: #e8b84a;
+    }
+    [data-variant="field"] .stat-row { gap: 8px; }
+    [data-variant="field"] .mini-card {
+      background: #272b20;
+      border: 1px solid #3d4432;
+      border-radius: 8px;
+    }
+    [data-variant="field"] .mini-card .v { font-size: 26px; }
+    [data-variant="field"] .wizard-steps span {
+      background: #272b20;
+      border-radius: 6px;
+      font-size: 12px;
+      padding: 8px 10px;
+    }
+    [data-variant="field"] .wizard-steps span.on {
+      background: #e8b84a;
+      color: #1a1608;
+    }
+    [data-variant="field"] .form-block {
+      background: #272b20;
+      border: 1px solid #3d4432;
+      border-radius: 8px;
+    }
+    [data-variant="field"] .field .box {
+      background: #141610;
+      border: 1px solid #4a523c;
+      height: 44px;
+      font-size: 15px;
+    }
+    [data-variant="field"] .hist-item { border-bottom-color: #3a4030; padding: 16px 0; }
+    [data-variant="field"] .hist-item .t { font-size: 16px; }
+    [data-variant="field"] .hist-item .tag {
+      background: #3d4432;
+      color: #e8b84a;
+      border-radius: 6px;
+    }
+    [data-variant="field"] .mock-bottom {
+      background: #141610;
+      border-top-color: #3a4030;
+      color: #e8b84a;
+    }
+
+    /* ===== C: Спокойный стол ===== */
+    [data-variant="desk"] .device {
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+    [data-variant="desk"] .app-shell {
+      background:
+        linear-gradient(165deg, #eef5f4 0%, #e7eef6 45%, #f3f0ea 100%);
+      color: #1a2430;
+    }
+    [data-variant="desk"] .mock-sidebar {
+      background: rgba(255,255,255,0.55);
+      border-right: 1px solid rgba(30,50,60,0.08);
+      backdrop-filter: blur(8px);
+    }
+    [data-variant="desk"] .brand-mark .logo {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    [data-variant="desk"] .brand-mark .logo span { color: #0f766e; }
+    [data-variant="desk"] .nav-hit.active {
+      background: rgba(15, 118, 110, 0.12);
+      color: #0f766e;
+    }
+    [data-variant="desk"] .mock-header {
+      background: transparent;
+      border-bottom-color: rgba(30,50,60,0.08);
+    }
+    [data-variant="desk"] .mock-header h3 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    [data-variant="desk"] .hero {
+      max-width: 420px;
+      padding: 12px 0 8px;
+    }
+    [data-variant="desk"] .hero .brand-hero {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: clamp(30px, 4vw, 42px);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+    [data-variant="desk"] .hero .line {
+      font-size: 15px;
+      color: #4a5a68;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+    [data-variant="desk"] .cta-primary {
+      background: #0f766e;
+      color: #f3fffc;
+      border-radius: 999px;
+      padding: 12px 20px;
+    }
+    [data-variant="desk"] .cta-ghost {
+      border-radius: 999px;
+      border-color: rgba(15,118,110,0.35);
+      color: #0f766e;
+    }
+    [data-variant="desk"] .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    [data-variant="desk"] .progress {
+      margin-top: 26px;
+      font-size: 13px;
+      color: #4a5a68;
+    }
+    [data-variant="desk"] .progress .bar {
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(15,118,110,0.12);
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    [data-variant="desk"] .progress .fill {
+      width: 62%;
+      height: 100%;
+      background: #0f766e;
+    }
+    [data-variant="desk"] .mini-card {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(30,50,60,0.08);
+      border-radius: 16px;
+    }
+    [data-variant="desk"] .wizard-steps span {
+      background: rgba(255,255,255,0.65);
+      border: 1px solid rgba(30,50,60,0.08);
+    }
+    [data-variant="desk"] .wizard-steps span.on {
+      background: #0f766e;
+      color: #fff;
+      border-color: #0f766e;
+    }
+    [data-variant="desk"] .form-block {
+      background: rgba(255,255,255,0.72);
+      border: 1px solid rgba(30,50,60,0.08);
+      border-radius: 18px;
+    }
+    [data-variant="desk"] .field .box {
+      background: #fff;
+      border: 1px solid rgba(30,50,60,0.12);
+    }
+    [data-variant="desk"] .hist-item { border-bottom-color: rgba(30,50,60,0.1); }
+    [data-variant="desk"] .hist-item .tag {
+      background: rgba(15,118,110,0.12);
+      color: #0f766e;
+    }
+    [data-variant="desk"] .mock-bottom {
+      background: rgba(255,255,255,0.85);
+      border-top-color: rgba(30,50,60,0.1);
+      color: #0f766e;
+    }
+
+    .panel-hidden { display: none !important; }
+
+    @media (max-width: 860px) {
+      .studio { grid-template-columns: 1fr; }
+      .rail {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid #243041;
+      }
+      .stage { padding: 20px 14px 40px; }
+      .stage-head { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body data-variant="north" data-device="desktop" data-screen="home">
+  <div class="studio">
+    <aside class="rail">
+      <div>
+        <h1>Новый дизайн АПК</h1>
+        <p class="lede">Три направления с нуля. Выберите вариант слева, экран и устройство — макет кликабелен.</p>
+      </div>
+
+      <div class="variant-list" id="variantList">
+        <button type="button" class="variant-btn active" data-variant="north">
+          <span class="name">A · Северный инспектор</span>
+          <span class="hint">Тёмный navy, лёд, бренд-герой. Один CTA на первом экране.</span>
+          <span class="swatches" aria-hidden="true">
+            <i style="background:#07111f"></i>
+            <i style="background:#1a3a66"></i>
+            <i style="background:#3d9bff"></i>
+            <i style="background:#7ec8ff"></i>
+          </span>
+        </button>
+        <button type="button" class="variant-btn" data-variant="field">
+          <span class="name">B · Полевой режим</span>
+          <span class="hint">Высокий контраст, крупные зоны нажатия, янтарь безопасности.</span>
+          <span class="swatches" aria-hidden="true">
+            <i style="background:#141610"></i>
+            <i style="background:#1c1f17"></i>
+            <i style="background:#e8b84a"></i>
+            <i style="background:#f4f1e4"></i>
+          </span>
+        </button>
+        <button type="button" class="variant-btn" data-variant="desk">
+          <span class="name">C · Спокойный стол</span>
+          <span class="hint">Светлый стол инспектора, teal, мягкая типографика.</span>
+          <span class="swatches" aria-hidden="true">
+            <i style="background:#eef5f4"></i>
+            <i style="background:#e7eef6"></i>
+            <i style="background:#0f766e"></i>
+            <i style="background:#1a2430"></i>
+          </span>
+        </button>
+      </div>
+
+      <div>
+        <div class="lede" style="margin-bottom:8px">Устройство</div>
+        <div class="device-toggle" id="deviceToggle">
+          <button type="button" class="active" data-device="desktop">Десктоп</button>
+          <button type="button" data-device="phone">Телефон</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="lede" style="margin-bottom:8px">Экран</div>
+        <div class="screen-nav" id="screenNav">
+          <button type="button" class="active" data-screen="home">Главная</button>
+          <button type="button" data-screen="wizard">Редактируемый акт</button>
+          <button type="button" data-screen="history">История</button>
+        </div>
+      </div>
+
+      <p class="rail-note">Макет-прототип: не боевой UI. После выбора направления можно внедрить в css/app.css и shell.</p>
+    </aside>
+
+    <main class="stage">
+      <div class="stage-head">
+        <div>
+          <h2 id="stageTitle">Северный инспектор</h2>
+          <p id="stageDesc">Атмосфера северной инспекции: глубокий navy и ледяной акцент. Бренд «Р.И. Шелудько» — герой первого экрана, один главный CTA.</p>
+        </div>
+        <button type="button" class="pick-badge" id="pickBtn">Выбрать этот вариант</button>
+      </div>
+
+      <div class="frame-wrap">
+        <div class="device" id="device">
+          <div class="app-shell">
+            <aside class="mock-sidebar">
+              <div class="brand-mark">
+                <div class="logo">Р.И. <span>Шелудько</span></div>
+                <small>Акты проверок · веб</small>
+              </div>
+              <button type="button" class="nav-hit active" data-screen="home">Главная</button>
+              <button type="button" class="nav-hit" data-screen="wizard">Редактируемый акт</button>
+              <button type="button" class="nav-hit" data-screen="history">История</button>
+              <button type="button" class="nav-hit" data-screen="history">Устранение</button>
+              <button type="button" class="nav-hit" data-screen="history">Отчёты</button>
+              <button type="button" class="nav-hit" data-screen="home">Настройки</button>
+            </aside>
+
+            <div class="mock-main">
+              <header class="mock-header">
+                <h3 id="pageTitle">Главная</h3>
+                <div style="opacity:.55;font-size:12px" id="syncLabel">Синхронизировано</div>
+              </header>
+
+              <div class="mock-content">
+                <!-- HOME -->
+                <div id="panel-home">
+                  <div class="hero">
+                    <div class="eyebrow panel-hidden" id="fieldEyebrow">Программа НЕТ</div>
+                    <div class="brand-hero" id="brandHero">Р.И. <span>Шелудько</span></div>
+                    <div class="line" id="heroLine">Готовы к проверке? Создайте полный акт за один проход.</div>
+                    <div class="actions">
+                      <button type="button" class="cta cta-primary" data-screen="wizard">Создать полный акт</button>
+                      <button type="button" class="cta cta-ghost" data-screen="wizard">Справка по ПБ</button>
+                    </div>
+                    <div class="progress">
+                      <div>График проверок · 62% за период</div>
+                      <div class="bar"><div class="fill"></div></div>
+                      <div style="font-size:12px;opacity:.65">Нажмите полосу — переключить месяц / период</div>
+                    </div>
+                  </div>
+                  <div class="stat-row">
+                    <div class="mini-card"><div class="v">148</div><div class="l">Текущий номер акта</div></div>
+                    <div class="mini-card"><div class="v">12</div><div class="l">Актов в работе</div></div>
+                    <div class="mini-card"><div class="v">3</div><div class="l">Черновиков</div></div>
+                  </div>
+                </div>
+
+                <!-- WIZARD -->
+                <div id="panel-wizard" class="panel-hidden">
+                  <div class="wizard-steps">
+                    <span class="on">1 · Дата</span>
+                    <span>2 · Организация</span>
+                    <span>3 · Объект</span>
+                    <span>4 · Нарушения</span>
+                    <span>5 · Выводы</span>
+                    <span>6 · Генерация</span>
+                  </div>
+                  <div class="form-block">
+                    <div class="field"><b>Дата проверки</b><div class="box">21.11.2026</div></div>
+                    <div class="field"><b>Председатель комиссии</b><div class="box">Р.И. Шелудько</div></div>
+                    <div class="field"><b>Члены комиссии</b><div class="box">Выберите из справочника…</div></div>
+                    <div class="actions" style="margin-top:8px">
+                      <button type="button" class="cta cta-primary">Далее →</button>
+                      <button type="button" class="cta cta-ghost" data-screen="home">Отмена</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- HISTORY -->
+                <div id="panel-history" class="panel-hidden">
+                  <div class="hist-item">
+                    <div>
+                      <div class="t">Акт №147 · ООО «Северстрой»</div>
+                      <div class="s">Объект КС-12 · 18.11.2026 · 4 нарушения</div>
+                    </div>
+                    <span class="tag">Черновик</span>
+                  </div>
+                  <div class="hist-item">
+                    <div>
+                      <div class="t">Акт №146 · АО «Трансгаз»</div>
+                      <div class="s">ЛПУМГ Урал · 12.11.2026 · устранено</div>
+                    </div>
+                    <span class="tag">Готов</span>
+                  </div>
+                  <div class="hist-item">
+                    <div>
+                      <div class="t">Справка ПБ · участок «Восток»</div>
+                      <div class="s">05.11.2026 · без нарушений</div>
+                    </div>
+                    <span class="tag">Готов</span>
+                  </div>
+                </div>
+              </div>
+
+              <nav class="mock-bottom" id="bottomNav">
+                <button type="button" class="active" data-screen="home"><span class="dot"></span>Главная</button>
+                <button type="button" data-screen="wizard"><span class="dot"></span>Акт</button>
+                <button type="button" data-screen="history"><span class="dot"></span>История</button>
+                <button type="button" data-screen="history"><span class="dot"></span>Отчёты</button>
+                <button type="button" data-screen="home"><span class="dot"></span>Ещё</button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var META = {
+        north: {
+          title: 'Северный инспектор',
+          desc: 'Атмосфера северной инспекции: глубокий navy и ледяной акцент. Бренд «Р.И. Шелудько» — герой первого экрана, один главный CTA.',
+          hero: 'Р.И. <span>Шелудько</span>',
+          line: 'Готовы к проверке? Создайте полный акт за один проход.',
+          showEyebrow: false
+        },
+        field: {
+          title: 'Полевой режим',
+          desc: 'Для планшета и телефона на объекте: высокий контраст, крупные кнопки, янтарь как сигнал действия. Минимум декора — максимум скорости.',
+          hero: 'Акты проверок',
+          line: 'Большие зоны нажатия. Быстрый старт полного акта прямо в поле.',
+          showEyebrow: true
+        },
+        desk: {
+          title: 'Спокойный стол',
+          desc: 'Светлое рабочее место инспектора: мягкий градиент фона, teal-акцент, спокойная антиква для бренда. Меньше «карточек», больше воздуха.',
+          hero: 'Р.И. Шелудько',
+          line: 'Спокойный стол для актов, справок и устранений — без лишнего шума.',
+          showEyebrow: false
+        }
+      };
+
+      var titles = { home: 'Главная', wizard: 'Редактируемый акт', history: 'История' };
+      var chosen = null;
+
+      function setVariant(v) {
+        document.body.setAttribute('data-variant', v);
+        document.querySelectorAll('#variantList .variant-btn').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-variant') === v);
+        });
+        var m = META[v];
+        document.getElementById('stageTitle').textContent = m.title;
+        document.getElementById('stageDesc').textContent = m.desc;
+        document.getElementById('brandHero').innerHTML = m.hero;
+        document.getElementById('heroLine').textContent = m.line;
+        document.getElementById('fieldEyebrow').classList.toggle('panel-hidden', !m.showEyebrow);
+        updatePick();
+      }
+
+      function setDevice(d) {
+        document.body.setAttribute('data-device', d);
+        document.querySelectorAll('#deviceToggle button').forEach(function (b) {
+          b.classList.toggle('active', b.getAttribute('data-device') === d);
+        });
+      }
+
+      function setScreen(s) {
+        document.body.setAttribute('data-screen', s);
+        ['home', 'wizard', 'history'].forEach(function (id) {
+          document.getElementById('panel-' + id).classList.toggle('panel-hidden', id !== s);
+        });
+        document.getElementById('pageTitle').textContent = titles[s] || s;
+        document.querySelectorAll('#screenNav button, .mock-sidebar .nav-hit, #bottomNav button').forEach(function (b) {
+          var ds = b.getAttribute('data-screen');
+          b.classList.toggle('active', ds === s);
+        });
+      }
+
+      function updatePick() {
+        var v = document.body.getAttribute('data-variant');
+        var btn = document.getElementById('pickBtn');
+        if (chosen === v) {
+          btn.classList.add('chosen');
+          btn.textContent = 'Выбран · ' + META[v].title;
+        } else {
+          btn.classList.remove('chosen');
+          btn.textContent = 'Выбрать этот вариант';
+        }
+      }
+
+      document.getElementById('variantList').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-variant]');
+        if (!b) return;
+        setVariant(b.getAttribute('data-variant'));
+      });
+
+      document.getElementById('deviceToggle').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-device]');
+        if (!b) return;
+        setDevice(b.getAttribute('data-device'));
+      });
+
+      document.body.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-screen]');
+        if (!b || b.closest('#variantList')) return;
+        if (b.hasAttribute('data-variant')) return;
+        var s = b.getAttribute('data-screen');
+        if (!titles[s]) return;
+        setScreen(s);
+      });
+
+      document.getElementById('pickBtn').addEventListener('click', function () {
+        chosen = document.body.getAttribute('data-variant');
+        updatePick();
+        try {
+          localStorage.setItem('apk-design-pick', chosen);
+        } catch (err) {}
+      });
+
+      try {
+        var saved = localStorage.getItem('apk-design-pick');
+        if (saved && META[saved]) {
+          chosen = saved;
+          setVariant(saved);
+        }
+      } catch (err) {}
+    })();
+  </script>
+</body>
+</html>
