@@ -7,7 +7,7 @@ const DocGenerator = (() => {
   const TEMPLATE_KEY = 'wordTemplate';
   const PIZZIP_LOCAL = './assets/vendor/pizzip.min.js';
   const DOCX_LOCAL = './assets/vendor/docxtemplater.js';
-  const BLANK_TEMPLATE_FILENAME = 'Шаблон_акта_пустой.docx';
+  const BLANK_TEMPLATE_FILENAME = 'Blank_akt_template.docx';
 
   /** Справочник маркеров для UI и подсказок в модале шаблона. */
   const TEMPLATE_MARKER_GUIDE = [
@@ -124,7 +124,7 @@ const DocGenerator = (() => {
     },
   ];
 
-  const BLANK_SPRAVKA_TEMPLATE_FILENAME = 'Шаблон_справки_пустой.docx';
+  const BLANK_SPRAVKA_TEMPLATE_FILENAME = 'Blank_spravka_template.docx';
 
   function getSpravkaMarkerGuide() {
     return SPRAVKA_MARKER_GUIDE.map((g) => ({
@@ -200,14 +200,37 @@ const DocGenerator = (() => {
     setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
   }
 
+  /** ASCII .docx name for Web Share / download (iOS rejects or mangles Cyrillic filenames). */
+  function toAsciiDocxFileName(fileName) {
+    const raw = String(fileName || 'document.docx').trim() || 'document.docx';
+    const withExt = /\.docx$/i.test(raw) ? raw : `${raw}.docx`;
+    const base = withExt.replace(/\.docx$/i, '');
+    const ascii = base
+      .replace(/[^\x20-\x7E]/g, '_')
+      .replace(/[\\/:*?"<>|]+/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
+    return `${ascii || 'document'}.docx`;
+  }
+
   async function openDocxBlob(blob, fileName) {
     const mime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-    const file = new File([blob], fileName, { type: mime });
+    const safeName = toAsciiDocxFileName(fileName);
+    const typedBlob =
+      blob && typeof blob === 'object' && blob.type === mime
+        ? blob
+        : new Blob([blob], { type: mime });
+    const file = new File([typedBlob], safeName, { type: mime });
 
-    if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function') {
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.share === 'function' &&
+      typeof navigator.canShare === 'function'
+    ) {
       try {
         if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: fileName });
+          await navigator.share({ files: [file], title: safeName });
           return 'shared';
         }
       } catch (err) {
@@ -215,24 +238,7 @@ const DocGenerator = (() => {
       }
     }
 
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = fileName;
-    a.type = mime;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    setTimeout(() => {
-      try {
-        window.open(blobUrl, '_blank', 'noopener,noreferrer');
-      } catch (_) {
-        /* ignore */
-      }
-    }, 150);
-
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
+    downloadBlob(typedBlob, safeName);
     return 'download';
   }
 
@@ -1917,6 +1923,8 @@ const DocGenerator = (() => {
     downloadBlankSpravkaTemplate,
     downloadRegistryAnalyticsDocx,
     buildRegistryAnalyticsDocumentXml,
+    openDocxBlob,
+    toAsciiDocxFileName,
     BLANK_TEMPLATE_FILENAME,
     BLANK_SPRAVKA_TEMPLATE_FILENAME,
     TEMPLATE_KEY,
