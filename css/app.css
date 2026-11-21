@@ -4363,6 +4363,17 @@
       }
     }
 
+    /* ——— Analytics period modal ——— */
+    .analytics-period-dialog .analytics-period-hint {
+      margin-bottom: 14px;
+    }
+    .analytics-period-dialog .analytics-period-all {
+      margin-bottom: 12px;
+    }
+    .analytics-period-dialog .form-group {
+      margin-bottom: 12px;
+    }
+
     /* ——— Backup Modal ——— */
     .backup-modal-dialog {
       max-width: 560px;

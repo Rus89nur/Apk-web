@@ -1,10 +1,10 @@
-const CACHE_NAME = 'gazprom-web-v392';
+const CACHE_NAME = 'gazprom-web-v393';
 const IS_LOCALHOST = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './manifest.json',
-  './css/app.css?v=391',
+  './css/app.css?v=393',
   './css/appearance.css?v=346',
   './js/appearance.js?v=272',
   './js/idb-connection.js?v=22',
@@ -26,11 +26,11 @@ const STATIC_ASSETS = [
   './js/deepseek-config.js?v=1',
   './js/deepseek-service.js?v=1',
   './js/ui-bindings.js?v=48',
-  './js/doc-generator.js?v=46',
+  './js/doc-generator.js?v=47',
   './js/template-builder-wizard.js?v=3',
   './js/defaults-bootstrap.js?v=15',
-  './js/registry-analytics.js?v=1',
-  './js/violation-registry.js?v=17',
+  './js/registry-analytics.js?v=2',
+  './js/violation-registry.js?v=18',
   './js/catalog-service.js?v=4',
   './js/backup-import.js?v=32',
   './js/akt-search.js?v=1',
@@ -43,7 +43,7 @@ const STATIC_ASSETS = [
   './js/spravka-wizard.js?v=14',
   './js/short-akt-form.js?v=10',
   './js/report-exporter.js?v=2',
-  './js/reports-dashboard.js?v=23',
+  './js/reports-dashboard.js?v=24',
   './js/app.js?v=173',
   './assets/sample-demo.gazprombackup',
   './assets/defaults/manifest.json',

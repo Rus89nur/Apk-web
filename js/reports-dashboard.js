@@ -107,6 +107,9 @@ const ReportsDashboard = (() => {
   }
 
   function getViolationKind(v) {
+    if (typeof RegistryAnalytics !== 'undefined' && typeof RegistryAnalytics.getViolationKind === 'function') {
+      return RegistryAnalytics.getViolationKind(v, activeCatalog);
+    }
     const raw = String(v.vid || '').trim();
     if (raw) {
       const resolved =
@@ -894,11 +897,12 @@ const ReportsDashboard = (() => {
       if (e.target.closest('#reportsRegistryAnalyticsBtn')) {
         void (async () => {
           try {
-            if (typeof ViolationRegistry === 'undefined' || !ViolationRegistry.exportAnalyticsDocx) {
+            if (typeof ViolationRegistry === 'undefined' || !ViolationRegistry.openAnalyticsPeriodDialog) {
               throw new Error('Модуль реестра недоступен');
             }
-            const total = await ViolationRegistry.exportAnalyticsDocx();
-            GazpromToast.success(`Аналитическая справка скачана (${total} формулировок)`);
+            const total = await ViolationRegistry.openAnalyticsPeriodDialog();
+            if (total == null) return;
+            GazpromToast.success(`Аналитическая справка скачана (${total} нарушений)`);
           } catch (err) {
             GazpromToast.error(err?.message || 'Не удалось сформировать справку');
           }

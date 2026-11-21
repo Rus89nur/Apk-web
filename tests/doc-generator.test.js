@@ -188,7 +188,11 @@ describe('DocGenerator registry analytics docx', () => {
   it('downloadRegistryAnalyticsDocx yields valid zip with analytics title and Latin filename', async () => {
     const { DocGenerator, downloads, openCalls } = loadDocGeneratorWithDom();
     const model = {
-      meta: { total: 1, generatedAt: '2026-03-05T10:00:00.000Z', registryName: 'Тест' },
+      meta: {
+        total: 1,
+        generatedAt: '2026-03-05T10:00:00.000Z',
+        period: '2025, март',
+      },
       byVid: [{ vid: 'Альфа', count: 1, sharePct: 100, samples: ['Пример'] }],
       clusters: [],
       checklist: [{ direction: 'Направление', questions: ['Вопрос?'] }],
@@ -210,7 +214,10 @@ describe('DocGenerator registry analytics docx', () => {
 
     const zip = new PizZip(bytes);
     const xml = zip.files['word/document.xml']?.asText() || '';
-    expect(xml).toContain('Аналитическая справка');
+    expect(xml).toContain('Аналитическая справка по выявленным нарушениям');
+    expect(xml).toContain('Период: 2025, март');
+    expect(xml).toContain('Число нарушений: 1');
+    expect(xml).not.toContain('Число формулировок');
   });
 
   it('openDocxBlob download path never calls window.open', async () => {

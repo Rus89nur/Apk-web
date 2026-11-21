@@ -1,11 +1,29 @@
 /**
- * RegistryAnalytics — детерминированная аналитическая справка по реестру нарушений.
- * Без LLM/сети: группировка по vid, фиксированные кластеры, статический чек-лист.
+ * RegistryAnalytics — детерминированная аналитическая справка по нарушениям из актов.
+ * Без LLM/сети: группировка по виду (как Отчёты), фиксированные кластеры, статический чек-лист.
  */
 const RegistryAnalytics = (() => {
   const EMPTY_VID = 'Без вида';
+  const EMPTY_KIND = 'Без названия';
   const SAMPLE_LIMIT = 3;
   const SAMPLE_MAX_LEN = 140;
+
+  const MONTH_NAMES_RU = [
+    'январь',
+    'февраль',
+    'март',
+    'апрель',
+    'май',
+    'июнь',
+    'июль',
+    'август',
+    'сентябрь',
+    'октябрь',
+    'ноябрь',
+    'декабрь',
+  ];
+
+  const QUARTER_LABELS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
 
   /** Кластеры без совпадений опускаются (count > 0). */
   const CLUSTER_RULES = [
@@ -163,15 +181,37 @@ const RegistryAnalytics = (() => {
     return `${t.slice(0, SAMPLE_MAX_LEN - 1)}…`;
   }
 
-  function resolveItemVid(item, catalog) {
-    const raw = item?.vid;
-    if (catalog && typeof ViolationTypes !== 'undefined' && typeof ViolationTypes.resolveVid === 'function') {
-      const resolved = ViolationTypes.resolveVid(catalog, raw);
-      const t = String(resolved || raw || '').trim();
-      return t || EMPTY_VID;
+  function truncateKindLabel(label) {
+    const out = String(label || '');
+    return out.length > 80 ? `${out.slice(0, 77)}…` : out;
+  }
+
+  /**
+   * Вид нарушения — та же семантика, что getViolationKind в Отчётах:
+   * непустой vid → resolveVid; пустой vid → fallback по title (без «Без вида» справочника).
+   * @param {object} violation
+   * @param {object} [catalog]
+   */
+  function getViolationKind(violation, catalog) {
+    const raw = String(violation?.vid || '').trim();
+    if (raw) {
+      let resolved = raw;
+      if (catalog && typeof ViolationTypes !== 'undefined' && typeof ViolationTypes.resolveVid === 'function') {
+        resolved = ViolationTypes.resolveVid(catalog, raw) || raw;
+      }
+      return truncateKindLabel(resolved || raw);
     }
-    const t = String(raw || '').trim();
-    return t || EMPTY_VID;
+    const title = String(violation?.title || '').trim();
+    if (!title) return EMPTY_KIND;
+    const shortPrefix = /^[^:]+:\s*/;
+    const normalized = shortPrefix.test(title) ? title.replace(shortPrefix, '').trim() : title;
+    const label = normalized || title;
+    return truncateKindLabel(label);
+  }
+
+  /** @deprecated внутренний alias; предпочтительно getViolationKind */
+  function resolveItemVid(item, catalog) {
+    return getViolationKind(item, catalog);
   }
 
   function itemSearchBlob(item, resolvedVid) {
@@ -192,7 +232,7 @@ const RegistryAnalytics = (() => {
   function buildByVid(items, catalog) {
     const map = new Map();
     for (const item of items) {
-      const vid = resolveItemVid(item, catalog);
+      const vid = getViolationKind(item, catalog);
       if (!map.has(vid)) map.set(vid, []);
       map.get(vid).push(item);
     }
@@ -220,14 +260,15 @@ const RegistryAnalytics = (() => {
       const matched = [];
       const matchedKeywords = new Set();
       for (const item of items) {
-        const vid = resolveItemVid(item, catalog);
+        const vid = getViolationKind(item, catalog);
+        // Кластеры: keyword по title (+ description/vid для совместимости с правилами)
         const blob = itemSearchBlob(item, vid);
         const hits = keywords.filter((kw) => blob.includes(kw));
         if (!hits.length) continue;
         matched.push(item);
         hits.forEach((h) => matchedKeywords.add(h));
       }
-      if (!matched.length) continue; // пустые кластеры опускаем
+      if (!matched.length) continue;
       clusters.push({
         id: rule.id,
         title: rule.title,
@@ -246,9 +287,99 @@ const RegistryAnalytics = (() => {
     }));
   }
 
+  function parseAktDate(akt) {
+    if (!akt?.date) return null;
+    const d = new Date(akt.date);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  /** Годы из akt.date доступных актов (убывание). */
+  function collectYearsFromAkts(akts) {
+    const years = new Set();
+    for (const akt of akts || []) {
+      const d = parseAktDate(akt);
+      if (!d) continue;
+      years.add(d.getFullYear());
+    }
+    return [...years].sort((a, b) => b - a);
+  }
+
   /**
-   * @param {Array} items — записи реестра (ViolationRegistry.getAll())
-   * @param {{ catalog?: object, registryName?: string, generatedAt?: string|Date, checklist?: Array, clusters?: Array }} [options]
+   * Нормализация периода.
+   * При allPeriod месяц/квартал игнорируются.
+   * Месяц и квартал взаимоисключающие: при обоих заданных приоритет у месяца.
+   * @param {{ allPeriod?: boolean, year?: number|string, month?: number|string|null, quarter?: number|string|null }} period
+   */
+  function normalizePeriod(period = {}) {
+    if (period.allPeriod) {
+      return { allPeriod: true };
+    }
+    const year = period.year != null && period.year !== '' ? Number(period.year) : null;
+    let month =
+      period.month != null && period.month !== '' && period.month !== 'all'
+        ? Number(period.month)
+        : null;
+    let quarter =
+      period.quarter != null && period.quarter !== '' && period.quarter !== 'all'
+        ? Number(period.quarter)
+        : null;
+    if (month != null && (!Number.isFinite(month) || month < 1 || month > 12)) month = null;
+    if (quarter != null && (!Number.isFinite(quarter) || quarter < 1 || quarter > 4)) quarter = null;
+    if (month != null && quarter != null) quarter = null; // приоритет месяца
+    return {
+      allPeriod: false,
+      year: Number.isFinite(year) ? year : null,
+      month,
+      quarter,
+    };
+  }
+
+  function formatPeriodLabel(period) {
+    const p = normalizePeriod(period);
+    if (p.allPeriod) return 'весь период';
+    const yearPart = p.year != null ? String(p.year) : '';
+    if (p.month != null) {
+      const name = MONTH_NAMES_RU[p.month - 1] || String(p.month);
+      return yearPart ? `${yearPart}, ${name}` : name;
+    }
+    if (p.quarter != null) {
+      const q = QUARTER_LABELS[p.quarter] || String(p.quarter);
+      return yearPart ? `${yearPart}, ${q} квартал` : `${q} квартал`;
+    }
+    return yearPart || 'весь период';
+  }
+
+  function aktMatchesPeriod(akt, period) {
+    const p = normalizePeriod(period);
+    if (p.allPeriod) return true;
+    const d = parseAktDate(akt);
+    if (!d) return false;
+    if (p.year != null && d.getFullYear() !== p.year) return false;
+    const month = d.getMonth() + 1;
+    if (p.month != null) return month === p.month;
+    if (p.quarter != null) return Math.ceil(month / 3) === p.quarter;
+    return true;
+  }
+
+  /** Фильтр актов по akt.date (год + месяц или квартал), как years в Отчётах. */
+  function filterAktsByPeriod(akts, period) {
+    return (akts || []).filter((akt) => aktMatchesPeriod(akt, period));
+  }
+
+  /** Плоский список нарушений из актов (как collectRows без фильтров отчётов). */
+  function collectViolationsFromAkts(akts) {
+    const out = [];
+    for (const akt of akts || []) {
+      for (const v of akt.violations || []) {
+        out.push(v);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * @param {Array} items — нарушения из актов (не справочник формулировок)
+   * @param {{ catalog?: object, period?: object, periodLabel?: string, generatedAt?: string|Date, checklist?: Array, clusters?: Array }} [options]
    */
   function buildAnalyticsModel(items, options = {}) {
     const list = Array.isArray(items) ? items : [];
@@ -258,12 +389,17 @@ const RegistryAnalytics = (() => {
       : new Date().toISOString();
     const checklist = buildChecklist(options.checklist || DEFAULT_CHECKLIST);
     const clusterRules = options.clusters || CLUSTER_RULES;
+    const period = options.period != null ? normalizePeriod(options.period) : undefined;
+    const periodLabel =
+      options.periodLabel ||
+      (period ? formatPeriodLabel(period) : undefined);
 
     return {
       meta: {
-        registryName: options.registryName || undefined,
         total: list.length,
         generatedAt,
+        period: periodLabel,
+        periodFilter: period,
       },
       byVid: buildByVid(list, catalog),
       clusters: buildClusters(list, catalog, clusterRules),
@@ -283,11 +419,20 @@ const RegistryAnalytics = (() => {
 
   return {
     EMPTY_VID,
+    EMPTY_KIND,
     CLUSTER_RULES,
     DEFAULT_CHECKLIST,
+    MONTH_NAMES_RU,
+    getViolationKind,
     buildAnalyticsModel,
     analyticsFileName,
     formatDateForFile,
+    collectYearsFromAkts,
+    collectViolationsFromAkts,
+    filterAktsByPeriod,
+    aktMatchesPeriod,
+    normalizePeriod,
+    formatPeriodLabel,
   };
 })();
 
