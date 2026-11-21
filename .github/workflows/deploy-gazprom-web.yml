@@ -35,7 +35,7 @@ jobs:
           mkdir -p _site
           for item in *; do
             case "$item" in
-              _site|.git|.github|.cursor|node_modules|proxy|tests) continue ;;
+              _site|.git|.github|.cursor|node_modules|tests) continue ;;
             esac
             cp -R "$item" _site/
           done

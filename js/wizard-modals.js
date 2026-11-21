@@ -3,8 +3,8 @@
  */
 const WizardModals = (() => {
   const SAVE_TIMEOUT_MS = 60000;
-  /** Подсказки по фото: DeepSeek (online) → локальный ML → ручной ввод. */
-  const VIOLATION_REGISTRY_PHOTO_HINTS = true;
+  /** локальный ML photo hints; выкл. как неточные */
+  const VIOLATION_REGISTRY_PHOTO_HINTS = false;
 
   const MV_PLACEHOLDER_NEW = {
     title: 'Здесь — формулировка из базы',
@@ -67,68 +67,6 @@ const WizardModals = (() => {
     if (!el) return;
     el.hidden = true;
     el.innerHTML = '';
-  }
-
-  function deepseekUiState() {
-    const cfg = typeof DeepseekConfig !== 'undefined' ? DeepseekConfig : null;
-    if (!cfg || cfg.ENABLED === false) {
-      return { show: false, disabled: true, title: '' };
-    }
-    const proxy = String(cfg.PROXY_URL || '').trim();
-    if (!proxy) {
-      return { show: true, disabled: true, title: 'ИИ не настроен' };
-    }
-    if (typeof GazpromOffline !== 'undefined' && GazpromOffline.isOffline()) {
-      return { show: true, disabled: true, title: 'Нужен интернет' };
-    }
-    if (typeof DeepseekService === 'undefined' || !DeepseekService.isAvailable()) {
-      return { show: true, disabled: true, title: 'Нужен интернет' };
-    }
-    return { show: true, disabled: false, title: 'Сформулировать нарушение через ИИ' };
-  }
-
-  function renderAiFormulateButtonHtml() {
-    const state = deepseekUiState();
-    if (!state.show) return '';
-    const disabled = state.disabled ? ' disabled' : '';
-    const titleAttr = state.title ? ` title="${AktUtils.escapeHtml(state.title)}"` : '';
-    return `<button type="button" class="btn-ghost btn-sm mv-ai-btn" id="mvAiFormulate"${disabled}${titleAttr}>Сформулировать (ИИ)</button>`;
-  }
-
-  function mapDeepseekCandidatesToHints(candidates, registryItems) {
-    const items = registryItems || [];
-    const hints = [];
-    const seen = new Set();
-    for (const row of candidates || []) {
-      const title = String(row?.title || '').trim();
-      if (!title) continue;
-      const key =
-        typeof ViolationSearch?.normalize === 'function'
-          ? ViolationSearch.normalize(title)
-          : title.toLowerCase();
-      if (!key || seen.has(key)) continue;
-      let item = null;
-      for (const reg of items) {
-        const regKey =
-          typeof ViolationSearch?.normalize === 'function'
-            ? ViolationSearch.normalize(reg?.title)
-            : String(reg?.title || '')
-                .toLowerCase()
-                .trim();
-        if (regKey === key) {
-          item = reg;
-          break;
-        }
-      }
-      if (!item) continue;
-      seen.add(key);
-      let confidence = Number(row?.confidence);
-      if (!Number.isFinite(confidence)) confidence = 0.5;
-      confidence = Math.max(0, Math.min(1, confidence));
-      hints.push({ item, percent: Math.round(confidence * 100) });
-      if (hints.length >= 4) break;
-    }
-    return hints;
   }
 
   const isSavingViolation = () => savingViolation;
@@ -843,10 +781,7 @@ const WizardModals = (() => {
       </div>
 
       <div class="form-group">
-        <div class="mv-title-label-row">
-          <label class="form-label" for="mvTitle">Формулировка нарушения <span style="color:var(--danger)">*</span></label>
-          ${renderAiFormulateButtonHtml()}
-        </div>
+        <label class="form-label" for="mvTitle">Формулировка нарушения <span style="color:var(--danger)">*</span></label>
         <textarea class="form-control mv-auto-textarea" id="mvTitle" rows="1" data-no-capitalize placeholder="${AktUtils.escapeHtml(ph.title)}">${AktUtils.escapeHtml(v?.title || '')}</textarea>
       </div>
       <div class="form-group">
@@ -1273,101 +1208,11 @@ const WizardModals = (() => {
           return;
         }
 
-        const useDeepseek =
-          typeof DeepseekService !== 'undefined' && DeepseekService.isAvailable();
-        if (useDeepseek) {
-          try {
-            const registry = getRegistryItems();
-            const registryTitles = registry
-              .map((item) => String(item?.title || '').trim())
-              .filter(Boolean)
-              .slice(0, 80);
-            const candidates = await DeepseekService.matchByPhoto({
-              dataUrl: src,
-              registryTitles,
-              items: registry,
-            });
-            if (gen !== photoHintGen || photoHintsDismissed) return;
-            const hints = mapDeepseekCandidatesToHints(candidates, registry);
-            if (hints.length) {
-              renderPhotoHintList(hints);
-              return;
-            }
-            GazpromToast.info('ИИ не нашёл совпадений — пробуем локальную модель');
-          } catch {
-            if (gen === photoHintGen) {
-              GazpromToast.info('ИИ недоступен — пробуем локальную модель');
-            }
-          }
-        }
-
-        if (gen !== photoHintGen || photoHintsDismissed) return;
         await runMlPhotoHint(src, gen);
       } catch {
         if (gen === photoHintGen) {
           showPhotoHintMessage('Ошибка при анализе фото. Выберите формулировку вручную.');
         }
-      }
-    }
-
-    async function onAiFormulateClick() {
-      const btn = document.getElementById('mvAiFormulate');
-      if (!btn || btn.disabled) return;
-      if (typeof DeepseekService === 'undefined' || !DeepseekService.isAvailable()) {
-        GazpromToast.info('ИИ недоступен. Нужен интернет и настроенный прокси.');
-        return;
-      }
-      const prevLabel = btn.textContent;
-      btn.classList.add('is-loading');
-      btn.disabled = true;
-      btn.textContent = 'Формулируем…';
-      try {
-        const registry = getRegistryItems();
-        const existingTitles = registry
-          .map((item) => String(item?.title || '').trim())
-          .filter(Boolean)
-          .slice(0, 60);
-        const result = await DeepseekService.suggestFormulation({
-          titleHint:
-            readFieldRaw('mvRegistrySearch') || readFieldRaw('mvTitle') || '',
-          mesto: document.getElementById('mvMesto')?.value || '',
-          vid: document.getElementById('mvVid')?.value || '',
-          existingTitles,
-        });
-        if (!result?.title) {
-          GazpromToast.info('Не удалось сформулировать. Введите текст вручную или выберите из реестра.');
-          return;
-        }
-        const titleEl = document.getElementById('mvTitle');
-        if (titleEl) titleEl.value = result.title;
-        const formulaEl = document.getElementById('mvFormula');
-        if (formulaEl && !readFieldRaw('mvFormula') && result.formulaFromRules) {
-          formulaEl.value = result.formulaFromRules;
-        }
-        const urlEl = document.getElementById('mvUrl');
-        if (urlEl && !readFieldRaw('mvUrl') && result.urlToPravilo) {
-          urlEl.value = result.urlToPravilo;
-        }
-        const vidEl = document.getElementById('mvVid');
-        if (vidEl && !vidEl.value && result.vid) {
-          if (!Array.from(vidEl.options).some((o) => o.value === result.vid)) {
-            const opt = document.createElement('option');
-            opt.value = result.vid;
-            opt.textContent = result.vid;
-            vidEl.insertBefore(opt, vidEl.options[1] || null);
-          }
-          vidEl.value = result.vid;
-        }
-        scheduleViolationTextareaResize();
-        GazpromToast.success('Формулировка предложена ИИ');
-      } catch {
-        GazpromToast.info('ИИ недоступен. Поля не изменены.');
-      } finally {
-        btn.classList.remove('is-loading');
-        btn.textContent = prevLabel || 'Сформулировать (ИИ)';
-        const state = deepseekUiState();
-        btn.disabled = !!state.disabled;
-        if (state.title) btn.title = state.title;
       }
     }
 
@@ -1409,9 +1254,6 @@ const WizardModals = (() => {
 
     document.getElementById('mvSave')?.addEventListener('click', saveViolation);
     document.getElementById('mvDelete')?.addEventListener('click', deleteViolation);
-    document.getElementById('mvAiFormulate')?.addEventListener('click', () => {
-      void onAiFormulateClick();
-    });
     if (VIOLATION_REGISTRY_PHOTO_HINTS && modalPhotos.length) void runPhotoHint(modalPhotos[0]);
     bindModalPhotoClicks();
     hydrateModalPhotoThumbs();

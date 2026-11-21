@@ -8,5 +8,4 @@ _site/
 * 2
 .env
 .env.*
-proxy/.dev.vars
 
